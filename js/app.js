@@ -14,7 +14,6 @@
 
 // Caché en memoria — permite que toda la app siga siendo síncrona
 const _cache = {};
-const _pending = {}; // escrituras pendientes
 
 // Helper: guardar en Firestore de forma no bloqueante
 async function _fsSet(path, data) {
