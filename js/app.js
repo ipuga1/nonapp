@@ -3548,11 +3548,13 @@ function toggleCompra(id){
 }
 
 function eliminarCompra(id){
-  const alim=DB.getAlim(); if(!alim) return;
-  alim.compras=alim.compras.filter(c=>c.id!==id);
-  DB.saveAlim(alim);
-  toast('Ítem eliminado');
-  renderTabAlim('compras');
+  confirmar('¿Eliminar este ítem?','Se eliminará de la lista de compras.',()=>{
+    const alim=DB.getAlim(); if(!alim) return;
+    alim.compras=alim.compras.filter(c=>c.id!==id);
+    DB.saveAlim(alim);
+    toast('Ítem eliminado');
+    renderTabAlim('compras');
+  });
 }
 
 function limpiarCompletadas(){
