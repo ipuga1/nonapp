@@ -4296,7 +4296,7 @@ function renderEventoCard(ev, puedeEditar){
   else if(diasD<0) diasLabel=`<span class="badge b-muted">Hace ${Math.abs(diasD)} días</span>`;
 
   return `
-    <div class="evento-card" onclick="editarEvento('${ev.id}')" style="cursor:pointer:''}">
+    <div class="evento-card" onclick="editarEvento('${ev.id}')" style="cursor:pointer">
       <div class="ev-color" style="background:${t.color}"></div>
       <div class="ev-fecha">
         <div class="ev-dia-num">${d}</div>
@@ -5032,7 +5032,7 @@ function renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin, am){
                         g.aprobacion==='pendiente'?`<span class="badge b-warn" style="font-size:10px">Pendiente</span>`:
                         g.aprobacion==='rechazado'?`<span class="badge b-err" style="font-size:10px">Rechazado</span>`:'';
       html+=`
-        <div class="gasto-row" onclick="editarGasto('${g.id}')" style="cursor:pointer:''}">
+        <div class="gasto-row" onclick="editarGasto('${g.id}')" style="cursor:pointer">
           <div class="gasto-ico" style="background:${conf.bg}">${conf.ico}</div>
           <div style="flex:1;min-width:0">
             <div class="gasto-desc">${g.desc||'Sin descripción'}</div>
