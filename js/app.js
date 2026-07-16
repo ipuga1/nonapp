@@ -242,12 +242,6 @@ const ROL_DESC={
 };
 
 /* ── HASH ── */
-function hashPass(str){
-  let h=5381;
-  for(let i=0;i<str.length;i++) h=((h<<5)+h)^str.charCodeAt(i);
-  // djb2 — siempre produce el mismo hash para el mismo input
-  return (h>>>0).toString(36); // >>> convierte a unsigned, siempre positivo
-}
 
 /* ── HELPERS ── */
 const $=id=>document.getElementById(id);
