@@ -286,7 +286,7 @@ function navTo(id){
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('on',i.dataset.screen===id));
   // Hooks de inicialización por pantalla
   if(id==='s-perfil')    renderPerfil();
-  if(id==='s-bita-new')  setTimeout(initSelectorCuidado,0);
+  if(id==='s-bita-new'){ setTimeout(initSelectorCuidado,0); setTimeout(initFormulario,0); }
   if(id==='s-bita-list') setTimeout(renderLista,0);
   if(id==='s-salud-hub'){
     ST.tabActivo='meds'; // siempre entrar por medicamentos
@@ -313,7 +313,6 @@ function navTo(id){
   if(['s-home-admin','s-home-familiar','s-home-observador','s-home-cuidadora'].includes(id)){
     const rol=id.replace('s-home-','');
     renderHome(rol==='admin'?'admin':rol==='familiar'?'familiar':rol==='observador'?'observador':'cuidadora');
-    ST._homeDirty=false;
   }
 }
 
@@ -533,6 +532,8 @@ function registrarInvitado(){
       // Marcar invitación como usada
       const invs=DB.getInvs().map(i=>i.codigo===_invActual.codigo?{...i,estado:'usado',usadoPor:uid}:i);
       DB.setInvs(invs);
+      // Invalidar también el código en Firestore para que no pueda reutilizarse desde otro dispositivo
+      _fsSet('codigos_inv/'+_invActual.codigo, {..._invActual, estado:'usado', usadoPor:uid});
 
       // Cargar datos del hogar
       await _cargarDatosFirestore(uid, _invActual.cuidadoId, adminId);
@@ -1219,10 +1220,12 @@ const ST = {
   // M4 Salud
   tabActivo: 'meds',
   medEditando: null,
+  medEditandoId: null,
+  docFiltro: 'todos',
   // M5 Alimentación
   tab: 'plan',
   porciones: {},
-  vasitos: 0,
+  vasosAgua: 0,
   // M9 Gastos
   mesVista: (()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })(),
   gastoEditandoId: null,
@@ -1232,6 +1235,9 @@ const ST = {
   editDiasSeleccionados: new Set(),
   // M8 Hogar
   tabHogar: 'insumos',
+  filtroInsumo: 'todos',
+  editInsumoId: null,
+  editProvId: null,
   // M7 Agenda
   anioActual: new Date().getFullYear(),
   mesActual: new Date().getMonth(),
@@ -1241,6 +1247,10 @@ const ST = {
   eventoCuidadoId: null,
   // OCR Receta
   ocrMeds: [],
+  // M10 Informe IA
+  informeActual: null,
+  mesGenerando: null,
+  version: 'familiar',
 };
 
 /* ════════════════════════════════════════════
@@ -2192,7 +2202,8 @@ function ajustarStockInsumo(id, delta){
   const comp=DB.getCompartido();
   const ins=(comp.hogar?.insumos||[]).find(i=>i.id===id);
   if(!ins) return;
-  ins.cantidad=Math.max(0, (ins.cantidad||0)+delta);
+  ins.stock=Math.max(0, (ins.stock||0)+delta);
+  ins.cantidad=ins.stock;
   DB.saveCompartido(comp);
   renderTabHogar('insumos');
 }
@@ -2228,11 +2239,6 @@ function guardarReposicion(){
   cerrarSheet('ov-edit-stock');
   toast(`✓ +${cantComprada} unidades registradas`,'ok');
   renderTab('meds');
-}
-
-function guardarStock(){
-  // Retrocompatibilidad — redirige a guardarReposicion
-  guardarReposicion();
 }
 
 /* Agregar medicamento manual */
@@ -3568,8 +3574,6 @@ const PALETA=[
 
 /* ── HELPERS ── */
 
-function diaHoyIdx(){ const d=new Date().getDay(); return d===0?6:d-1; }
-
 function paleta(idx){ return PALETA[idx % PALETA.length]; }
 
 /* ── NAVEGACIÓN ── */
@@ -4035,11 +4039,6 @@ const MESES_CORTO=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','
 const DIAS_SEMANA=['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
 
 
-function fechaLegible(dateStr){
-  if(!dateStr) return '—';
-  const [a,m,d]=dateStr.split('-').map(Number);
-  return `${d} de ${MESES[m-1]} de ${a}`;
-}
 function diasHasta(dateStr){
   const hoyD=new Date(); hoyD.setHours(0,0,0,0);
   const ev=new Date(dateStr+'T00:00:00');
@@ -5771,7 +5770,7 @@ function abrirSheetInvitacion(){
 
 /* Crear la invitación y mostrar el código */
 function crearInvitacion(){
-  const s = DB.getSesion(); if(!s) return;
+  const s = DB.getSesion(); if(!s || s.rol !== 'admin') return;
   const nombre = $('inv-nombre-input').value.trim();
   const email  = $('inv-email-input').value.trim().toLowerCase();
   const rol    = $('inv-rol-select').value;
@@ -5946,6 +5945,7 @@ function renderInvitaciones(){
 
 /* Revocar acceso a un usuario */
 function revocarAcceso(uid){
+  const s = DB.getSesion(); if(!s || s.rol !== 'admin') return;
   const u = DB.getUsuarios().find(x => x.id === uid);
   if(!u) return;
   confirmar(
@@ -5965,6 +5965,7 @@ function revocarAcceso(uid){
 
 /* Cancelar una invitación pendiente */
 function cancelarInvitacion(invId){
+  const s = DB.getSesion(); if(!s || s.rol !== 'admin') return;
   const invs = DB.getInvs();
   const inv = invs.find(i => i.id === invId);
   if(!inv) return;
@@ -6025,23 +6026,6 @@ function proximaToma(horarios) {
     if (tomaMin > nowMins) return h;
   }
   return horarios[0]; // mañana a la primera hora
-}
-
-function tomasPendientesHoy(med, confirmaciones) {
-  // Cuántas tomas quedan sin confirmar hoy
-  const horarios = med.horarios || [];
-  const hoyStr = hoy();
-  return horarios.filter(h => !confirmaciones[med.id + '_' + hoyStr + '_' + h]);
-}
-
-function stockCalculado(med) {
-  // Stock real = stockInicial - tomas confirmadas totales
-  // Retrocompatibilidad: si no tiene stockInicial, usar stock antiguo
-  if (med.stockInicial === undefined) return med.stock || 0;
-  const consumidas = med.reposiciones
-    ? med.reposiciones.reduce((sum, r) => sum + (r.cantidad || 0), 0)
-    : 0;
-  return Math.max(0, (med.stockActual !== undefined ? med.stockActual : med.stockInicial));
 }
 
 /* ── Módulo Gastos — boleta fotográfica ── */
@@ -6156,19 +6140,6 @@ async function recargarDesdeFB(){
     console.error('recargarDesdeFB:', e);
     toast('Error de conexión. Verifica tu internet.', 'err');
   }
-}
-
-function resetearDatosDemo(){
-  confirmar(
-    '¿Limpiar todos los datos?',
-    'Se eliminarán todos los datos de esta cuenta en este dispositivo. Esta acción no se puede deshacer.',
-    ()=>{
-      Object.keys(localStorage).filter(k=>k.startsWith('raiz_')).forEach(k=>localStorage.removeItem(k));
-      DB.clearSesion();
-      navTo('s-splash');
-      toast('✓ Datos eliminados','ok');
-    }
-  );
 }
 
 function fabActionEquip(){
