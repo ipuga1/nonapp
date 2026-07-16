@@ -76,15 +76,6 @@ async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
       _cache['raiz_compartido_' + adminId] = compSnap.data();
     }
 
-    // Cargar invitaciones del hogar
-    const invsSnap = await fb.getDocs(
-      fb.query(fb.collection(fb.db, 'invitaciones'),
-               fb.where('adminId', '==', adminId))
-    );
-    const invs = [];
-    invsSnap.forEach(d => invs.push(d.data()));
-    _cache['raiz_invitaciones'] = invs;
-
     console.log('✓ Datos cargados desde Firestore');
   } catch(e) {
     console.warn('Error cargando datos:', e.message);
@@ -469,11 +460,6 @@ function validarCodigo(){
       const fb=window._fb;
       if(fb){
         try{
-          // Buscar en todas las invitaciones por código
-          const snap=await fb.getDocs(
-            fb.query(fb.collection(fb.db,'invitaciones_hogar'))
-          );
-          // No podemos buscar por subcampo fácilmente — usar la alternativa
           // Buscar el documento directamente por código como ID
           const invSnap=await _fsGet('codigos_inv/'+codigo);
           if(invSnap&&invSnap.estado==='pendiente') inv=invSnap;
