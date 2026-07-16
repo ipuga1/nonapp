@@ -3994,7 +3994,7 @@ function eliminarPersona(id,nombre){
     const equipo=DB.getEquipo().filter(p=>p.id!==id);
     DB.saveEquipo(equipo);
     toast('Persona eliminada del equipo','ok');
-    renderTab(ST.tab);
+    renderTabEquip(ST.tabEquip);
   });
 }
 
