@@ -5387,6 +5387,7 @@ function iniciarGeneracion(){
 
 /* ════ GENERADOR DE INFORME IA ════ */
 function generarInformeIA(){
+  // Cálculo 100% local basado en reglas fijas — no realiza ninguna llamada a un modelo de IA/LLM real.
   const c=DB.getCuidado();
   const am=c?.am||{};
   const mes=ST.mesGenerando||mesActual();
