@@ -472,7 +472,7 @@ function validarCodigo(){
   buscarInvitacion().then(inv=>{
     setLoading('codigo-spinner','codigo-btn-txt',false);
     if(!inv){
-      $('codigo-err').style.display='block';
+      $('code-err').style.display='block';
       return;
     }
     // Verificar expiración
@@ -491,9 +491,9 @@ function validarCodigo(){
 
 // Registro invitado
 function registrarInvitado(){
-  const nombre=$('inv-reg-nombre').value.trim();
-  const pass=$('inv-reg-pass').value;
-  const pass2=$('inv-reg-pass2').value;
+  const nombre=$('inv-nombre').value.trim();
+  const pass=$('inv-pass').value;
+  const pass2=$('inv-pass2').value;
   if(!nombre){ toast('Escribe tu nombre','err'); return; }
   if(pass.length<6){ toast('Mínimo 6 caracteres','err'); return; }
   if(pass!==pass2){ toast('Las contraseñas no coinciden','err'); return; }
@@ -502,11 +502,11 @@ function registrarInvitado(){
   const fb=window._fb;
   if(!fb){ toast('Conectando...','ok'); return; }
 
-  setLoading('inv-reg-spinner','inv-reg-btn-txt',true);
+  setLoading('inv-spinner','inv-btn-txt',true);
 
   fb.createUserWithEmailAndPassword(fb.auth, _invActual.email||`${Date.now()}@raiz-invitado.app`, pass)
     .then(async(cred)=>{
-      setLoading('inv-reg-spinner','inv-reg-btn-txt',false);
+      setLoading('inv-spinner','inv-btn-txt',false);
       const uid=cred.user.uid;
       const adminId=_invActual.adminId;
 
@@ -531,7 +531,7 @@ function registrarInvitado(){
       mostrarBienvenida(userData);
     })
     .catch((err)=>{
-      setLoading('inv-reg-spinner','inv-reg-btn-txt',false);
+      setLoading('inv-spinner','inv-btn-txt',false);
       const msgs={'auth/email-already-in-use':'Este email ya tiene cuenta — inicia sesión normalmente'};
       toast(msgs[err.code]||'Error al registrarse','err');
     });
