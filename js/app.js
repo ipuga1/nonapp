@@ -1256,18 +1256,21 @@ const ST = {
 };
 
 /* ── Alias de compatibilidad hacia atrás ──────────────────────────
-   Exponen cada propiedad agrupada arriba como ST.<nombrePlano>,
-   igual que antes de la modularización, para no romper ninguna
-   referencia existente en el resto del archivo. ── */
+   Fase 2 (Sprints 2–9): todos los módulos ya usan directamente su
+   namespace ST.<modulo>.*. De los 30 alias originales, 28 quedaron
+   sin ninguna referencia y se eliminaron en el Sprint 10.
+   Solo quedan estos 2, porque código de OTRO módulo aún depende de
+   ellos (acoplamiento cruzado documentado, pendiente de resolver
+   en un sprint aparte antes de poder eliminarlos):
+   - tab: setTabEquip(), setTabHogar(), setTabGastos() y
+     guardarPresupuesto() siguen leyendo/escribiendo ST.tab en vez
+     de ST.alimentacion.tab (hallazgo H-01).
+   - diaSeleccionado: abrirAddComida() y guardarComida() (Alimentación)
+     siguen usando ST.diaSeleccionado en vez de ST.agenda.diaSeleccionado
+     (hallazgo H-02). ── */
 [
-  ['bitaCuidadoId','bitacora'], ['filtro','bitacora'], ['bitacoraActual','bitacora'], ['form','bitacora'],
-  ['tabActivo','salud'], ['medEditando','salud'], ['medEditandoId','salud'], ['docFiltro','salud'], ['ocrMeds','salud'],
-  ['tab','alimentacion'], ['porciones','alimentacion'], ['vasosAgua','alimentacion'],
-  ['mesVista','gastos'], ['gastoEditandoId','gastos'],
-  ['tabEquip','equipo'], ['diasSeleccionados','equipo'], ['editDiasSeleccionados','equipo'],
-  ['tabHogar','hogar'], ['filtroInsumo','hogar'], ['editInsumoId','hogar'], ['editProvId','hogar'],
-  ['anioActual','agenda'], ['mesActual','agenda'], ['diaSeleccionado','agenda'], ['eventoEditandoId','agenda'], ['tipoActual','agenda'], ['eventoCuidadoId','agenda'],
-  ['informeActual','informe'], ['mesGenerando','informe'], ['version','informe'],
+  ['tab','alimentacion'],
+  ['diaSeleccionado','agenda'],
 ].forEach(([prop,group])=>{
   Object.defineProperty(ST, prop, {
     get(){ return ST[group][prop]; },
