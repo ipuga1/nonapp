@@ -244,7 +244,7 @@ function showErr(id,msg){ const e=$(id); e.textContent=msg||e.textContent; e.cla
 function hideErr(id){ $(id)?.classList.remove('show'); }
 function setLoading(sid,bid,v){ $(sid).style.display=v?'inline-block':'none'; $(bid).style.opacity=v?'.7':'1'; }
 function initials(n){ if(!n)return'?'; return n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2); }
-function hoy(){ return new Date().toISOString().split('T')[0]; }
+function hoy(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fechaHoy(){ return new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}); }
 function fmt(n){ return '$'+Number(n||0).toLocaleString('es-CL'); }
 
@@ -5790,7 +5790,7 @@ function crearInvitacion(){
     cuidadoId,
     estado: 'pendiente',
     creado: hoy(),
-    expira: expira.toISOString().split('T')[0],
+    expira: expira.getFullYear()+'-'+String(expira.getMonth()+1).padStart(2,'0')+'-'+String(expira.getDate()).padStart(2,'0'),
   };
 
   DB.setInvs([...invs, nuevaInv]);
