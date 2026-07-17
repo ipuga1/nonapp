@@ -4083,7 +4083,7 @@ function renderAgenda(){
   const am=c.am||{};
 
   // Por defecto, seleccionar el día de hoy si no hay ninguno elegido aún
-  if(!ST.diaSeleccionado) ST.diaSeleccionado=hoy();
+  if(!ST.agenda.diaSeleccionado) ST.agenda.diaSeleccionado=hoy();
 
   // Sub-título
   const sub=`${am.nombre||'tu familiar'} · agenda de citas`;
@@ -4144,7 +4144,7 @@ function renderCalendarioAgenda(){
   for(let d=1;d<=diasEnMes;d++){
     const dateStr=ymd(a,m,d);
     const esHoy=dateStr===hoyStr;
-    const esSel=dateStr===ST.diaSeleccionado;
+    const esSel=dateStr===ST.agenda.diaSeleccionado;
     const evDia=eventosPorFecha[d]||[];
     const dotsHtml=evDia.slice(0,3).map(ev=>{
       const tipo=TIPOS[ev.tipo]||TIPOS.otro;
@@ -4167,15 +4167,15 @@ function renderCalendarioAgenda(){
 }
 
 function cambiarMes(delta){
-  ST.mesActual+=delta;
-  if(ST.mesActual<0){ ST.mesActual=11; ST.anioActual--; }
-  if(ST.mesActual>11){ ST.mesActual=0; ST.anioActual++; }
+  ST.agenda.mesActual+=delta;
+  if(ST.agenda.mesActual<0){ ST.agenda.mesActual=11; ST.agenda.anioActual--; }
+  if(ST.agenda.mesActual>11){ ST.agenda.mesActual=0; ST.agenda.anioActual++; }
   renderCalendarioAgenda();
   renderDiaSeleccionado(['admin','cuidadora'].includes(DB.getSesion()?.rol));
 }
 
 function selDia(dateStr){
-  ST.diaSeleccionado=dateStr;
+  ST.agenda.diaSeleccionado=dateStr;
   renderCalendarioAgenda();
   renderDiaSeleccionado(['admin','cuidadora'].includes(DB.getSesion()?.rol));
 }
@@ -4183,7 +4183,7 @@ function selDia(dateStr){
 /* ── EVENTOS DEL DÍA SELECCIONADO ── */
 function renderDiaSeleccionado(puedeEditar){
   const eventos=DB.getEventos();
-  const dateStr=ST.diaSeleccionado;
+  const dateStr=ST.agenda.diaSeleccionado;
   const [a,m,d]=dateStr.split('-').map(Number);
   const dowIdx=new Date(dateStr+'T12:00').getDay();
   const dow=dowIdx===0?'Domingo':DIAS_FULL[dowIdx-1];
@@ -4293,14 +4293,14 @@ function initSelectorCuidadoEvento(eventoCuidadoId){
   // Mostrar siempre el selector, incluso con un solo Cuidado —
   // así el usuario ve y controla explícitamente a quién aplica el evento
   wrap.style.display='block';
-  ST.eventoCuidadoId = eventoCuidadoId!==undefined ? eventoCuidadoId : null;
+  ST.agenda.eventoCuidadoId = eventoCuidadoId!==undefined ? eventoCuidadoId : null;
   renderChipsCuidadoEvento(todos, chips);
 }
 
 function renderChipsCuidadoEvento(todos, chips){
   const opciones=[{id:null, nombre:'Todos'}, ...todos.map(c=>({id:c.id, nombre:c.am?.nombre||'Sin nombre'}))];
   chips.innerHTML=opciones.map(op=>{
-    const on=ST.eventoCuidadoId===op.id;
+    const on=ST.agenda.eventoCuidadoId===op.id;
     return `<button onclick="selCuidadoEvento(${op.id?`'${op.id}'`:'null'})"
       style="padding:8px 16px;border-radius:20px;font-size:13px;font-weight:${on?700:500};
       border:2px solid ${on?'var(--sage)':'var(--line)'};
@@ -4312,7 +4312,7 @@ function renderChipsCuidadoEvento(todos, chips){
 }
 
 function selCuidadoEvento(cid){
-  ST.eventoCuidadoId=cid;
+  ST.agenda.eventoCuidadoId=cid;
   const todos=DB.getCuidadosAdmin();
   const chips=$('ev-cuidado-chips');
   if(chips) renderChipsCuidadoEvento(todos, chips);
@@ -4320,16 +4320,16 @@ function selCuidadoEvento(cid){
 
 function abrirSheetEvento(){
   // Prellenar con la fecha seleccionada
-  ST.eventoEditandoId=null;
+  ST.agenda.eventoEditandoId=null;
   $('sh-evento-titulo').textContent='Nuevo evento';
   $('ev-titulo').value='';
-  $('ev-fecha').value=ST.diaSeleccionado||hoy();
+  $('ev-fecha').value=ST.agenda.diaSeleccionado||hoy();
   $('ev-hora').value='10:00';
   $('ev-lugar').value=''; $('ev-acompanante').value=''; $('ev-notas').value='';
   $('ev-alerta').value='1';
   $('btn-eliminar-evento').style.display='none';
   // Reset tipo
-  ST.tipoActual='cita_medica';
+  ST.agenda.tipoActual='cita_medica';
   document.querySelectorAll('.tipo-btn').forEach(b=>{ b.classList.toggle('on',b.dataset.tipo==='cita_medica'); });
   actualizarEstilosTipo();
   initSelectorCuidadoEvento(null);
@@ -4339,7 +4339,7 @@ function abrirSheetEvento(){
 
 function editarEvento(id){
   const ev=DB.getEventos().find(e=>e.id===id); if(!ev) return;
-  ST.eventoEditandoId=id;
+  ST.agenda.eventoEditandoId=id;
   $('sh-evento-titulo').textContent='Editar evento';
   $('ev-titulo').value=ev.titulo||'';
   $('ev-fecha').value=ev.fecha||hoy();
@@ -4349,22 +4349,22 @@ function editarEvento(id){
   $('ev-notas').value=ev.notas||'';
   $('ev-alerta').value=ev.alerta||'1';
   $('btn-eliminar-evento').style.display='block';
-  ST.tipoActual=ev.tipo||'cita_medica';
-  document.querySelectorAll('.tipo-btn').forEach(b=>{ b.classList.toggle('on',b.dataset.tipo===ST.tipoActual); });
+  ST.agenda.tipoActual=ev.tipo||'cita_medica';
+  document.querySelectorAll('.tipo-btn').forEach(b=>{ b.classList.toggle('on',b.dataset.tipo===ST.agenda.tipoActual); });
   actualizarEstilosTipo();
   initSelectorCuidadoEvento(ev.cuidadoId!==undefined ? ev.cuidadoId : null);
   $('ov-evento').classList.add('open');
 }
 
 function selTipo(btn){
-  ST.tipoActual=btn.dataset.tipo;
+  ST.agenda.tipoActual=btn.dataset.tipo;
   document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   actualizarEstilosTipo();
 }
 
 function actualizarEstilosTipo(){
-  const t=TIPOS[ST.tipoActual]||TIPOS.otro;
+  const t=TIPOS[ST.agenda.tipoActual]||TIPOS.otro;
   document.querySelectorAll('.tipo-btn').forEach(b=>{
     if(b.classList.contains('on')){
       b.style.borderColor=t.color;
@@ -4384,30 +4384,30 @@ function guardarEvento(){
   if(!fecha){ toast('Selecciona una fecha','err'); return; }
 
   const eventos=DB.getEventos();
-  if(ST.eventoEditandoId){
-    const idx=eventos.findIndex(e=>e.id===ST.eventoEditandoId);
+  if(ST.agenda.eventoEditandoId){
+    const idx=eventos.findIndex(e=>e.id===ST.agenda.eventoEditandoId);
     if(idx>=0){
       eventos[idx]={...eventos[idx],
-        tipo:ST.tipoActual, titulo, fecha,
+        tipo:ST.agenda.tipoActual, titulo, fecha,
         hora:$('ev-hora').value,
         lugar:$('ev-lugar').value.trim(),
         acompanante:$('ev-acompanante').value.trim(),
         notas:$('ev-notas').value.trim(),
         alerta:$('ev-alerta').value,
-        cuidadoId: ST.eventoCuidadoId!==undefined ? ST.eventoCuidadoId : null,
+        cuidadoId: ST.agenda.eventoCuidadoId!==undefined ? ST.agenda.eventoCuidadoId : null,
       };
     }
     toast('✓ Evento actualizado','ok');
   } else {
     eventos.push({
       id:'ev-'+Date.now(),
-      tipo:ST.tipoActual, titulo, fecha,
+      tipo:ST.agenda.tipoActual, titulo, fecha,
       hora:$('ev-hora').value,
       lugar:$('ev-lugar').value.trim(),
       acompanante:$('ev-acompanante').value.trim(),
       notas:$('ev-notas').value.trim(),
       alerta:$('ev-alerta').value,
-      cuidadoId: ST.eventoCuidadoId!==undefined ? ST.eventoCuidadoId : null,
+      cuidadoId: ST.agenda.eventoCuidadoId!==undefined ? ST.agenda.eventoCuidadoId : null,
       creadoEl:hoy(),
     });
     toast('✓ Evento guardado','ok');
@@ -4417,16 +4417,16 @@ function guardarEvento(){
   cerrarSheet('ov-evento');
   // Navegar al mes del evento
   const [a,m]=fecha.split('-').map(Number);
-  ST.anioActual=a; ST.mesActual=m-1; ST.diaSeleccionado=fecha;
+  ST.agenda.anioActual=a; ST.agenda.mesActual=m-1; ST.agenda.diaSeleccionado=fecha;
   renderCalendarioAgenda();
   renderDiaSeleccionado(['admin','cuidadora'].includes(DB.getSesion()?.rol));
   renderAlertas();
 }
 
 function eliminarEventoActual(){
-  if(!ST.eventoEditandoId) return;
+  if(!ST.agenda.eventoEditandoId) return;
   confirmar('¿Eliminar este evento?','Se eliminará del calendario permanentemente.',()=>{
-    const eventos=DB.getEventos().filter(e=>e.id!==ST.eventoEditandoId);
+    const eventos=DB.getEventos().filter(e=>e.id!==ST.agenda.eventoEditandoId);
     DB.saveEventos(eventos);
     cerrarSheet('ov-evento');
     toast('Evento eliminado');
