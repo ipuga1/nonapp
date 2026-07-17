@@ -1195,50 +1195,87 @@ window._raizOnAuth = async (firebaseUser) => {
    ════════════════════════════════════════════ */
 const ST = {
   // M3 Bitácora
-  bitaCuidadoId: null,
-  filtro: 'todos',
-  bitacoraActual: null,
-  form: {
-    quien:'Cuidadora', presion:'', temp:'', sato:'',
-    desayuno:'', almuerzo:'', cena:'',
-    bano:false, hidra:false, activ:false, visita:false,
-    animo:'',
+  bitacora: {
+    bitaCuidadoId: null,
+    filtro: 'todos',
+    bitacoraActual: null,
+    form: {
+      quien:'Cuidadora', presion:'', temp:'', sato:'',
+      desayuno:'', almuerzo:'', cena:'',
+      bano:false, hidra:false, activ:false, visita:false,
+      animo:'',
+    },
   },
   // M4 Salud
-  tabActivo: 'meds',
-  medEditando: null,
-  medEditandoId: null,
-  docFiltro: 'todos',
+  salud: {
+    tabActivo: 'meds',
+    medEditando: null,
+    medEditandoId: null,
+    docFiltro: 'todos',
+    ocrMeds: [],
+  },
   // M5 Alimentación
-  tab: 'plan',
-  porciones: {},
-  vasosAgua: 0,
+  alimentacion: {
+    tab: 'plan',
+    porciones: {},
+    vasosAgua: 0,
+  },
   // M9 Gastos
-  mesVista: (()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })(),
-  gastoEditandoId: null,
+  gastos: {
+    mesVista: (()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })(),
+    gastoEditandoId: null,
+  },
   // M6 Equipo
-  tabEquip: 'cuidadoras',
-  diasSeleccionados: new Set(['lunes','martes','miercoles','jueves','viernes']),
-  editDiasSeleccionados: new Set(),
+  equipo: {
+    tabEquip: 'cuidadoras',
+    diasSeleccionados: new Set(['lunes','martes','miercoles','jueves','viernes']),
+    editDiasSeleccionados: new Set(),
+  },
   // M8 Hogar
-  tabHogar: 'insumos',
-  filtroInsumo: 'todos',
-  editInsumoId: null,
-  editProvId: null,
+  hogar: {
+    tabHogar: 'insumos',
+    filtroInsumo: 'todos',
+    editInsumoId: null,
+    editProvId: null,
+  },
   // M7 Agenda
-  anioActual: new Date().getFullYear(),
-  mesActual: new Date().getMonth(),
-  diaSeleccionado: null,
-  eventoEditandoId: null,
-  tipoActual: 'cita_medica',
-  eventoCuidadoId: null,
-  // OCR Receta
-  ocrMeds: [],
+  agenda: {
+    anioActual: new Date().getFullYear(),
+    mesActual: new Date().getMonth(),
+    diaSeleccionado: null,
+    eventoEditandoId: null,
+    tipoActual: 'cita_medica',
+    eventoCuidadoId: null,
+  },
   // M10 Informe IA
-  informeActual: null,
-  mesGenerando: null,
-  version: 'familiar',
+  informe: {
+    informeActual: null,
+    mesGenerando: null,
+    version: 'familiar',
+  },
 };
+
+/* ── Alias de compatibilidad hacia atrás ──────────────────────────
+   Exponen cada propiedad agrupada arriba como ST.<nombrePlano>,
+   igual que antes de la modularización, para no romper ninguna
+   referencia existente en el resto del archivo. ── */
+[
+  ['bitaCuidadoId','bitacora'], ['filtro','bitacora'], ['bitacoraActual','bitacora'], ['form','bitacora'],
+  ['tabActivo','salud'], ['medEditando','salud'], ['medEditandoId','salud'], ['docFiltro','salud'], ['ocrMeds','salud'],
+  ['tab','alimentacion'], ['porciones','alimentacion'], ['vasosAgua','alimentacion'],
+  ['mesVista','gastos'], ['gastoEditandoId','gastos'],
+  ['tabEquip','equipo'], ['diasSeleccionados','equipo'], ['editDiasSeleccionados','equipo'],
+  ['tabHogar','hogar'], ['filtroInsumo','hogar'], ['editInsumoId','hogar'], ['editProvId','hogar'],
+  ['anioActual','agenda'], ['mesActual','agenda'], ['diaSeleccionado','agenda'], ['eventoEditandoId','agenda'], ['tipoActual','agenda'], ['eventoCuidadoId','agenda'],
+  ['informeActual','informe'], ['mesGenerando','informe'], ['version','informe'],
+].forEach(([prop,group])=>{
+  Object.defineProperty(ST, prop, {
+    get(){ return ST[group][prop]; },
+    set(v){ ST[group][prop]=v; },
+    enumerable: true,
+    configurable: true,
+  });
+});
 
 /* ════════════════════════════════════════════
    FUNCIONES AUXILIARES COMPARTIDAS
