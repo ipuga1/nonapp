@@ -4485,7 +4485,7 @@ const CAT_PROV = {
 
 /* ════ TABS ════ */
 function setTabHogar(tab,btn){
-  ST.tabHogar=tab; ST.tab=tab;
+  ST.hogar.tabHogar=tab; ST.tab=tab;
   document.querySelectorAll('.th').forEach(t=>t.classList.remove('on'));
   if(btn) btn.classList.add('on');
   renderTabHogar(tab);
@@ -4528,7 +4528,7 @@ function renderTabHogar(tab){
 function renderInsumos(hogar, puedeEditar, esAdmin){
   const content=$('hogar-content');
   const insumos=hogar.insumos||[];
-  const filtro=ST.filtroInsumo;
+  const filtro=ST.hogar.filtroInsumo;
   const stockBajos=insumos.filter(i=>i.stock<=i.stockMin);
   const sinStock=insumos.filter(i=>i.stock===0);
 
@@ -4587,7 +4587,7 @@ function renderInsumos(hogar, puedeEditar, esAdmin){
 }
 
 function setFiltroInsumo(cat,btn){
-  ST.filtroInsumo=cat;
+  ST.hogar.filtroInsumo=cat;
   document.querySelectorAll('.filtros-bar .fpill').forEach(p=>p.classList.remove('on'));
   btn.classList.add('on');
   const hogar=DB.getHogar();
@@ -4612,7 +4612,7 @@ function selCatInsumo(btn){
 }
 
 function abrirSheetInsumo(id){
-  ST.editInsumoId=null;
+  ST.hogar.editInsumoId=null;
   $('sh-insumo-titulo').textContent='Agregar insumo';
   $('ins-nombre').value=''; $('ins-stock').value='0'; $('ins-min').value='5'; $('ins-notas').value='';
   $('ins-unidad').value='unidades';
@@ -4626,7 +4626,7 @@ function abrirSheetInsumo(id){
 function editarInsumo(id){
   const hogar=DB.getHogar(); if(!hogar) return;
   const ins=hogar.insumos.find(i=>i.id===id); if(!ins) return;
-  ST.editInsumoId=id;
+  ST.hogar.editInsumoId=id;
   $('sh-insumo-titulo').textContent='Editar insumo';
   $('ins-nombre').value=ins.nombre||'';
   $('ins-stock').value=ins.stock||0;
@@ -4653,8 +4653,8 @@ function guardarInsumo(){
     unidad:$('ins-unidad').value,
     notas:$('ins-notas').value.trim(),
   };
-  if(ST.editInsumoId){
-    const idx=hogar.insumos.findIndex(i=>i.id===ST.editInsumoId);
+  if(ST.hogar.editInsumoId){
+    const idx=hogar.insumos.findIndex(i=>i.id===ST.hogar.editInsumoId);
     if(idx>=0) hogar.insumos[idx]={...hogar.insumos[idx],...data};
     toast('✓ Insumo actualizado','ok');
   } else {
@@ -4667,10 +4667,10 @@ function guardarInsumo(){
 }
 
 function eliminarInsumoActual(){
-  if(!ST.editInsumoId) return;
+  if(!ST.hogar.editInsumoId) return;
   confirmar('¿Eliminar este insumo?','Se eliminará del registro de stock.',()=>{
     const hogar=DB.getHogar(); if(!hogar) return;
-    hogar.insumos=hogar.insumos.filter(i=>i.id!==ST.editInsumoId);
+    hogar.insumos=hogar.insumos.filter(i=>i.id!==ST.hogar.editInsumoId);
     DB.saveHogar(hogar);
     cerrarSheet('ov-insumo');
     toast('Insumo eliminado');
@@ -4737,7 +4737,7 @@ function selCatProv(btn){
 }
 
 function abrirSheetProveedor(){
-  ST.editProvId=null;
+  ST.hogar.editProvId=null;
   $('sh-prov-titulo').textContent='Agregar proveedor / servicio';
   ['prov-nombre','prov-telefono','prov-direccion','prov-horario','prov-notas'].forEach(id=>$(id).value='');
   _catProvActual='farmacia';
@@ -4750,7 +4750,7 @@ function abrirSheetProveedor(){
 function editarProveedor(id){
   const hogar=DB.getHogar(); if(!hogar) return;
   const p=hogar.proveedores.find(x=>x.id===id); if(!p) return;
-  ST.editProvId=id;
+  ST.hogar.editProvId=id;
   $('sh-prov-titulo').textContent='Editar proveedor';
   $('prov-nombre').value=p.nombre||'';
   $('prov-telefono').value=p.telefono||'';
@@ -4775,8 +4775,8 @@ function guardarProveedor(){
     horario:$('prov-horario').value.trim(),
     notas:$('prov-notas').value.trim(),
   };
-  if(ST.editProvId){
-    const idx=hogar.proveedores.findIndex(p=>p.id===ST.editProvId);
+  if(ST.hogar.editProvId){
+    const idx=hogar.proveedores.findIndex(p=>p.id===ST.hogar.editProvId);
     if(idx>=0) hogar.proveedores[idx]={...hogar.proveedores[idx],...data};
     toast('✓ Proveedor actualizado','ok');
   } else {
@@ -4789,10 +4789,10 @@ function guardarProveedor(){
 }
 
 function eliminarProvActual(){
-  if(!ST.editProvId) return;
+  if(!ST.hogar.editProvId) return;
   confirmar('¿Eliminar este proveedor?','Se eliminará del directorio.',()=>{
     const hogar=DB.getHogar(); if(!hogar) return;
-    hogar.proveedores=hogar.proveedores.filter(p=>p.id!==ST.editProvId);
+    hogar.proveedores=hogar.proveedores.filter(p=>p.id!==ST.hogar.editProvId);
     DB.saveHogar(hogar);
     cerrarSheet('ov-proveedor');
     toast('Proveedor eliminado');
@@ -6178,8 +6178,8 @@ function fabActionHogar(){
   const s=DB.getSesion(); if(!s) return;
   if(!['admin','cuidadora'].includes(s.rol)) return;
   // Abrir sheet según el tab activo en Hogar
-  if(ST.tabHogar==='insumos') abrirSheetInsumo();
-  else if(ST.tabHogar==='proveedores') abrirSheetProveedor();
+  if(ST.hogar.tabHogar==='insumos') abrirSheetInsumo();
+  else if(ST.hogar.tabHogar==='proveedores') abrirSheetProveedor();
 }
 function fabActionGastos(){
   const s=DB.getSesion(); if(!s) return;
