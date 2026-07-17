@@ -1256,29 +1256,12 @@ const ST = {
 };
 
 /* ── Alias de compatibilidad hacia atrás ──────────────────────────
-   Fase 2 (Sprints 2–9): todos los módulos ya usan directamente su
-   namespace ST.<modulo>.*. De los 30 alias originales, 28 quedaron
-   sin ninguna referencia y se eliminaron en el Sprint 10.
-   Solo quedan estos 2, porque código de OTRO módulo aún depende de
-   ellos (acoplamiento cruzado documentado, pendiente de resolver
-   en un sprint aparte antes de poder eliminarlos):
-   - tab: setTabEquip(), setTabHogar(), setTabGastos() y
-     guardarPresupuesto() siguen leyendo/escribiendo ST.tab en vez
-     de ST.alimentacion.tab (hallazgo H-01).
-   - diaSeleccionado: abrirAddComida() y guardarComida() (Alimentación)
-     siguen usando ST.diaSeleccionado en vez de ST.agenda.diaSeleccionado
-     (hallazgo H-02). ── */
-[
-  ['tab','alimentacion'],
-  ['diaSeleccionado','agenda'],
-].forEach(([prop,group])=>{
-  Object.defineProperty(ST, prop, {
-    get(){ return ST[group][prop]; },
-    set(v){ ST[group][prop]=v; },
-    enumerable: true,
-    configurable: true,
-  });
-});
+   Fase 2 (Sprints 2–9): todos los módulos usan directamente su
+   namespace ST.<modulo>.*. De los 30 alias originales, 28 se
+   eliminaron en el Sprint 10. Los últimos 2 (tab, diaSeleccionado)
+   dependían de acoplamiento cruzado (H-01, H-02) resuelto en los
+   Sprints 10A/10B: todo el código ahora usa ST.alimentacion.tab y
+   ST.agenda.diaSeleccionado directamente. No queda ningún alias. ── */
 
 /* ════════════════════════════════════════════
    FUNCIONES AUXILIARES COMPARTIDAS
@@ -3039,7 +3022,7 @@ function selDiaYAbrirComida(dia){
 }
 
 function abrirAddComida(dia){
-  ST.diaSeleccionado=dia;
+  ST.agenda.diaSeleccionado=dia;
   $('sh-comida-titulo').textContent=`Agregar comida · ${DIA_LABEL[dia]}`;
   $('comida-desc').value=''; $('comida-notas').value='';
   $('comida-momento').value='desayuno';
@@ -3051,7 +3034,7 @@ function guardarComida(){
   const desc=$('comida-desc').value.trim();
   if(!desc){ toast('Escribe una descripción de la comida','err'); return; }
   const alim=DB.getAlim(); if(!alim) return;
-  const dia=ST.diaSeleccionado||hoy();
+  const dia=ST.agenda.diaSeleccionado||hoy();
   if(!alim.diario) alim.diario={};
   if(!alim.diario[dia]) alim.diario[dia]=[];
   if(!Array.isArray(alim.plan[dia])) alim.plan[dia]=[];
@@ -3610,7 +3593,7 @@ function paleta(idx){ return PALETA[idx % PALETA.length]; }
 
 /* ════ HUB — TABS ════ */
 function setTabEquip(tab,btn){
-  ST.equipo.tabEquip=tab; ST.tab=tab;
+  ST.equipo.tabEquip=tab; ST.alimentacion.tab=tab;
   document.querySelectorAll('.th').forEach(t=>t.classList.remove('on'));
   if(btn) btn.classList.add('on');
   renderTabEquip(tab);
@@ -4111,7 +4094,7 @@ function renderAgenda(){
 /* ── CALENDARIO MENSUAL ── */
 function renderCalendarioAgenda(){
   const eventos=DB.getEventos();
-  const {anioActual:a, mesActual:m}=ST;
+  const {anioActual:a, mesActual:m}=ST.agenda;
 
   // Label del mes
   $('cal-mes-label').textContent=`${MESES[m]} ${a}`;
@@ -4488,7 +4471,7 @@ const CAT_PROV = {
 
 /* ════ TABS ════ */
 function setTabHogar(tab,btn){
-  ST.hogar.tabHogar=tab; ST.tab=tab;
+  ST.hogar.tabHogar=tab; ST.alimentacion.tab=tab;
   document.querySelectorAll('.th').forEach(t=>t.classList.remove('on'));
   if(btn) btn.classList.add('on');
   renderTabHogar(tab);
@@ -4854,7 +4837,7 @@ function mesesDisponibles(gastos){
 
 /* ════ TABS ════ */
 function setTabGastos(tab,btn){
-  ST.tab=tab;
+  ST.alimentacion.tab=tab;
   document.querySelectorAll('.th').forEach(t=>t.classList.remove('on'));
   if(btn) btn.classList.add('on');
   renderTabGastos(tab);
@@ -5252,7 +5235,7 @@ function guardarPresupuesto(){
   DB.saveCompartido(comp);
   cerrarSheet('ov-presupuesto');
   toast('✓ Presupuesto actualizado','ok');
-  renderTabGastos(ST.tab);
+  renderTabGastos(ST.alimentacion.tab);
 }
 function guardarPresupuestoCat(cat,val){
   const comp=DB.getCompartido();
