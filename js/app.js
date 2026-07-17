@@ -3607,7 +3607,7 @@ function paleta(idx){ return PALETA[idx % PALETA.length]; }
 
 /* ════ HUB — TABS ════ */
 function setTabEquip(tab,btn){
-  ST.tabEquip=tab; ST.tab=tab;
+  ST.equipo.tabEquip=tab; ST.tab=tab;
   document.querySelectorAll('.th').forEach(t=>t.classList.remove('on'));
   if(btn) btn.classList.add('on');
   renderTabEquip(tab);
@@ -3907,7 +3907,7 @@ function renderDiasBtns(containerId, seleccionados){
 
 function toggleDiaEquip(btn, containerId){
   const dia=btn.dataset.dia;
-  const set=containerId==='c-dias-btns'?ST.diasSeleccionados:ST.editDiasSeleccionados;
+  const set=containerId==='c-dias-btns'?ST.equipo.diasSeleccionados:ST.equipo.editDiasSeleccionados;
   if(set.has(dia)){
     set.delete(dia);
     btn.style.borderColor='var(--line)';
@@ -3924,8 +3924,8 @@ function abrirSheetCuidadora(){
   $('c-nombre').value=''; $('c-telefono').value=''; $('c-notas').value='';
   $('c-rol').value='cuidadora_principal';
   $('c-hora-ini').value='08:00'; $('c-hora-fin').value='18:00';
-  ST.diasSeleccionados=new Set(['lunes','martes','miercoles','jueves','viernes']);
-  renderDiasBtns('c-dias-btns',ST.diasSeleccionados);
+  ST.equipo.diasSeleccionados=new Set(['lunes','martes','miercoles','jueves','viernes']);
+  renderDiasBtns('c-dias-btns',ST.equipo.diasSeleccionados);
   $('ov-add-cuidadora').classList.add('open');
   setTimeout(()=>$('c-nombre').focus(),300);
 }
@@ -3938,7 +3938,7 @@ function guardarCuidadora(){
     id:'p-'+Date.now(), categoria:'cuidadora',
     nombre, telefono:$('c-telefono').value.trim(),
     rol:$('c-rol').value,
-    dias:[...ST.diasSeleccionados],
+    dias:[...ST.equipo.diasSeleccionados],
     horaIni:$('c-hora-ini').value,
     horaFin:$('c-hora-fin').value,
     notas:$('c-notas').value.trim(),
@@ -3960,8 +3960,8 @@ function editarCuidadora(id){
   $('edit-c-hora-ini').value=p.horaIni||'08:00';
   $('edit-c-hora-fin').value=p.horaFin||'18:00';
   $('edit-c-notas').value=p.notas||'';
-  ST.editDiasSeleccionados=new Set(p.dias||[]);
-  renderDiasBtns('edit-c-dias-btns',ST.editDiasSeleccionados);
+  ST.equipo.editDiasSeleccionados=new Set(p.dias||[]);
+  renderDiasBtns('edit-c-dias-btns',ST.equipo.editDiasSeleccionados);
   $('ov-edit-cuidadora').classList.add('open');
 }
 
@@ -3975,7 +3975,7 @@ function actualizarCuidadora(){
     ...equipo[idx],
     nombre, telefono:$('edit-c-telefono').value.trim(),
     rol:$('edit-c-rol').value,
-    dias:[...ST.editDiasSeleccionados],
+    dias:[...ST.equipo.editDiasSeleccionados],
     horaIni:$('edit-c-hora-ini').value,
     horaFin:$('edit-c-hora-fin').value,
     notas:$('edit-c-notas').value.trim(),
@@ -4019,7 +4019,7 @@ function eliminarPersona(id,nombre){
     const equipo=DB.getEquipo().filter(p=>p.id!==id);
     DB.saveEquipo(equipo);
     toast('Persona eliminada del equipo','ok');
-    renderTabEquip(ST.tabEquip);
+    renderTabEquip(ST.equipo.tabEquip);
   });
 }
 
@@ -6171,8 +6171,8 @@ function fabActionEquip(){
   const s=DB.getSesion(); if(!s) return;
   if(!['admin','cuidadora'].includes(s.rol)) return;
   // Abrir sheet según el tab activo en Equipo
-  if(ST.tabEquip==='cuidadoras') abrirSheetCuidadora();
-  else if(ST.tabEquip==='especialistas') abrirSheetEspecialista();
+  if(ST.equipo.tabEquip==='cuidadoras') abrirSheetCuidadora();
+  else if(ST.equipo.tabEquip==='especialistas') abrirSheetEspecialista();
 }
 function fabActionHogar(){
   const s=DB.getSesion(); if(!s) return;
