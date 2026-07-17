@@ -5574,7 +5574,7 @@ function renderContenidoInforme(version){
       if(!parrafo.trim()) return '';
       if(parrafo.startsWith('**')&&parrafo.includes(':**')){
         const titulo=parrafo.match(/\*\*([^*]+)\*\*/)?.[1]||'';
-        const contenido=parrafo.replace(/\*\*[^*]+\*\*:\s*/,'');
+        const contenido=parrafo.replace(/^\*\*[^*]+\*\*\s*/,'');
         return `<div class="inf-seccion"><div class="is-titulo">${seccionIco(titulo)} ${titulo}</div><div class="is-texto">${contenido}</div></div>`;
       }
       return `<div class="inf-seccion"><div class="is-texto">${parrafo}</div></div>`;
