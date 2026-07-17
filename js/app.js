@@ -5375,7 +5375,7 @@ function renderHub(){
 
 /* ════ GENERACIÓN DEL INFORME ════ */
 function iniciarGeneracion(){
-  ST.mesGenerando=mesActual();
+  ST.informe.mesGenerando=mesActual();
   navTo('s-generando');
 
   const pasos=['gp-0','gp-1','gp-2','gp-3','gp-4'];
@@ -5414,7 +5414,7 @@ function generarInformeIA(){
   // Cálculo 100% local basado en reglas fijas — no realiza ninguna llamada a un modelo de IA/LLM real.
   const c=DB.getCuidado();
   const am=c?.am||{};
-  const mes=ST.mesGenerando||mesActual();
+  const mes=ST.informe.mesGenerando||mesActual();
   const [anio,mesNum]=mes.split('-').map(Number);
 
   // Datos del mes
@@ -5567,8 +5567,8 @@ function _fmt(n){ return '$'+Number(n||0).toLocaleString('es-CL'); }
 
 /* ════ VER INFORME ════ */
 function mostrarInforme(informe){
-  ST.informeActual=informe;
-  ST.version='familiar';
+  ST.informe.informeActual=informe;
+  ST.informe.version='familiar';
 
   // Header
   const am=informe.am||{};
@@ -5595,14 +5595,14 @@ function verInforme(id){
 }
 
 function selVersion(v){
-  ST.version=v;
+  ST.informe.version=v;
   $('vtab-familiar').classList.toggle('on',v==='familiar');
   $('vtab-clinico').classList.toggle('on',v==='clinico');
   renderContenidoInforme(v);
 }
 
 function renderContenidoInforme(version){
-  const inf=ST.informeActual; if(!inf) return;
+  const inf=ST.informe.informeActual; if(!inf) return;
   const body=$('inf-det-body');
 
   if(version==='familiar'){
@@ -5688,7 +5688,7 @@ function seccionIco(titulo){
 
 /* ════ ACCIONES DEL INFORME ════ */
 function compartirInformeWA(){
-  const inf=ST.informeActual; if(!inf) return;
+  const inf=ST.informe.informeActual; if(!inf) return;
   const am=inf.am||{};
   const texto=`🌿 *Informe Mensual · ${mesLabel(inf.mes)}*\n*${am.nombre||'tu familiar'} · ${am.edad||'—'} años*\n\n${inf.resumenFamiliar?.replace(/\*\*/g,'')||'—'}\n\n_Generado por Raíz_`;
   window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank');
@@ -5698,9 +5698,9 @@ function compartirInformeWA(){
 }
 
 function copiarInforme(){
-  const inf=ST.informeActual; if(!inf) return;
+  const inf=ST.informe.informeActual; if(!inf) return;
   const am=inf.am||{};
-  const texto=ST.version==='familiar'
+  const texto=ST.informe.version==='familiar'
     ? `Informe Mensual · ${mesLabel(inf.mes)}\n${am.nombre||'—'} · ${am.edad||'—'} años\n\n${inf.resumenFamiliar?.replace(/\*\*/g,'')||'—'}`
     : inf.resumenClinico||'—';
   if(navigator.clipboard){
@@ -5714,7 +5714,7 @@ function copiarInforme(){
 }
 
 function archivarInforme(){
-  const inf=ST.informeActual; if(!inf) return;
+  const inf=ST.informe.informeActual; if(!inf) return;
   confirmar('¿Archivar este informe?','Quedará marcado como archivado en el historial.',()=>{
     const c=DB.getCuidado(); if(!c) return;
     const i=(c.informes||[]).find(x=>x.id===inf.id);
