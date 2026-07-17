@@ -2133,6 +2133,7 @@ function confMed(medId, btn){
   const pct=meds.length?Math.round(confirmedHoy.length/meds.length*100):0;
   const fill=$('mp-fill'); if(fill) fill.style.width=pct+'%';
   const count=$('mp-count'); if(count) count.textContent=`${confirmedHoy.length}/${meds.length} confirmados`;
+  renderSidebar();
 }
 
 /* Eliminar medicamento */
