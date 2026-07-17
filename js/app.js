@@ -293,7 +293,7 @@ function navTo(id){
       renderTab('meds');
     },0);
   }
-  if(id==='s-alim-hub')     setTimeout(()=>renderTabAlim(ST.tab||'plan'),0);
+  if(id==='s-alim-hub')     setTimeout(()=>renderTabAlim(ST.alimentacion.tab||'plan'),0);
   if(id==='s-ficha-editar') setTimeout(prellenarFicha,0);
   if(id==='s-ocr-receta')   setTimeout(resetOCR,0);
   if(id==='s-invitaciones') setTimeout(renderInvitaciones,0);
@@ -2865,7 +2865,7 @@ function diaHoy(){ return DIAS[new Date().getDay()===0?6:new Date().getDay()-1];
 
 /* ════ HUB — TABS ════ */
 function setTabAlim(tab,btn){
-  ST.tab=tab;
+  ST.alimentacion.tab=tab;
   document.querySelectorAll('.th').forEach(t=>t.classList.remove('on'));
   if(btn) btn.classList.add('on');
   else document.querySelectorAll('.th').forEach((t,i)=>{ if(['plan','restricciones','diario','compras'][i]===tab) t.classList.add('on'); });
@@ -2876,9 +2876,9 @@ function fabActionAlim(){
   const s=DB.getSesion(); if(!s) return;
   const puede=['admin','familiar','cuidadora'].includes(s.rol);
   if(!puede) return;
-  if(ST.tab==='plan')         abrirSeleccionarDia();
-  if(ST.tab==='restricciones') abrirSheetRestriccion();
-  if(ST.tab==='compras')       abrirSheetCompra();
+  if(ST.alimentacion.tab==='plan')         abrirSeleccionarDia();
+  if(ST.alimentacion.tab==='restricciones') abrirSheetRestriccion();
+  if(ST.alimentacion.tab==='compras')       abrirSheetCompra();
 }
 
 function renderTabAlim(tab){
@@ -3186,14 +3186,14 @@ function renderDiario(cuidado, puede){
   const bitaHoy=(cuidado.bitacoras||[]).filter(b=>b.fecha===hoy()).slice(-1)[0];
   // Leer porciones guardadas (de bitácora o del estado local)
   if(bitaHoy){
-    ST.porciones.desayuno=bitaHoy.desayuno||ST.porciones.desayuno;
-    ST.porciones.almuerzo=bitaHoy.almuerzo||ST.porciones.almuerzo;
-    ST.porciones.cena=bitaHoy.cena||ST.porciones.cena;
-    if(bitaHoy.vasosAgua!==undefined) ST.vasosAgua=bitaHoy.vasosAgua||0;
+    ST.alimentacion.porciones.desayuno=bitaHoy.desayuno||ST.alimentacion.porciones.desayuno;
+    ST.alimentacion.porciones.almuerzo=bitaHoy.almuerzo||ST.alimentacion.porciones.almuerzo;
+    ST.alimentacion.porciones.cena=bitaHoy.cena||ST.alimentacion.porciones.cena;
+    if(bitaHoy.vasosAgua!==undefined) ST.alimentacion.vasosAgua=bitaHoy.vasosAgua||0;
   }
 
   const porcionBtns=(comida)=>{
-    const v=ST.porciones[comida];
+    const v=ST.alimentacion.porciones[comida];
     return `
       <div class="pc-btns">
         <button class="pcb${v==='Todo'?' todo':''}" onclick="selPorcionAlim('${comida}','Todo',this)">Todo ✓</button>
@@ -3208,12 +3208,12 @@ function renderDiario(cuidado, puede){
   const planRef=(momento)=>{ const c=planHoy.filter(x=>x.momento===momento); return c.length?c.map(x=>x.desc).join(', '):'Sin planificar'; };
 
   // Progress de comidas
-  const completas=Object.values(ST.porciones).filter(v=>v&&v!=='Nada').length;
+  const completas=Object.values(ST.alimentacion.porciones).filter(v=>v&&v!=='Nada').length;
   const total=3;
   const pct=Math.round(completas/total*100);
 
   // Vasitos de agua
-  const vasosHtml=Array.from({length:8},(_,i)=>`<div class="vaso${i<ST.vasosAgua?' on':''}" onclick="togVaso(${i})" title="${(i+1)*0.25}L">💧</div>`).join('');
+  const vasosHtml=Array.from({length:8},(_,i)=>`<div class="vaso${i<ST.alimentacion.vasosAgua?' on':''}" onclick="togVaso(${i})" title="${(i+1)*0.25}L">💧</div>`).join('');
 
   let html=`
     <div style="padding:12px 18px;border-bottom:1px solid var(--line);background:var(--white)">
@@ -3235,9 +3235,9 @@ function renderDiario(cuidado, puede){
           <div class="pc-titulo">Desayuno</div>
           <div class="pc-plan">Plan: ${planRef('desayuno')}</div>
         </div>
-        ${ST.porciones.desayuno?`<span class="badge ${ST.porciones.desayuno==='Todo'?'b-ok':ST.porciones.desayuno==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${ST.porciones.desayuno}</span>`:''}
+        ${ST.alimentacion.porciones.desayuno?`<span class="badge ${ST.alimentacion.porciones.desayuno==='Todo'?'b-ok':ST.alimentacion.porciones.desayuno==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${ST.alimentacion.porciones.desayuno}</span>`:''}
       </div>
-      ${puede?porcionBtns('desayuno'):`<div style="font-size:13px;color:var(--ink3)">${ST.porciones.desayuno||'No registrado'}</div>`}
+      ${puede?porcionBtns('desayuno'):`<div style="font-size:13px;color:var(--ink3)">${ST.alimentacion.porciones.desayuno||'No registrado'}</div>`}
     </div>`;
 
   // Almuerzo
@@ -3249,9 +3249,9 @@ function renderDiario(cuidado, puede){
           <div class="pc-titulo">Almuerzo</div>
           <div class="pc-plan">Plan: ${planRef('almuerzo')}</div>
         </div>
-        ${ST.porciones.almuerzo?`<span class="badge ${ST.porciones.almuerzo==='Todo'?'b-ok':ST.porciones.almuerzo==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${ST.porciones.almuerzo}</span>`:''}
+        ${ST.alimentacion.porciones.almuerzo?`<span class="badge ${ST.alimentacion.porciones.almuerzo==='Todo'?'b-ok':ST.alimentacion.porciones.almuerzo==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${ST.alimentacion.porciones.almuerzo}</span>`:''}
       </div>
-      ${puede?porcionBtns('almuerzo'):`<div style="font-size:13px;color:var(--ink3)">${ST.porciones.almuerzo||'No registrado'}</div>`}
+      ${puede?porcionBtns('almuerzo'):`<div style="font-size:13px;color:var(--ink3)">${ST.alimentacion.porciones.almuerzo||'No registrado'}</div>`}
     </div>`;
 
   // Cena
@@ -3263,9 +3263,9 @@ function renderDiario(cuidado, puede){
           <div class="pc-titulo">Cena</div>
           <div class="pc-plan">Plan: ${planRef('cena')}</div>
         </div>
-        ${ST.porciones.cena?`<span class="badge ${ST.porciones.cena==='Todo'?'b-ok':ST.porciones.cena==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${ST.porciones.cena}</span>`:''}
+        ${ST.alimentacion.porciones.cena?`<span class="badge ${ST.alimentacion.porciones.cena==='Todo'?'b-ok':ST.alimentacion.porciones.cena==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${ST.alimentacion.porciones.cena}</span>`:''}
       </div>
-      ${puede?porcionBtns('cena'):`<div style="font-size:13px;color:var(--ink3)">${ST.porciones.cena||'No registrado'}</div>`}
+      ${puede?porcionBtns('cena'):`<div style="font-size:13px;color:var(--ink3)">${ST.alimentacion.porciones.cena||'No registrado'}</div>`}
     </div>`;
 
   // Hidratación
@@ -3276,7 +3276,7 @@ function renderDiario(cuidado, puede){
           <div style="font-size:14px;font-weight:700;color:var(--ink)">💧 Hidratación</div>
           <div style="font-size:12px;color:var(--ink3)">Meta: 6 vasos / 1.5L diarios</div>
         </div>
-        <span class="badge ${ST.vasosAgua>=6?'b-ok':ST.vasosAgua>=3?'b-warn':'b-muted'}">${ST.vasosAgua} vasos · ${(ST.vasosAgua*0.25).toFixed(2)}L</span>
+        <span class="badge ${ST.alimentacion.vasosAgua>=6?'b-ok':ST.alimentacion.vasosAgua>=3?'b-warn':'b-muted'}">${ST.alimentacion.vasosAgua} vasos · ${(ST.alimentacion.vasosAgua*0.25).toFixed(2)}L</span>
       </div>
       ${puede?`
         <div class="vaso-row">${vasosHtml}</div>
@@ -3296,7 +3296,7 @@ function renderDiario(cuidado, puede){
 }
 
 function selPorcionAlim(comida, val, btn){
-  ST.porciones[comida]=val;
+  ST.alimentacion.porciones[comida]=val;
   const cls=val==='Todo'?'todo':val==='Mitad'?'mitad':'nada';
   btn.closest('.pc-btns')?.querySelectorAll('.pcb').forEach(b=>b.classList.remove('todo','mitad','nada'));
   btn.classList.add(cls);
@@ -3314,17 +3314,17 @@ function selPorcionAlim(comida, val, btn){
 
 function togVaso(i){
   // Si el vaso ya está activo y es el último activo, desactivar; si no, activar hasta ese índice
-  ST.vasosAgua = (i < ST.vasosAgua) ? i : i+1;
+  ST.alimentacion.vasosAgua = (i < ST.alimentacion.vasosAgua) ? i : i+1;
   // Re-render solo la parte de vasitos
   const row=document.querySelector('.vaso-row');
   if(row){
-    row.innerHTML=Array.from({length:8},(_,j)=>`<div class="vaso${j<ST.vasosAgua?' on':''}" onclick="togVaso(${j})" title="${(j+1)*0.25}L">💧</div>`).join('');
+    row.innerHTML=Array.from({length:8},(_,j)=>`<div class="vaso${j<ST.alimentacion.vasosAgua?' on':''}" onclick="togVaso(${j})" title="${(j+1)*0.25}L">💧</div>`).join('');
   }
   // Actualizar el badge
   const badge=document.querySelector('.hidra-card .badge');
   if(badge){
-    badge.className=`badge ${ST.vasosAgua>=6?'b-ok':ST.vasosAgua>=3?'b-warn':'b-muted'}`;
-    badge.textContent=`${ST.vasosAgua} vasos · ${(ST.vasosAgua*0.25).toFixed(2)}L`;
+    badge.className=`badge ${ST.alimentacion.vasosAgua>=6?'b-ok':ST.alimentacion.vasosAgua>=3?'b-warn':'b-muted'}`;
+    badge.textContent=`${ST.alimentacion.vasosAgua} vasos · ${(ST.alimentacion.vasosAgua*0.25).toFixed(2)}L`;
   }
   const meta=document.querySelector('.hidra-meta');
   if(meta) meta.textContent='Toca cada vaso para registrar (cada uno = 250ml)';
@@ -3338,10 +3338,10 @@ function guardarRegistroDiario(){
   const idx=c.bitacoras.findLastIndex(b=>b.fecha===hoy());
   if(idx>=0){
     // Actualizar la existente
-    c.bitacoras[idx].desayuno=ST.porciones.desayuno;
-    c.bitacoras[idx].almuerzo=ST.porciones.almuerzo;
-    c.bitacoras[idx].cena=ST.porciones.cena;
-    c.bitacoras[idx].vasosAgua=ST.vasosAgua;
+    c.bitacoras[idx].desayuno=ST.alimentacion.porciones.desayuno;
+    c.bitacoras[idx].almuerzo=ST.alimentacion.porciones.almuerzo;
+    c.bitacoras[idx].cena=ST.alimentacion.porciones.cena;
+    c.bitacoras[idx].vasosAgua=ST.alimentacion.vasosAgua;
   } else {
     // Crear registro mínimo de alimentación
     c.bitacoras.push({
@@ -3349,13 +3349,13 @@ function guardarRegistroDiario(){
       fecha:hoy(),
       hora:new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),
       quien:'Alimentación',
-      desayuno:ST.porciones.desayuno,
-      almuerzo:ST.porciones.almuerzo,
-      cena:ST.porciones.cena,
-      vasosAgua:ST.vasosAgua,
-      bano:false,hidra:ST.vasosAgua>=6,activ:false,visita:false,
+      desayuno:ST.alimentacion.porciones.desayuno,
+      almuerzo:ST.alimentacion.porciones.almuerzo,
+      cena:ST.alimentacion.porciones.cena,
+      vasosAgua:ST.alimentacion.vasosAgua,
+      bano:false,hidra:ST.alimentacion.vasosAgua>=6,activ:false,visita:false,
       animo:'',nota:'',
-      resumen:`Porciones del día: desayuno ${ST.porciones.desayuno||'no registrado'}, almuerzo ${ST.porciones.almuerzo||'no registrado'}, cena ${ST.porciones.cena||'no registrado'}. Hidratación: ${ST.vasosAgua} vasos.`,
+      resumen:`Porciones del día: desayuno ${ST.alimentacion.porciones.desayuno||'no registrado'}, almuerzo ${ST.alimentacion.porciones.almuerzo||'no registrado'}, cena ${ST.alimentacion.porciones.cena||'no registrado'}. Hidratación: ${ST.alimentacion.vasosAgua} vasos.`,
     });
   }
   DB.saveCuidado(c);
