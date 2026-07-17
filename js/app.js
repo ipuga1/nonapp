@@ -4869,8 +4869,8 @@ function renderTabGastos(tab){
   const am=c.am||{};
   const presupuesto=comp.presupuesto||150000;
 
-  if($('gastos-sub')) $('gastos-sub').textContent=`${am.nombre||'tu familiar'} · ${mesLabel(ST.mesVista)}`;
-  if($('gastos-sub-d')) $('gastos-sub-d').textContent=`${am.nombre||'tu familiar'} · ${mesLabel(ST.mesVista)}`;
+  if($('gastos-sub')) $('gastos-sub').textContent=`${am.nombre||'tu familiar'} · ${mesLabel(ST.gastos.mesVista)}`;
+  if($('gastos-sub-d')) $('gastos-sub-d').textContent=`${am.nombre||'tu familiar'} · ${mesLabel(ST.gastos.mesVista)}`;
 
   const deskBtn=(label,fn)=>`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="${fn}">${label}</button>`;
 
@@ -4898,7 +4898,7 @@ function renderTabGastos(tab){
 function renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin, am){
   const content=$('gastos-content');
   const meses=mesesDisponibles(gastos);
-  const gastosMes=gastos.filter(g=>g.fecha?.startsWith(ST.mesVista));
+  const gastosMes=gastos.filter(g=>g.fecha?.startsWith(ST.gastos.mesVista));
   const total=gastosMes.reduce((s,g)=>s+g.monto,0);
   const pct=Math.min(100,Math.round(total/presupuesto*100));
   const resta=presupuesto-total;
@@ -4908,7 +4908,7 @@ function renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin, am){
     <div class="budget-card">
       <div class="bc-row">
         <div>
-          <div class="bc-label">Gastado en ${mesLabel(ST.mesVista)}</div>
+          <div class="bc-label">Gastado en ${mesLabel(ST.gastos.mesVista)}</div>
           <div class="bc-monto">${fmt(total)}</div>
         </div>
         <button class="bc-edit" onclick="${esAdmin?'abrirEditarPresupuesto()':''}">
@@ -4926,13 +4926,13 @@ function renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin, am){
 
     <!-- Selector de mes -->
     <div class="mes-selector">
-      ${meses.map(m=>`<div class="mes-pill${m===ST.mesVista?' on':''}" onclick="selMes('${m}')">${mesLabel(m)}</div>`).join('')}
+      ${meses.map(m=>`<div class="mes-pill${m===ST.gastos.mesVista?' on':''}" onclick="selMes('${m}')">${mesLabel(m)}</div>`).join('')}
     </div>`;
 
   // Gastos agrupados por fecha
   const sorted=[...gastosMes].sort((a,b)=>b.fecha.localeCompare(a.fecha));
   if(!sorted.length){
-    html+=`<div class="empty"><div class="empty-ico">🧾</div><div class="empty-title">Sin gastos en ${mesLabel(ST.mesVista)}</div><div class="empty-txt">${puedeRegistrar?'Toca ＋ para registrar el primer gasto del mes.':'El administrador aún no ha registrado gastos este mes.'}</div></div>`;
+    html+=`<div class="empty"><div class="empty-ico">🧾</div><div class="empty-title">Sin gastos en ${mesLabel(ST.gastos.mesVista)}</div><div class="empty-txt">${puedeRegistrar?'Toca ＋ para registrar el primer gasto del mes.':'El administrador aún no ha registrado gastos este mes.'}</div></div>`;
   } else {
     // Desglose rápido por categoría
     const porCat={};
@@ -4986,7 +4986,7 @@ function renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin, am){
 }
 
 function selMes(ym){
-  ST.mesVista=ym;
+  ST.gastos.mesVista=ym;
   renderTabGastos('registro');
 }
 
@@ -4994,7 +4994,7 @@ function selMes(ym){
 function renderPresupuesto(gastos, presupuesto, esAdmin, cuidado){
   const content=$('gastos-content');
   const comp=DB.getCompartido();
-  const gastosMes=gastos.filter(g=>g.fecha?.startsWith(ST.mesVista));
+  const gastosMes=gastos.filter(g=>g.fecha?.startsWith(ST.gastos.mesVista));
   const totalReal=gastosMes.reduce((s,g)=>s+g.monto,0);
   const presupuestoCats=comp.presupuestoCats||{};
 
@@ -5014,7 +5014,7 @@ function renderPresupuesto(gastos, presupuesto, esAdmin, cuidado){
         <span style="font-size:22px;font-weight:900;color:rgba(255,255,255,.8)">${pct}%</span>
       </div>
       <div class="bc-track"><div class="bc-fill${pct>=100?' over':pct>=80?' warn':''}" style="width:${pct}%"></div></div>
-      <div class="bc-meta"><span>Meta: ${fmt(presupuesto)} · ${mesLabel(ST.mesVista)}</span><span>${fmt(presupuesto-totalReal)} disponible</span></div>
+      <div class="bc-meta"><span>Meta: ${fmt(presupuesto)} · ${mesLabel(ST.gastos.mesVista)}</span><span>${fmt(presupuesto-totalReal)} disponible</span></div>
     </div>`;
 
   html+=`<div class="slbl">Presupuesto por categoría${esAdmin?' (editable)':''}</div>`;
@@ -5054,7 +5054,7 @@ function renderPresupuesto(gastos, presupuesto, esAdmin, cuidado){
 /* ════ TAB RENDICIÓN ════ */
 function renderRendicion(gastos, presupuesto, esFamiliar, esAdmin, am){
   const content=$('gastos-content');
-  const gastosMes=gastos.filter(g=>g.fecha?.startsWith(ST.mesVista));
+  const gastosMes=gastos.filter(g=>g.fecha?.startsWith(ST.gastos.mesVista));
   const total=gastosMes.reduce((s,g)=>s+g.monto,0);
   const pendientes=gastosMes.filter(g=>g.aprobacion==='pendiente');
   const aprobados=gastosMes.filter(g=>g.aprobacion==='aprobado');
@@ -5063,13 +5063,13 @@ function renderRendicion(gastos, presupuesto, esFamiliar, esAdmin, am){
   const porCat={};
   gastosMes.forEach(g=>{ if(!porCat[g.cat]) porCat[g.cat]=0; porCat[g.cat]+=g.monto; });
 
-  const resumenTexto=`Rendición de gastos · ${mesLabel(ST.mesVista)}\n\nTotal gastado: ${fmt(total)} de ${fmt(presupuesto)} presupuestados.\n\nPor categoría:\n`+
+  const resumenTexto=`Rendición de gastos · ${mesLabel(ST.gastos.mesVista)}\n\nTotal gastado: ${fmt(total)} de ${fmt(presupuesto)} presupuestados.\n\nPor categoría:\n`+
     Object.entries(porCat).map(([c,m])=>`· ${CATS[c]?.label||c}: ${fmt(m)}`).join('\n')+
     `\n\nTotal: ${fmt(total)} · ${Math.round(total/presupuesto*100)}% del presupuesto.`;
 
   let html=`
     <div class="rendicion-box">
-      <div class="rb-titulo">📊 Resumen de ${mesLabel(ST.mesVista)}</div>
+      <div class="rb-titulo">📊 Resumen de ${mesLabel(ST.gastos.mesVista)}</div>
       ${Object.entries(porCat).map(([cat,monto])=>{
         const conf=CATS[cat]||CATS.otro;
         return `<div class="rb-fila"><span class="rb-key">${conf.ico} ${conf.label}</span><span class="rb-val">${fmt(monto)}</span></div>`;
@@ -5128,7 +5128,7 @@ function renderRendicion(gastos, presupuesto, esFamiliar, esAdmin, am){
   }
 
   if(!gastosMes.length){
-    html+=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-title">Sin gastos en ${mesLabel(ST.mesVista)}</div><div class="empty-txt">La rendición estará disponible cuando se registren gastos.</div></div>`;
+    html+=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-title">Sin gastos en ${mesLabel(ST.gastos.mesVista)}</div><div class="empty-txt">La rendición estará disponible cuando se registren gastos.</div></div>`;
   }
 
   // Variable global para copiar
@@ -5152,7 +5152,7 @@ function selCat(btn){
 }
 
 function abrirSheetGasto(){
-  ST.gastoEditandoId=null;
+  ST.gastos.gastoEditandoId=null;
   $('sh-gasto-titulo').textContent='Registrar gasto';
   $('g-monto').value=''; $('g-desc').value='';
   $('g-fecha').value=hoy(); $('g-aprobacion').value='no';
@@ -5168,7 +5168,7 @@ function abrirSheetGasto(){
 function editarGasto(id){
   const comp=DB.getCompartido();
   const g=(comp.gastos||[]).find(x=>x.id===id); if(!g) return;
-  ST.gastoEditandoId=id;
+  ST.gastos.gastoEditandoId=id;
   $('sh-gasto-titulo').textContent='Editar gasto';
   $('g-monto').value=g.monto||0;
   $('g-desc').value=g.desc||'';
@@ -5198,8 +5198,8 @@ function guardarGasto(){
     aprobacion:$('g-aprobacion').value,
     emoji:CATS[_catActual]?.ico||'📦',
   };
-  if(ST.gastoEditandoId){
-    const idx=comp.gastos.findIndex(g=>g.id===ST.gastoEditandoId);
+  if(ST.gastos.gastoEditandoId){
+    const idx=comp.gastos.findIndex(g=>g.id===ST.gastos.gastoEditandoId);
     if(idx>=0) comp.gastos[idx]={...comp.gastos[idx],...data};
     toast('✓ Gasto actualizado','ok');
   } else {
@@ -5220,9 +5220,9 @@ function eliminarGasto(id){
 }
 
 function eliminarGastoActual(){
-  if(!ST.gastoEditandoId) return;
+  if(!ST.gastos.gastoEditandoId) return;
   cerrarSheet('ov-gasto');
-  eliminarGasto(ST.gastoEditandoId);
+  eliminarGasto(ST.gastos.gastoEditandoId);
 }
 
 /* ════ APROBACIÓN ════ */
