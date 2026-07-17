@@ -1302,11 +1302,11 @@ function initSelectorCuidado(){
   const chips=document.getElementById('bita-cuidado-chips');
   if(!sel||!chips) return;
   const s=DB.getSesion();
-  if(!ST.bitaCuidadoId) ST.bitaCuidadoId=s?.cuidadoId||todos[0]?.id;
+  if(!ST.bitacora.bitaCuidadoId) ST.bitacora.bitaCuidadoId=s?.cuidadoId||todos[0]?.id;
   if(todos.length<=1){ sel.style.display='none'; return; }
   sel.style.display='block';
   chips.innerHTML=todos.map(cx=>{
-    const on=cx.id===ST.bitaCuidadoId;
+    const on=cx.id===ST.bitacora.bitaCuidadoId;
     return `<button onclick="selCuidadoBita('${cx.id}')"
       style="padding:8px 16px;border-radius:20px;font-size:13px;font-weight:${on?700:500};
       border:2px solid ${on?'var(--sage)':'var(--line)'};
@@ -1317,7 +1317,7 @@ function initSelectorCuidado(){
   }).join('');
 }
 function selCuidadoBita(cid){
-  ST.bitaCuidadoId=cid;
+  ST.bitacora.bitaCuidadoId=cid;
   initSelectorCuidado();
 }
 
@@ -1349,7 +1349,7 @@ function fechaLarga(fecha){
 
 /* ════ LISTA DE BITÁCORAS ════ */
 function setFiltro(filtro, btn){
-  ST.filtro=filtro;
+  ST.bitacora.filtro=filtro;
   document.querySelectorAll('.fpill').forEach(p=>p.classList.remove('on'));
   btn.classList.add('on');
   renderLista();
@@ -1393,9 +1393,9 @@ function renderLista(){
 
   // Filtrar bitácoras
   let bitacoras=[...(cuidado.bitacoras||[])].reverse();
-  if(ST.filtro==='hoy')    bitacoras=bitacoras.filter(b=>esHoy(b.fecha));
-  if(ST.filtro==='semana') bitacoras=bitacoras.filter(b=>esEstaSemana(b.fecha));
-  if(ST.filtro==='mes')    bitacoras=bitacoras.filter(b=>esEsteMes(b.fecha));
+  if(ST.bitacora.filtro==='hoy')    bitacoras=bitacoras.filter(b=>esHoy(b.fecha));
+  if(ST.bitacora.filtro==='semana') bitacoras=bitacoras.filter(b=>esEstaSemana(b.fecha));
+  if(ST.bitacora.filtro==='mes')    bitacoras=bitacoras.filter(b=>esEsteMes(b.fecha));
 
   // Observador: solo ve registros con resumen
   if(esObservador) bitacoras=bitacoras.filter(b=>b.resumen);
@@ -1405,7 +1405,7 @@ function renderLista(){
     body.innerHTML=`
       <div class="empty">
         <div class="empty-ico">📋</div>
-        <div class="empty-title">${ST.filtro==='hoy'?'Sin registros hoy':'Sin registros'}</div>
+        <div class="empty-title">${ST.bitacora.filtro==='hoy'?'Sin registros hoy':'Sin registros'}</div>
         <div class="empty-txt">${puedeEscribir
           ? 'Toca ＋ para registrar el día de '+( am.nombre||'tu familiar')+'.'
           : 'El administrador o la cuidadora aún no han registrado nada.'}</div>
@@ -1467,7 +1467,7 @@ function verDetalle(id){
   const sesion=DB.getSesion(); if(!sesion) return;
   const b=cuidado.bitacoras.find(x=>x.id===id);
   if(!b){ toast('Registro no encontrado','err'); return; }
-  ST.bitacoraActual=b;
+  ST.bitacora.bitacoraActual=b;
 
   // Títulos
   const titulo=`Registro · ${fechaCorta(b.fecha)}`;
@@ -1593,7 +1593,7 @@ function initFormulario(){
   if($('new-fecha-display-d')) $('new-fecha-display-d').textContent=fechaStr;
 
   // Reset del estado
-  ST.form={
+  ST.bitacora.form={
     quien: sesion.rol==='cuidadora'?'Cuidadora':sesion.rol==='admin'?'Administradora':'Familiar',
     presion:'', temp:'', sato:'',
     desayuno:'Todo', almuerzo:'Todo', cena:'',
@@ -1627,7 +1627,7 @@ function initFormulario(){
 
   // Reset quien
   $('quien-btns')?.querySelectorAll('.qb').forEach(b=>{
-    b.classList.toggle('on', b.textContent.includes(ST.form.quien));
+    b.classList.toggle('on', b.textContent.includes(ST.bitacora.form.quien));
   });
 
   // Actualizar btn guardar
@@ -1637,27 +1637,27 @@ function initFormulario(){
 
 /* Selectors del formulario */
 function selQuien(val, btn){
-  ST.form.quien=val;
+  ST.bitacora.form.quien=val;
   $('quien-btns')?.querySelectorAll('.qb').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
 }
 
 function selPorcion(comida, val, btn){
-  ST.form[comida]=val;
+  ST.bitacora.form[comida]=val;
   const cls=val==='Todo'?'todo':val==='Mitad'?'mitad':'nada';
   $('pbs-'+comida)?.querySelectorAll('.pb').forEach(b=>b.classList.remove('todo','mitad','nada'));
   btn.classList.add(cls);
 }
 
 function togChk(k){
-  ST.form[k]=!ST.form[k];
+  ST.bitacora.form[k]=!ST.bitacora.form[k];
   const cb=$('cb-'+k), cl=$('cl-'+k);
-  if(cb){ cb.classList.toggle('on',ST.form[k]); cb.textContent=ST.form[k]?'✓':''; }
-  if(cl){ cl.classList.toggle('done',ST.form[k]); }
+  if(cb){ cb.classList.toggle('on',ST.bitacora.form[k]); cb.textContent=ST.bitacora.form[k]?'✓':''; }
+  if(cl){ cl.classList.toggle('done',ST.bitacora.form[k]); }
 }
 
 function selAnimo(val, btn){
-  ST.form.animo=val;
+  ST.bitacora.form.animo=val;
   $('animo-btns')?.querySelectorAll('.ab').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
 }
@@ -1671,7 +1671,7 @@ function validarPresion(inp){
   inp.classList.toggle('warn',!ok);
   inp.classList.toggle('ok',ok);
   $('presion-msg').style.display=!ok?'block':'none';
-  ST.form.presion=v;
+  ST.bitacora.form.presion=v;
 }
 
 function validarTemp(inp){
@@ -1687,7 +1687,7 @@ function validarTemp(inp){
     else msg.textContent='⚠ Rango esperado: 34–42°C';
   }
   $('temp-msg').style.display=!ok?'block':'none';
-  ST.form.temp=inp.value;
+  ST.bitacora.form.temp=inp.value;
 }
 
 function validarSato(inp){
@@ -1702,7 +1702,7 @@ function validarSato(inp){
     else msg.textContent='⚠ Rango esperado: 70–100%';
   }
   $('sato-msg').style.display=!ok?'block':'none';
-  ST.form.sato=inp.value;
+  ST.bitacora.form.sato=inp.value;
 }
 
 /* ════ GUARDAR BITÁCORA ════ */
@@ -1731,18 +1731,18 @@ function guardarBitacora(){
       id,
       fecha: hoy(),
       hora:  horaActual(),
-      quien: ST.form.quien,
+      quien: ST.bitacora.form.quien,
       presion,
       temp,
       sato,
-      desayuno: ST.form.desayuno,
-      almuerzo: ST.form.almuerzo,
-      cena:     ST.form.cena,
-      bano:     ST.form.bano,
-      hidra:    ST.form.hidra,
-      activ:    ST.form.activ,
-      visita:   ST.form.visita,
-      animo:    ST.form.animo,
+      desayuno: ST.bitacora.form.desayuno,
+      almuerzo: ST.bitacora.form.almuerzo,
+      cena:     ST.bitacora.form.cena,
+      bano:     ST.bitacora.form.bano,
+      hidra:    ST.bitacora.form.hidra,
+      activ:    ST.bitacora.form.activ,
+      visita:   ST.bitacora.form.visita,
+      animo:    ST.bitacora.form.animo,
       nota,
     };
 
@@ -1864,7 +1864,7 @@ function mostrarResumenIA(b, nombreAM){
   }
 
   // Guardar referencia para compartir
-  ST.bitacoraActual=b;
+  ST.bitacora.bitacoraActual=b;
   navTo('s-resumen-ia');
 }
 
@@ -1874,14 +1874,14 @@ function textoWA(b){
 }
 
 function enviarWhatsApp(){
-  if(!ST.bitacoraActual){ toast('Sin datos para compartir','err'); return; }
-  window.open('https://wa.me/?text='+encodeURIComponent(textoWA(ST.bitacoraActual)),'_blank');
+  if(!ST.bitacora.bitacoraActual){ toast('Sin datos para compartir','err'); return; }
+  window.open('https://wa.me/?text='+encodeURIComponent(textoWA(ST.bitacora.bitacoraActual)),'_blank');
   toast('Abriendo WhatsApp...','ok');
 }
 
 function copiarResumen(){
-  if(!ST.bitacoraActual){ return; }
-  copiarTexto(textoWA(ST.bitacoraActual));
+  if(!ST.bitacora.bitacoraActual){ return; }
+  copiarTexto(textoWA(ST.bitacora.bitacoraActual));
 }
 
 function enviarWhatsAppResumen(id){
