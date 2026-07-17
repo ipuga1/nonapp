@@ -260,6 +260,7 @@ function navTo(id){
   if(SCREENS_AUTH.includes(id) && !DB.getSesion()){
     id='s-splash';
   }
+  cerrarConfirm();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const sc=$(id);
   if(!sc){ console.warn('Pantalla no encontrada:',id); return; }
@@ -1319,7 +1320,7 @@ function setFiltro(filtro, btn){
 
 function renderLista(){
   const sesion=DB.getSesion(); if(!sesion) return;
-  const _cid=ST.bitaCuidadoId||DB.getSesion()?.cuidadoId;
+  const _cid=DB.getSesion()?.cuidadoId;
   const cuidado=DB.getCuidadoById(_cid)||DB.getCuidado(); if(!cuidado) return;
   const puedeEscribir=['admin','cuidadora'].includes(sesion.rol);
   const esObservador=sesion.rol==='observador';
