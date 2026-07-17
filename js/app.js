@@ -281,7 +281,7 @@ function navTo(id){
   if(id==='s-bita-new'){ setTimeout(initSelectorCuidado,0); setTimeout(initFormulario,0); }
   if(id==='s-bita-list') setTimeout(renderLista,0);
   if(id==='s-salud-hub'){
-    ST.tabActivo='meds'; // siempre entrar por medicamentos
+    ST.salud.tabActivo='meds'; // siempre entrar por medicamentos
     // Resetear visualmente los tabs
     setTimeout(()=>{
       const saludScreen=document.getElementById('s-salud-hub');
@@ -1941,7 +1941,7 @@ $('cb-ok').onclick=()=>{ $('confirm-ov').classList.remove('open'); if(_cb)_cb();
 
 /* ════ HUB DE SALUD — TABS ════ */
 function setTab(tab, btnEl){
-  ST.tabActivo=tab;
+  ST.salud.tabActivo=tab;
   document.querySelectorAll('.th').forEach(t=>t.classList.remove('on'));
   if(btnEl) btnEl.classList.add('on');
   renderTab(tab);
@@ -1951,9 +1951,9 @@ function fabAction(){
   const sesion=DB.getSesion(); if(!sesion) return;
   const puedeEditar=['admin','cuidadora'].includes(sesion.rol);
   if(!puedeEditar) return;
-  if(ST.tabActivo==='meds')    abrirSheetMed();
-  if(ST.tabActivo==='docs')    abrirSheetDoc();
-  if(ST.tabActivo==='ficha' && sesion.rol==='admin')   navTo('s-ficha-editar');
+  if(ST.salud.tabActivo==='meds')    abrirSheetMed();
+  if(ST.salud.tabActivo==='docs')    abrirSheetDoc();
+  if(ST.salud.tabActivo==='ficha' && sesion.rol==='admin')   navTo('s-ficha-editar');
 }
 
 function renderTab(tab){
@@ -2188,7 +2188,7 @@ function eliminarMed(medId){
 function editarStock(medId){
   const c=DB.getCuidado(); if(!c) return;
   const med=c.meds.find(m=>m.id===medId); if(!med) return;
-  ST.medEditandoId=medId;
+  ST.salud.medEditandoId=medId;
 
   // Retrocompatibilidad: inicializar campos nuevos si no existen
   if(med.stockActual===undefined) med.stockActual=med.stock||0;
@@ -2240,7 +2240,7 @@ function ajustarStock(delta){
 
 function guardarReposicion(){
   const c=DB.getCuidado(); if(!c) return;
-  const med=c.meds.find(m=>m.id===ST.medEditandoId); if(!med) return;
+  const med=c.meds.find(m=>m.id===ST.salud.medEditandoId); if(!med) return;
   const cantComprada=parseInt($('stock-valor').value)||0;
   if(cantComprada<=0){ toast('Ingresa la cantidad comprada','err'); return; }
 
@@ -2268,7 +2268,7 @@ function guardarReposicion(){
 
 /* Agregar medicamento manual */
 function abrirSheetMed(){
-  ST.medEditando=null;
+  ST.salud.medEditando=null;
   if($('sh-med-titulo')) $('sh-med-titulo').textContent='Agregar medicamento';
   ['am-nombre','am-dosis','am-medico','am-notas'].forEach(id=>{ if($(id)) $(id).value=''; });
   if($('am-periocidad'))     $('am-periocidad').value='7';
@@ -2298,7 +2298,7 @@ function actualizarPreviewHorarios(){
 function editarMed(medId){
   const c=DB.getCuidado(); if(!c) return;
   const med=c.meds.find(m=>m.id===medId); if(!med) return;
-  ST.medEditando=medId;
+  ST.salud.medEditando=medId;
   if($('sh-med-titulo')) $('sh-med-titulo').textContent='Editar medicamento';
   if($('am-nombre'))         $('am-nombre').value=med.nombre||'';
   if($('am-dosis'))          $('am-dosis').value=med.dosis||'';
@@ -2345,11 +2345,11 @@ function guardarMedManual(){
     freq:horarios.length ? horarios.join(', ') : 'Solo si necesita',
   };
 
-  if(ST.medEditando){
+  if(ST.salud.medEditando){
     // Editar medicamento existente
-    const idx=c.meds.findIndex(m=>m.id===ST.medEditando);
+    const idx=c.meds.findIndex(m=>m.id===ST.salud.medEditando);
     if(idx>=0){
-      nuevo.id=ST.medEditando;
+      nuevo.id=ST.salud.medEditando;
       // Conservar consumos y reposiciones previos
       nuevo.reposiciones=c.meds[idx].reposiciones||nuevo.reposiciones;
       nuevo.stockActual=c.meds[idx].stockActual!==undefined ? c.meds[idx].stockActual : stockInicial;
@@ -2361,7 +2361,7 @@ function guardarMedManual(){
     toast('✓ Medicamento agregado','ok');
   }
 
-  ST.medEditando=null;
+  ST.salud.medEditando=null;
   DB.saveCuidado(c);
   cerrarSheet('ov-add-med');
   renderTab('meds');
@@ -2460,12 +2460,12 @@ function mostrarResultadoOCR(medsDetectados){
     nuevo:!medsExistentes.find(x=>x.nombre.toLowerCase()===m.nombre.toLowerCase())
   }));
 
-  ST.ocrMeds=detectados.map((m,i)=>({...m,id:'ocr-'+i,seleccionado:m.nuevo}));
+  ST.salud.ocrMeds=detectados.map((m,i)=>({...m,id:'ocr-'+i,seleccionado:m.nuevo}));
 
   const lista=$('ocr-meds-lista');
   lista.innerHTML=`
     <div class="ocr-result-hdr"><span>✦</span>IA detectó ${detectados.length} medicamento${detectados.length>1?'s':''} — confirma cuáles agregar</div>
-    ${ST.ocrMeds.map((m,i)=>`
+    ${ST.salud.ocrMeds.map((m,i)=>`
       <div class="ocr-med-row" onclick="toggleOcrMed(${i})">
         <div class="ocr-med-chk${m.seleccionado?' on':''}" id="ocr-chk-${i}">${m.seleccionado?'✓':''}</div>
         <div style="flex:1">
@@ -2479,15 +2479,15 @@ function mostrarResultadoOCR(medsDetectados){
 }
 
 function toggleOcrMed(i){
-  ST.ocrMeds[i].seleccionado=!ST.ocrMeds[i].seleccionado;
+  ST.salud.ocrMeds[i].seleccionado=!ST.salud.ocrMeds[i].seleccionado;
   const chk=$('ocr-chk-'+i);
-  const s=ST.ocrMeds[i].seleccionado;
+  const s=ST.salud.ocrMeds[i].seleccionado;
   chk.classList.toggle('on',s);
   chk.textContent=s?'✓':'';
 }
 
 function agregarMedsOCR(){
-  const seleccionados=ST.ocrMeds.filter(m=>m.seleccionado);
+  const seleccionados=ST.salud.ocrMeds.filter(m=>m.seleccionado);
   if(!seleccionados.length){ toast('Selecciona al menos un medicamento','err'); return; }
   const c=DB.getCuidado(); if(!c) return;
   if(!Array.isArray(c.meds)) c.meds=[];
@@ -2499,7 +2499,7 @@ function agregarMedsOCR(){
   DB.saveCuidado(c);
   toast(`✓ ${seleccionados.length} medicamento${seleccionados.length>1?'s':''} agregado${seleccionados.length>1?'s':''}`, 'ok');
   resetOCR();
-  setTimeout(()=>{ navTo('s-salud-hub'); ST.tabActivo='meds'; renderTab('meds'); }, 600);
+  setTimeout(()=>{ navTo('s-salud-hub'); ST.salud.tabActivo='meds'; renderTab('meds'); }, 600);
 }
 
 function resetOCR(){
@@ -2510,7 +2510,7 @@ function resetOCR(){
   $('ocr-spinner').style.display='none';
   $('ocr-resultado').style.display='none';
   $('ocr-file-input').value='';
-  ST.ocrMeds=[];
+  ST.salud.ocrMeds=[];
 }
 
 /* ════ TAB FICHA CLÍNICA ════ */
@@ -2658,7 +2658,7 @@ function prellenarFicha(){
 function renderDocs(cuidado, puedeEditar){
   const docs=cuidado.documentos||[];
   const content=$('salud-content');
-  const filtro=ST.docFiltro;
+  const filtro=ST.salud.docFiltro;
 
   const tipoIco={receta:'📋',examen:'🔬',imagen:'🩻',informe:'📄',certificado:'📜',otro:'📁'};
   const tipoColor={receta:'var(--sage-lt)',examen:'var(--blue-lt)',imagen:'var(--purple-lt)',informe:'var(--amber-lt)',certificado:'var(--surf)',otro:'var(--surf)'};
@@ -2699,7 +2699,7 @@ function renderDocs(cuidado, puedeEditar){
 }
 
 function setDocFiltro(filtro, btn){
-  ST.docFiltro=filtro;
+  ST.salud.docFiltro=filtro;
   document.querySelectorAll('.dfpill').forEach(p=>p.classList.remove('on'));
   if(btn) btn.classList.add('on');
   const c=DB.getCuidado();
