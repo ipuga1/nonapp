@@ -1255,14 +1255,6 @@ const ST = {
   },
 };
 
-/* ── Alias de compatibilidad hacia atrás ──────────────────────────
-   Fase 2 (Sprints 2–9): todos los módulos usan directamente su
-   namespace ST.<modulo>.*. De los 30 alias originales, 28 se
-   eliminaron en el Sprint 10. Los últimos 2 (tab, diaSeleccionado)
-   dependían de acoplamiento cruzado (H-01, H-02) resuelto en los
-   Sprints 10A/10B: todo el código ahora usa ST.alimentacion.tab y
-   ST.agenda.diaSeleccionado directamente. No queda ningún alias. ── */
-
 /* ════════════════════════════════════════════
    FUNCIONES AUXILIARES COMPARTIDAS
    ════════════════════════════════════════════ */
@@ -1409,10 +1401,6 @@ function renderLista(){
   let html='';
   Object.entries(grupos).forEach(([fecha,items])=>{
     const esH=esHoy(fecha);
-    const labels={
-      'hoy':'HOY',
-      'fecha': esH ? 'HOY · '+fechaLarga(fecha).toUpperCase() : fechaLarga(fecha).toUpperCase()
-    };
     html+=`<div class="fecha-grupo-lbl${esH?' hoy':''}">${esH?'HOY · ':''}${fechaLarga(fecha).toUpperCase()}</div>`;
 
     items.forEach(b=>{
@@ -1543,7 +1531,6 @@ function verDetalle(id){
   $('detalle-body').innerHTML=html;
 
   // Botones inferiores
-  const puedeVolver=true;
   $('detalle-btns-wrap').innerHTML=`
     <button class="btn btn-s" onclick="navTo('s-bita-list')">← Volver al historial</button>`;
 
@@ -1569,7 +1556,6 @@ function eliminarBitacora(id){
 function initFormulario(){
   const sesion=DB.getSesion(); if(!sesion) return;
   const cuidado=DB.getCuidado();
-  const am=cuidado?.am||{};
 
   // Fechas y hora
   const fechaStr=fechaLarga();
@@ -1752,8 +1738,6 @@ function guardarBitacora(){
 
 /* ── GENERADOR DE RESUMEN IA ── */
 function generarResumenIA(b, nombre){
-  const partes=[];
-
   // Estado general
   const animoMap={'Muy bien 😊':'estuvo muy bien','Bien 🙂':'estuvo bien','Regular 😐':'estuvo regular','Mal 😔':'estuvo mal'};
   const estadoBase=animoMap[b.animo]||'estuvo bien';
@@ -1943,7 +1927,6 @@ function renderTab(tab){
   const puedeEditar=['admin','cuidadora'].includes(sesion.rol);
   const esAdmin=sesion.rol==='admin';
   const fab=$('salud-fab');
-  const content=$('salud-content');
   const edadDisplay=calcularEdad(am.fechaNacimiento)||am.edad||'—'; const sub=`${am.nombre||'tu familiar'} · ${edadDisplay} años`;
   if($('salud-sub')) $('salud-sub').textContent=sub;
   if($('salud-sub-d')) $('salud-sub-d').textContent=sub;
@@ -2045,13 +2028,10 @@ function renderMeds(cuidado, sesion, puedeEditar, esAdmin){
     html+=`<div style="background:var(--white);border-bottom:1px solid var(--line)">`;
     lista.forEach((m,i)=>{
       const conf=confs[m.id+'_'+hoyStr];
-      const stockOk=m.stock>5;
       const stockLow=m.stock>0&&m.stock<=5;
       const noStock=m.stock===0;
-      const icoClass=noStock?'sin-stock':stockLow?'stock-low':'normal';
       // Stock real (retrocompat)
       const stockReal=m.stockActual!==undefined?m.stockActual:(m.stock||0);
-      const stockRealOk=stockReal>5;
       const stockRealLow=stockReal>0&&stockReal<=5;
       const noStockReal=stockReal===0;
       const icoClassR=noStockReal?'sin-stock':stockRealLow?'stock-low':'normal';
@@ -2953,7 +2933,7 @@ function renderPlanSemanal(alim, puede, cuidado){
       const momentos=['desayuno','almuerzo','once','cena'];
       momentos.forEach(momento=>{
         const comidasMomento=comidas.filter(c=>c.momento===momento);
-        comidasMomento.forEach((c,i)=>{
+        comidasMomento.forEach((c)=>{
           // Porción registrada en la bitácora de hoy
           const porcion=esHoyDia&&['desayuno','almuerzo','cena'].includes(momento)?porcionHoy[momento]:'';
           const porcionCls=porcion==='Todo'?'cp-todo':porcion==='Mitad'?'cp-mitad':porcion==='Nada'?'cp-nada':'';
@@ -3275,7 +3255,6 @@ function selPorcionAlim(comida, val, btn){
   btn.closest('.pc-btns')?.querySelectorAll('.pcb').forEach(b=>b.classList.remove('todo','mitad','nada'));
   btn.classList.add(cls);
   // Actualizar badge en el header
-  const header=btn.closest('.porcion-card')?.querySelector('.badge');
   // re-render header badge inline
   const icoPc=btn.closest('.porcion-card')?.querySelector('.pc-header');
   if(icoPc){
@@ -3591,7 +3570,6 @@ function renderTabEquip(tab){
   const comp=DB.getCompartido();
   const am=c.am||{};
   const esAdmin=s.rol==='admin';
-  const puedeVer=['admin','familiar','cuidadora'].includes(s.rol);
   const fab=$('equipo-fab');
   const sub=`${am.nombre||'tu familiar'} · ${comp.equipo?.length||0} personas en el equipo`;
   if($('equipo-sub')) $('equipo-sub').textContent=sub;
@@ -4145,7 +4123,7 @@ function selDia(dateStr){
 function renderDiaSeleccionado(puedeEditar){
   const eventos=DB.getEventos();
   const dateStr=ST.agenda.diaSeleccionado;
-  const [a,m,d]=dateStr.split('-').map(Number);
+  const [,m,d]=dateStr.split('-').map(Number);
   const dowIdx=new Date(dateStr+'T12:00').getDay();
   const dow=dowIdx===0?'Domingo':DIAS_FULL[dowIdx-1];
   const labelDia=`${dow}, ${d} de ${MESES[m-1]}`;
@@ -4185,7 +4163,7 @@ function renderDiaSeleccionado(puedeEditar){
 
 function renderEventoCard(ev, puedeEditar){
   const t=TIPOS[ev.tipo]||TIPOS.otro;
-  const [a,m,d]=ev.fecha.split('-').map(Number);
+  const [,m,d]=ev.fecha.split('-').map(Number);
   const diasD=diasHasta(ev.fecha);
   let diasLabel='';
   if(diasD===0) diasLabel='<span class="badge b-info">Hoy</span>';
