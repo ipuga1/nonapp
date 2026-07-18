@@ -1732,7 +1732,7 @@ function guardarBitacora(){
     btn.disabled=false;
 
     toast('✓ Registro guardado','ok');
-    mostrarResumenIA(registro, am.nombre||'tu familiar');
+    mostrarResumenIA(registro);
   }, 600);
 }
 
@@ -1805,7 +1805,7 @@ function generarResumenIA(b, nombre){
 }
 
 /* ════ PANTALLA DE RESUMEN IA ════ */
-function mostrarResumenIA(b, nombreAM){
+function mostrarResumenIA(b){
   const fecha=fechaLarga(b.fecha);
   if($('resumen-hora-display')) $('resumen-hora-display').textContent=b.hora;
   if($('resumen-fecha-display')) $('resumen-fecha-display').textContent=fecha;
@@ -1933,7 +1933,7 @@ function renderTab(tab){
 
   if(tab==='meds'){
     if(fab) fab.style.display=puedeEditar?'flex':'none';
-    renderMeds(cuidado, sesion, puedeEditar, esAdmin);
+    renderMeds(cuidado, puedeEditar, esAdmin);
     // Sin botones en el header — los botones de agregar van dentro del contenido
     if($('salud-hdr-action')) $('salud-hdr-action').innerHTML='';
     if($('salud-hdr-action-d')) $('salud-hdr-action-d').innerHTML='';
@@ -1961,7 +1961,7 @@ function renderTab(tab){
 }
 
 /* ════ TAB MEDICAMENTOS ════ */
-function renderMeds(cuidado, sesion, puedeEditar, esAdmin){
+function renderMeds(cuidado, puedeEditar, esAdmin){
   const content=$('salud-content');
   const meds=cuidado.meds||[];
   const confs=cuidado.confirmaciones||{};
