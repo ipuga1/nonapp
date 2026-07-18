@@ -342,7 +342,6 @@ html,body{
 
 /* ── Labels y divisores ── */
 .slbl{ font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink3); padding:14px 18px 6px; }
-.divider{ height:1px; background:var(--line); }
 
 /* ── IA hint ── */
 .ia{ background:var(--sage-lt); border:1px solid var(--sage-md); border-radius:var(--rs); padding:10px 14px; display:flex; gap:8px; font-size:12px; color:var(--ink2); line-height:1.5; }
@@ -392,7 +391,6 @@ html,body{
   margin-bottom:7px;
 }
 .bita-hora{ font-size:12px; font-weight:700; color:var(--sage); }
-.bita-quien{ font-size:11px; color:var(--ink3); }
 .bita-badges{ display:flex; gap:5px; flex-wrap:wrap; margin-bottom:7px; }
 .bita-nota{
   font-size:13px; color:var(--ink2); line-height:1.5;
@@ -502,7 +500,6 @@ html,body{
 .det-sec-title{ font-size:11px; font-weight:700; color:var(--ink3); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
 .det-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; }
 .det-key{ font-size:13px; color:var(--ink3); }
-.det-val{ font-size:13px; font-weight:600; color:var(--ink); }
 
 /* ════ RESUMEN IA ════ */
 .resumen-ia-box{
@@ -678,7 +675,6 @@ html,body{ height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
 
 /* ── Labels y divisores ── */
 .slbl{ font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink3); padding:14px 18px 6px; }
-.divider{ height:1px; background:var(--line); }
 .ia{ background:var(--sage-lt); border:1px solid var(--sage-md); border-radius:var(--rs); padding:10px 14px; display:flex; gap:8px; font-size:12px; color:var(--ink2); line-height:1.5; }
 .ia-ico{ font-size:14px; flex-shrink:0; color:var(--sage); margin-top:1px; }
 
@@ -814,7 +810,6 @@ html,body{ height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
 .ocr-med-chk.on{ background:var(--sage); color:#fff; border-color:var(--sage); }
 .ocr-med-nombre{ font-size:13px; font-weight:700; color:var(--ink); flex:1; }
 .ocr-med-info{ font-size:11px; color:var(--ink3); margin-top:2px; }
-.ocr-med-estado{ flex-shrink:0; }
 
 /* ════ FICHA CLÍNICA ════ */
 .ficha-section{ padding:14px 18px; border-bottom:1px solid var(--line); }
@@ -833,14 +828,12 @@ html,body{ height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
 }
 .cc-grave{ background:var(--red-lt); color:var(--red); border:1px solid #F0B0AE; }
 .cc-cronica{ background:var(--amber-lt); color:var(--amber); border:1px solid #E8C88A; }
-.cc-info{ background:var(--blue-lt); color:var(--blue); border:1px solid #B5CAEA; }
 
 /* Restricción row */
 .restriccion-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
 .restriccion-row:last-child{ border-bottom:none; }
 .rr-ico{ font-size:18px; flex-shrink:0; }
 .rr-txt{ font-size:13px; color:var(--ink); flex:1; }
-.rr-tipo{ font-size:11px; padding:2px 8px; border-radius:20px; font-weight:500; }
 
 /* ════ DOCUMENTOS ════ */
 .doc-filtros{ display:flex; gap:8px; padding:10px 16px; overflow-x:auto; scrollbar-width:none; border-bottom:1px solid var(--line); flex-shrink:0; }
@@ -986,7 +979,6 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sa
 
 /* ── Labels ── */
 .slbl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);padding:14px 18px 6px}
-.divider{height:1px;background:var(--line)}
 .ia{background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--rs);padding:10px 14px;display:flex;gap:8px;font-size:12px;color:var(--ink2);line-height:1.5}
 .ia-ico{font-size:14px;flex-shrink:0;color:var(--sage);margin-top:1px}
 
@@ -1327,7 +1319,6 @@ root {
   font-size:9px;font-weight:700;line-height:1.3;
   text-align:center;
 }
-.cal-vacio{background:var(--surf);border-radius:5px;width:100%;height:32px}
 .cal-libre{background:transparent}
 /* Leyenda del calendario */
 .leyenda{display:flex;gap:12px;flex-wrap:wrap;padding:10px 18px;border-bottom:1px solid var(--line)}
@@ -1411,13 +1402,11 @@ root{
 }
 .ev-dia-num{font-size:20px;font-weight:900;color:var(--ink);line-height:1}
 .ev-dia-txt{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
-.ev-mes-txt{font-size:10px;color:var(--ink3);text-transform:uppercase}
 .ev-body{flex:1;min-width:0}
 .ev-titulo{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:3px}
 .ev-meta{font-size:12px;color:var(--ink3);display:flex;flex-direction:column;gap:2px}
 .ev-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
 .ev-hora{font-size:12px;font-weight:600;color:var(--ink2)}
-.ev-del{font-size:11px;color:var(--red);cursor:pointer;background:var(--red-lt);border:1px solid #F0B0AE;border-radius:6px;padding:3px 8px;font-family:inherit}
 /* Alerta de eventos próximos */
 .alerta-prox{
   background:var(--amber-lt);border:1px solid #E8C88A;
@@ -1480,7 +1469,6 @@ root{
 .tab-hub{display:flex;border-bottom:1px solid var(--line);background:var(--white);flex-shrink:0}
 .th{flex:1;padding:13px 16px;font-size:13px;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;text-align:center;white-space:nowrap}
 /* ── Tabbar ── */
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 /* ════ INSUMOS ════ */
 .alerta-banner{
   display:flex;gap:12px;align-items:flex-start;
@@ -1541,7 +1529,6 @@ root{
 }
 .prov-nombre{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:2px}
 .prov-tipo{font-size:12px;color:var(--ink3)}
-.prov-contacto{font-size:12px;color:var(--sage);font-weight:600;margin-top:4px}
 .prov-right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
 .prov-call{
   display:flex;align-items:center;gap:5px;padding:7px 12px;
@@ -1589,7 +1576,6 @@ root{
 .bc-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .bc-label{font-size:12px;color:rgba(255,255,255,.72)}
 .bc-monto{font-size:28px;font-weight:900;color:#fff;letter-spacing:-.5px}
-.bc-total{font-size:13px;color:rgba(255,255,255,.72)}
 .bc-track{height:8px;background:rgba(255,255,255,.25);border-radius:4px;overflow:hidden;margin-bottom:8px}
 .bc-fill{height:100%;border-radius:4px;transition:width .5s;background:#fff}
 .bc-fill.warn{background:#FFD97D}
@@ -1625,7 +1611,6 @@ root{
 .gasto-desc{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px}
 .gasto-meta{font-size:11px;color:var(--ink3)}
 .gasto-monto{margin-left:auto;font-size:14px;font-weight:800;color:var(--ink);white-space:nowrap;flex-shrink:0}
-.gasto-aprobado{margin-left:6px;flex-shrink:0}
 .gasto-del{font-size:13px;color:var(--red);cursor:pointer;background:none;border:none;padding:4px 8px;flex-shrink:0}
 /* Separador de fecha */
 .fecha-sep{
@@ -1840,8 +1825,6 @@ button,.btn,.tab,.sb-item,.qa{min-height:44px}
 @media(min-width:768px){.sidebar{display:flex}.screen.active .tabbar{display:none!important}.screen.active .mob-hdr{display:none!important}.screen.active .desk-hdr{display:flex!important}.desk-hdr{display:none}.main{overflow:hidden}}
 
 /* ── Auth screens — scroll total en cualquier tamaño de pantalla ── */
-.screen.auth-screen { overflow-y: auto; -webkit-overflow-scrolling: touch; display: none; flex-direction: column; }
-.screen.auth-screen.active { display: flex; flex-direction: column; }
 #s-splash.active, #s-login.active, #s-registro-tipo.active,
 #s-registro-admin.active, #s-ingresar-codigo.active,
 #s-registro-invitado.active, #s-bienvenida.active {
@@ -1854,12 +1837,6 @@ button,.btn,.tab,.sb-item,.qa{min-height:44px}
   font-family: inherit; font-weight: 600; display: block; min-height: 44px;
   display: flex; align-items: center; gap: 4px;
 }
-/* Garantizar que el contenido de auth scrollea cuando es más alto que la pantalla */
-.auth-scroll-wrap {
-  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  display: flex; flex-direction: column;
-}
-
 /* ── Auth screens por ID (máxima especificidad) ── */
 /* Splash: flex-column, sin scroll, botones siempre visibles */
 #s-splash.active {

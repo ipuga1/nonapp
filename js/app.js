@@ -1897,12 +1897,6 @@ function copiarTexto(txt){
 
 $('cb-ok').onclick=()=>{ $('confirm-ov').classList.remove('open'); if(_cb)_cb(); };
 
-
-/* ════ QA AUTOMÁTICO ════ */
-
-/* ════ INICIALIZACIÓN ════ */
-
-
 /* ════════════════════════════════════════════
    MÓDULO 4 — SALUD
    ════════════════════════════════════════════ */
@@ -2813,12 +2807,6 @@ window.navTo=function(id){
 
 $('cb-ok').onclick=()=>{ $('confirm-ov').classList.remove('open'); if(_cb)_cb(); };
 
-
-/* ════ QA AUTOMÁTICO ════ */
-
-/* ════ INICIALIZACIÓN ════ */
-
-
 /* ════════════════════════════════════════════
    MÓDULO 5 — ALIMENTACIÓN
    ════════════════════════════════════════════ */
@@ -3538,14 +3526,6 @@ function generarListaIA(){
 
 $('cb-ok').onclick=()=>{ $('confirm-ov').classList.remove('open'); if(_cb)_cb(); };
 
-
-/* ════ QA AUTOMÁTICO ════ */
-
-/* ════ INICIALIZACIÓN ════ */
-
-
-
-
 /* ════════════════════════════════════════
    MÓDULO 6 — EQUIPO DE CUIDADO
    ════════════════════════════════════════ */
@@ -4012,11 +3992,6 @@ function eliminarPersona(id,nombre){
 /* ── SHEETS / CONFIRM ── */
 
 $('cb-ok').onclick=()=>{ $('confirm-ov').classList.remove('open'); if(_cb)_cb(); };
-
-/* ════ QA AUTOMÁTICO ════ */
-
-/* ════ INICIALIZACIÓN ════ */
-
 
 /* ════════════════════════════════════════
    MÓDULO 7 — AGENDA
@@ -6102,25 +6077,6 @@ function cargarBoletaExistente(dataUrl){
   if(preview) preview.style.display = 'block';
   if(placeholder) placeholder.style.display = 'none';
   if(area) area.style.borderColor = 'var(--sage)';
-}
-
-
-/* ── Lightbox para ver imágenes en pantalla completa ── */
-function abrirLightbox(src){
-  const ov = document.getElementById('ov-lightbox');
-  const img = document.getElementById('lightbox-img');
-  if(!ov || !img) return;
-  img.src = src;
-  ov.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-function cerrarLightbox(){
-  const ov = document.getElementById('ov-lightbox');
-  if(!ov) return;
-  ov.style.display = 'none';
-  document.getElementById('lightbox-img').src = '';
-  document.body.style.overflow = '';
 }
 
 
