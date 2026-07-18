@@ -3587,7 +3587,7 @@ function renderTabEquip(tab){
       esAdmin?`<button class="hdr-action" onclick="abrirSheetCuidadora()">+ Agregar</button>`:'',
       esAdmin?deskBtn('+ Agregar cuidadora','abrirSheetCuidadora()'):''
     );
-    renderCuidadoras(c,s,esAdmin);
+    renderCuidadoras(c,esAdmin);
 
   } else if(tab==='especialistas'){
     if(fab) fab.style.display=esAdmin?'flex':'none';
@@ -3595,17 +3595,17 @@ function renderTabEquip(tab){
       esAdmin?`<button class="hdr-action" onclick="abrirSheetEspecialista()">+ Agregar</button>`:'',
       esAdmin?deskBtn('+ Agregar especialista','abrirSheetEspecialista()'):''
     );
-    renderEspecialistas(c,esAdmin);
+    renderEspecialistas(esAdmin);
 
   } else if(tab==='turnos'){
     if(fab) fab.style.display='none';
     setAcciones('','');
-    renderCalendario(c,s);
+    renderCalendario();
   }
 }
 
 /* ════ TAB CUIDADORAS ════ */
-function renderCuidadoras(c, sesion, esAdmin){
+function renderCuidadoras(c, esAdmin){
   const content=$('equipo-content');
   const comp=DB.getCompartido();
   const cuidadoras=(comp.equipo||[]).filter(p=>p.categoria==='cuidadora');
@@ -3685,7 +3685,7 @@ function renderCuidadoras(c, sesion, esAdmin){
 }
 
 /* ════ TAB ESPECIALISTAS ════ */
-function renderEspecialistas(c, esAdmin){
+function renderEspecialistas(esAdmin){
   const content=$('equipo-content');
   const comp=DB.getCompartido();
   const especialistas=(comp.equipo||[]).filter(p=>p.categoria==='especialista');
@@ -3741,7 +3741,7 @@ function renderEspecialistas(c, esAdmin){
 }
 
 /* ════ TAB CALENDARIO DE TURNOS ════ */
-function renderCalendario(c, sesion){
+function renderCalendario(){
   const content=$('equipo-content');
   const comp=DB.getCompartido();
   const cuidadoras=(comp.equipo||[]).filter(p=>p.categoria==='cuidadora');
@@ -4153,15 +4153,15 @@ function renderDiaSeleccionado(puedeEditar){
 
     if(proximos.length){
       body.innerHTML+=`<div class="slbl">Próximos 30 días</div>`;
-      proximos.forEach(ev=>{ body.innerHTML+=renderEventoCard(ev,puedeEditar); });
+      proximos.forEach(ev=>{ body.innerHTML+=renderEventoCard(ev); });
     }
     return;
   }
 
-  body.innerHTML=evDia.map(ev=>renderEventoCard(ev,puedeEditar)).join('');
+  body.innerHTML=evDia.map(ev=>renderEventoCard(ev)).join('');
 }
 
-function renderEventoCard(ev, puedeEditar){
+function renderEventoCard(ev){
   const t=TIPOS[ev.tipo]||TIPOS.otro;
   const [,m,d]=ev.fecha.split('-').map(Number);
   const diasD=diasHasta(ev.fecha);
@@ -4550,7 +4550,7 @@ function selCatInsumo(btn){
   btn.classList.add('on');
 }
 
-function abrirSheetInsumo(id){
+function abrirSheetInsumo(){
   ST.hogar.editInsumoId=null;
   $('sh-insumo-titulo').textContent='Agregar insumo';
   $('ins-nombre').value=''; $('ins-stock').value='0'; $('ins-min').value='5'; $('ins-notas').value='';
@@ -4817,24 +4817,24 @@ function renderTabGastos(tab){
     if(fab) fab.style.display=puedeRegistrar?'flex':'none';
     if($('gastos-hdr-action')) $('gastos-hdr-action').innerHTML=puedeRegistrar?`<button class="hdr-action" onclick="abrirSheetGasto()">+ Agregar</button>`:'';
     if($('gastos-hdr-action-d')) $('gastos-hdr-action-d').innerHTML=puedeRegistrar?deskBtn('+ Registrar gasto','abrirSheetGasto()'):'';
-    renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin, am);
+    renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin);
 
   } else if(tab==='presupuesto'){
     if(fab) fab.style.display='none';
     if($('gastos-hdr-action')) $('gastos-hdr-action').innerHTML=esAdmin?`<button class="hdr-action" onclick="abrirEditarPresupuesto()">Editar</button>`:'';
     if($('gastos-hdr-action-d')) $('gastos-hdr-action-d').innerHTML=esAdmin?deskBtn('Editar presupuesto','abrirEditarPresupuesto()'):'';
-    renderPresupuesto(gastos, presupuesto, esAdmin, c);
+    renderPresupuesto(gastos, presupuesto, esAdmin);
 
   } else if(tab==='rendicion'){
     if(fab) fab.style.display='none';
     if($('gastos-hdr-action')) $('gastos-hdr-action').innerHTML='';
     if($('gastos-hdr-action-d')) $('gastos-hdr-action-d').innerHTML='';
-    renderRendicion(gastos, presupuesto, esFamiliar, esAdmin, am);
+    renderRendicion(gastos, presupuesto, esFamiliar, esAdmin);
   }
 }
 
 /* ════ TAB REGISTRO ════ */
-function renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin, am){
+function renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin){
   const content=$('gastos-content');
   const meses=mesesDisponibles(gastos);
   const gastosMes=gastos.filter(g=>g.fecha?.startsWith(ST.gastos.mesVista));
@@ -4930,7 +4930,7 @@ function selMes(ym){
 }
 
 /* ════ TAB PRESUPUESTO ════ */
-function renderPresupuesto(gastos, presupuesto, esAdmin, cuidado){
+function renderPresupuesto(gastos, presupuesto, esAdmin){
   const content=$('gastos-content');
   const comp=DB.getCompartido();
   const gastosMes=gastos.filter(g=>g.fecha?.startsWith(ST.gastos.mesVista));
@@ -4991,7 +4991,7 @@ function renderPresupuesto(gastos, presupuesto, esAdmin, cuidado){
 }
 
 /* ════ TAB RENDICIÓN ════ */
-function renderRendicion(gastos, presupuesto, esFamiliar, esAdmin, am){
+function renderRendicion(gastos, presupuesto, esFamiliar, esAdmin){
   const content=$('gastos-content');
   const gastosMes=gastos.filter(g=>g.fecha?.startsWith(ST.gastos.mesVista));
   const total=gastosMes.reduce((s,g)=>s+g.monto,0);
@@ -5414,8 +5414,8 @@ function generarInformeIA(){
 
     // Textos generados por IA
     resumenFamiliar: generarResumenFamiliar(am, diasRegistro, totalDiasMes, presionProm, pctComio, animoPred, totalGastos, presupuesto, eventosMes, meds),
-    resumenClinico: generarResumenClinico(am, bitMes, meds, presionProm, pctComio, gastosMes, eventosMes),
-    sugerenciasIA: generarSugerencias(am, presionProm, pctComio, totalGastos, presupuesto),
+    resumenClinico: generarResumenClinico(am, bitMes, meds, presionProm, pctComio, eventosMes),
+    sugerenciasIA: generarSugerencias(presionProm, pctComio, totalGastos, presupuesto),
   };
 
   // Guardar en el cuidado
@@ -5448,7 +5448,7 @@ function generarResumenFamiliar(am, diasR, diasT, presion, pctComio, animo, gast
   return txt;
 }
 
-function generarResumenClinico(am, bitMes, meds, presionProm, pctComio, gastos, eventos){
+function generarResumenClinico(am, bitMes, meds, presionProm, pctComio, eventos){
   const nombre=am.nombre||'Paciente';
   const edad=am.edad||'—';
   const conds=(am.condiciones||[]).join(', ')||'No especificadas';
@@ -5492,7 +5492,7 @@ function generarResumenClinico(am, bitMes, meds, presionProm, pctComio, gastos, 
   return txt;
 }
 
-function generarSugerencias(am, presion, pctComio, gastos, pres){
+function generarSugerencias(presion, pctComio, gastos, pres){
   const sugs=[];
   if(presion&&presion>140) sugs.push({ico:'❤️',txt:`Presión promedio alta (${presion} mmHg). Considerar ajuste de dosis con el cardiólogo.`});
   if(pctComio<60) sugs.push({ico:'🍽️',txt:`El apetito estuvo bajo este mes (${pctComio}% de días con almuerzo completo). Revisar con nutricionista.`});
