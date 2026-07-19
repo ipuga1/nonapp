@@ -24,7 +24,7 @@ html,body{height:100%;margin:0;padding:0;font-family:-apple-system,BlinkMacSyste
 .sidebar{width:240px;flex-shrink:0;border-right:1px solid var(--line);display:none;flex-direction:column;background:var(--white);height:100vh}
 .tabbar{display:none}
 .screen.active .mob-hdr{display:none}
-.screen.active .mob-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--white);flex-shrink:0;min-height:56px;}.desk-hdr{display:none;display:flex!important}
+.screen.active .mob-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--white);flex-shrink:0;min-height:56px;}.desk-hdr{display:none;align-items:center;justify-content:space-between;gap:16px;padding:20px 28px;border-bottom:1px solid var(--line);background:var(--white);flex-shrink:0;min-height:68px;}
 .sb-logo{padding:24px 20px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);flex-shrink:0}
 .sb-logo-ico{font-size:24px}.sb-logo-name{font-size:19px;font-weight:900;color:var(--ink);letter-spacing:-.5px}
 .sb-switcher{padding:12px 14px;border-bottom:1px solid var(--line);flex-shrink:0;cursor:pointer}
