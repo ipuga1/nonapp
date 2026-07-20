@@ -236,6 +236,13 @@ const ROL_DESC={
 
 /* ── HELPERS ── */
 const $=id=>document.getElementById(id);
+let _guardarTs={};
+function _bloqueadoPorDobleClick(key,ms=800){
+  const now=Date.now();
+  if(_guardarTs[key]&&now-_guardarTs[key]<ms) return true;
+  _guardarTs[key]=now;
+  return false;
+}
 function toast(msg,type='',dur=2800){
   const t=$('toast'); t.textContent=msg; t.className='toast show'+(type?' '+type:'');
   clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),dur);
@@ -1169,24 +1176,6 @@ document.addEventListener('keydown',e=>{
   if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
   else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
 });
-
-/* ════ QA ════ */
-function qaAutoTest(){
-  const err=[],warn=[];
-  try{ localStorage.setItem('raiz_qa','1'); localStorage.removeItem('raiz_qa'); }catch(e){ err.push('localStorage no disponible'); }
-  const pantallas=['s-splash','s-login','s-registro-tipo','s-registro-admin','s-ingresar-codigo','s-registro-invitado','s-bienvenida','s-onb-am','s-onb-salud','s-activacion','s-home-admin','s-home-familiar','s-home-observador','s-home-cuidadora','s-perfil','s-bita-list','s-bita-new','s-gastos','s-agenda','s-invitaciones'];
-  pantallas.forEach(id=>{ if(!$(id)) err.push(`#${id} no encontrado`); });
-  const ids=document.querySelectorAll('[id]');
-  const seen=new Set(); let dups=[];
-  ids.forEach(el=>{ if(seen.has(el.id)) dups.push(el.id); seen.add(el.id); });
-  if(dups.length) err.push('IDs duplicados: '+dups.join(', '));
-  console.group('🌿 Raíz · QA Bloque 1 (M1+M2)');
-  if(!err.length&&!warn.length) console.log('%c✓ QA pasado — 0 errores, 0 advertencias','color:#4A7C6F;font-weight:700');
-  err.forEach(e=>console.error('❌',e)); warn.forEach(w=>console.warn('⚠️',w));
-  console.log(`Pantallas: ${pantallas.length} · Usuarios demo: ${DB.getUsuarios().length} · Cuidados: ${DB.getCuidados().length}`);
-  console.groupEnd();
-  if(err.length) toast(`⚠ QA: ${err.length} error(es) — ver consola`,'err',5000);
-}
 
 /* ════ INIT ════ */
 // Callback de Firebase cuando detecta sesión activa (al recargar la página)
@@ -2249,6 +2238,7 @@ function guardarReposicion(){
   const med=c.meds.find(m=>m.id===ST.salud.medEditandoId); if(!med) return;
   const cantComprada=parseInt($('stock-valor').value)||0;
   if(cantComprada<=0){ toast('Ingresa la cantidad comprada','err'); return; }
+  if(_bloqueadoPorDobleClick('reposicion')) return;
 
   // Inicializar campos si es medicamento antiguo (retrocompatibilidad)
   if(med.stockActual===undefined) med.stockActual=med.stock||0;
@@ -2327,6 +2317,7 @@ function guardarMedManual(){
     return;
   }
   $('am-nombre').classList.remove('error');
+  if(_bloqueadoPorDobleClick('medManual')) return;
   const c=DB.getCuidado(); if(!c) return;
   if(!Array.isArray(c.meds)) c.meds=[];
 
@@ -2727,6 +2718,7 @@ function abrirSheetDoc(){
 function guardarDocumento(){
   const nombre=$('doc-nombre').value.trim();
   if(!nombre){ toast('Escribe un nombre para el documento','err'); return; }
+  if(_bloqueadoPorDobleClick('documento')) return;
   const c=DB.getCuidado(); if(!c) return;
   if(!Array.isArray(c.documentos)) c.documentos=[];
   c.documentos.push({
@@ -3052,6 +3044,7 @@ function abrirAddComida(dia){
 function guardarComida(){
   const desc=$('comida-desc').value.trim();
   if(!desc){ toast('Escribe una descripción de la comida','err'); return; }
+  if(_bloqueadoPorDobleClick('comida')) return;
   const alim=DB.getAlim(); if(!alim) return;
   const dia=ST.agenda.diaSeleccionado||hoy();
   if(!alim.diario) alim.diario={};
@@ -3162,6 +3155,7 @@ function abrirSheetRestriccion(){
 function guardarRestriccion(){
   const desc=$('rest-desc').value.trim();
   if(!desc){ toast('Describe el alimento o ingrediente','err'); return; }
+  if(_bloqueadoPorDobleClick('restriccion')) return;
   const alim=DB.getAlim(); if(!alim) return;
   alim.restricciones.push({
     id:'r-'+Date.now(),
@@ -3471,6 +3465,7 @@ function abrirSheetCompra(){
 function guardarCompra(){
   const nombre=$('compra-nombre').value.trim();
   if(!nombre){ toast('Escribe el nombre del producto','err'); return; }
+  if(_bloqueadoPorDobleClick('compra')) return;
   const alim=DB.getAlim(); if(!alim) return;
   alim.compras.push({
     id:'cp-'+Date.now(),
@@ -3928,6 +3923,7 @@ function abrirSheetCuidadora(){
 function guardarCuidadora(){
   const nombre=$('c-nombre').value.trim();
   if(!nombre){ toast('Ingresa el nombre de la cuidadora','err'); return; }
+  if(_bloqueadoPorDobleClick('cuidadora')) return;
   const equipo=DB.getEquipo();
   equipo.push({
     id:'p-'+Date.now(), categoria:'cuidadora',
@@ -3992,6 +3988,7 @@ function abrirSheetEspecialista(){
 function guardarEspecialista(){
   const nombre=$('esp-nombre').value.trim();
   if(!nombre){ toast('Ingresa el nombre del especialista','err'); return; }
+  if(_bloqueadoPorDobleClick('especialista')) return;
   const equipo=DB.getEquipo();
   equipo.push({
     id:'e-'+Date.now(), categoria:'especialista',
@@ -4372,6 +4369,7 @@ function guardarEvento(){
   if(!titulo){ toast('Escribe un título para el evento','err'); return; }
   const fecha=$('ev-fecha').value;
   if(!fecha){ toast('Selecciona una fecha','err'); return; }
+  if(_bloqueadoPorDobleClick('evento')) return;
 
   const eventos=DB.getEventos();
   if(ST.agenda.eventoEditandoId){
@@ -4632,6 +4630,7 @@ function editarInsumo(id){
 function guardarInsumo(){
   const nombre=$('ins-nombre').value.trim();
   if(!nombre){ toast('Escribe el nombre del insumo','err'); return; }
+  if(_bloqueadoPorDobleClick('insumo')) return;
   const hogar=DB.getHogar(); if(!hogar) return;
   const data={
     cat:_catInsumoActual||_catActualHogar||'general',
@@ -4756,6 +4755,7 @@ function editarProveedor(id){
 function guardarProveedor(){
   const nombre=$('prov-nombre').value.trim();
   if(!nombre){ toast('Escribe el nombre del proveedor','err'); return; }
+  if(_bloqueadoPorDobleClick('proveedor')) return;
   const hogar=DB.getHogar(); if(!hogar) return;
   const data={
     cat:_catProvActual,
@@ -5178,6 +5178,7 @@ function guardarGasto(){
   if(!monto||monto<=0){ toast('Ingresa un monto válido','err'); return; }
   const desc=$('g-desc').value.trim();
   if(!desc){ toast('Escribe una descripción','err'); return; }
+  if(_bloqueadoPorDobleClick('gasto')) return;
   const c=DB.getCuidado(); if(!c) return;
   const comp=DB.getCompartido();
   if(!Array.isArray(comp.gastos)) comp.gastos=[];
