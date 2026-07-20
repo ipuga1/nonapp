@@ -41,6 +41,18 @@ async function _fsGet(path) {
   }
 }
 
+// Helper: eliminar un documento en Firestore
+async function _fsDelete(path) {
+  try {
+    const fb = window._fb;
+    if (!fb) return; // Firebase aún no cargó
+    const ref = fb.doc(fb.db, ...path.split('/'));
+    await fb.deleteDoc(ref);
+  } catch(e) {
+    console.warn('Firestore delete error:', e.message);
+  }
+}
+
 // Cargar todos los datos del hogar en el caché (llamado tras login)
 async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
   try {
@@ -682,6 +694,7 @@ function eliminarCuidado(cid){
     ()=>{
       const cuidados=DB.getCuidados().filter(x=>x.id!==cid);
       DB.setCuidados(cuidados);
+      _fsDelete('cuidados/'+cid);
       toast(`✓ Cuidado de ${nombre} eliminado`,'ok');
       renderPerfil();
     }
