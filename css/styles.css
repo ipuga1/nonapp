@@ -5,7 +5,7 @@
    ════════════════════════════════════════════ */
 :root{
   --sage:#4A7C6F;--sage-lt:#E8F0EE;--sage-md:#C2D8D2;--sage-dk:#2E5C52;
-  --amber:#C47A2B;--amber-lt:#FAF0E2;
+  --amber:#C47A2B;--amber-lt:#FAF0E2;--amber-dk:#8A5A1E;
   --red:#C0453A;--red-lt:#FAEAEA;
   --blue:#3A6EA8;--blue-lt:#E8EFF8;
   --purple:#6B5EA8;--purple-lt:#EEEAF8;
@@ -86,7 +86,7 @@ html,body{height:100%;margin:0;padding:0;font-family:-apple-system,BlinkMacSyste
 .flbl{font-size:13px;font-weight:600;color:var(--ink2)}
 .fin{background:var(--surf);border:1.5px solid var(--line);border-radius:var(--rs);padding:13px 14px;font-size:15px;color:var(--ink);width:100%;outline:none;font-family:inherit;transition:border-color .15s}
 .fin:focus{border-color:var(--sage)}.fin::placeholder{color:var(--ink3)}
-.fin.error{border-color:var(--red)}
+.fin.error{border-color:var(--red) !important}
 .fhint{font-size:11px;color:var(--ink3)}
 .ferr{font-size:11px;color:var(--red);font-weight:500;display:none}
 .ferr.show{display:block}
@@ -735,11 +735,11 @@ html,body{ height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
 .med-info{ flex:1; min-width:0; }
 .med-nombre{ font-size:14px; font-weight:700; color:var(--ink); margin-bottom:2px; }
 .med-meta{ font-size:12px; color:var(--ink3); }
-.med-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.med-actions{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .med-chk-btn{
-  width:34px; height:34px; border-radius:50%;
+  width:44px; height:44px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  font-size:16px; border:2px solid var(--line);
+  font-size:18px; border:2px solid var(--line);
   cursor:pointer; transition:all .2s; background:var(--surf);
   flex-shrink:0;
 }
@@ -747,9 +747,9 @@ html,body{ height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
 .med-chk-btn.confirmado:hover{ background:var(--red); border-color:var(--red); }
 .med-chk-btn.confirmado:hover::after{ content:' ✕'; }
 .med-del-btn{
-  width:28px; height:28px; border-radius:50%;
+  width:38px; height:38px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  font-size:13px; border:none; cursor:pointer;
+  font-size:15px; border:none; cursor:pointer;
   background:var(--red-lt); color:var(--red); flex-shrink:0;
 }
 
@@ -1850,5 +1850,14 @@ button,.btn,.tab,.sb-item,.qa{min-height:44px}
 #s-onb-am, #s-onb-salud {
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 

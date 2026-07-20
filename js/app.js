@@ -293,13 +293,40 @@ function navTo(id){
       renderTab('meds');
     },0);
   }
-  if(id==='s-alim-hub')     setTimeout(()=>renderTabAlim(ST.alimentacion.tab||'plan'),0);
+  if(id==='s-alim-hub'){
+    const tabAlim=ST.alimentacion.tab||'plan';
+    setTimeout(()=>{
+      const scrAlim=document.getElementById('s-alim-hub');
+      if(scrAlim) scrAlim.querySelectorAll('.tab-hub .th').forEach((t,i)=>{
+        t.classList.toggle('on',['plan','restricciones','diario','compras'][i]===tabAlim);
+      });
+      renderTabAlim(tabAlim);
+    },0);
+  }
   if(id==='s-ficha-editar') setTimeout(prellenarFicha,0);
   if(id==='s-ocr-receta')   setTimeout(resetOCR,0);
   if(id==='s-invitaciones') setTimeout(renderInvitaciones,0);
-  if(id==='s-equipo-hub')   setTimeout(()=>renderTabEquip('cuidadoras'),0);
-  if(id==='s-hogar-hub')    setTimeout(()=>renderTabHogar('insumos'),0);
-  if(id==='s-gastos')       setTimeout(()=>renderTabGastos('registro'),0);
+  if(id==='s-equipo-hub'){
+    setTimeout(()=>{
+      const scrEquipo=document.getElementById('s-equipo-hub');
+      if(scrEquipo) scrEquipo.querySelectorAll('.tab-hub .th').forEach((t,i)=>t.classList.toggle('on',i===0));
+      renderTabEquip('cuidadoras');
+    },0);
+  }
+  if(id==='s-hogar-hub'){
+    setTimeout(()=>{
+      const scrHogar=document.getElementById('s-hogar-hub');
+      if(scrHogar) scrHogar.querySelectorAll('.tab-hub .th').forEach((t,i)=>t.classList.toggle('on',i===0));
+      renderTabHogar('insumos');
+    },0);
+  }
+  if(id==='s-gastos'){
+    setTimeout(()=>{
+      const scrGastos=document.getElementById('s-gastos');
+      if(scrGastos) scrGastos.querySelectorAll('.tab-hub .th').forEach((t,i)=>t.classList.toggle('on',i===0));
+      renderTabGastos('registro');
+    },0);
+  }
   if(id==='s-informe-hub')  setTimeout(renderHub,0);
   if(id==='s-agenda')       setTimeout(renderAgenda,0);
   if(['s-home-admin','s-home-familiar','s-home-observador','s-home-cuidadora'].includes(id)){
@@ -547,7 +574,7 @@ function mostrarBienvenida(u){
   b.className='rol-badge-pill rb-'+r;
   b.textContent=(ROL_EMOJI[r]||'👤')+' '+ROL_LABEL[r];
   $('bv-rol-desc').textContent=ROL_DESC[r]||'';
-  if(c?.am?.nombre){ $('bv-am-nombre').textContent=c.am.nombre+' '+(c.am.apellido||''); $('bv-am-meta').textContent=(c.am.edad||'—')+' años · Cuidadora: '+(c.cuidadora||'Por configurar'); }
+  if(c?.am?.nombre){ $('bv-am-nombre').textContent=c.am.nombre+' '+(c.am.apellido||''); $('bv-am-meta').textContent=(c.am.edad||'—')+' años · Cuidadora: '+(nombreCuidadoraPrincipal(c)||'Por configurar'); }
   $('bv-ia-txt').textContent=r==='admin'?`Registra la bitácora de hoy para que la IA tenga su primer dato.`:`Recibirás actualizaciones del cuidado de ${c?.am?.nombre||'tu familiar'}.`;
 // El sidebar solo se muestra en desktop (≥768px via @media CSS)
   // No modificar el inline style — el CSS lo controla
@@ -606,6 +633,12 @@ function onbEliminarCuidadora(idx){
 /* ════ HELPERS NUEVOS ════ */
 
 /* Calcula edad en años desde una fecha de nacimiento YYYY-MM-DD */
+function nombreCuidadoraPrincipal(c){
+  const comp=DB.getCompartido();
+  const principal=(comp?.equipo||[]).find(p=>p.categoria==='cuidadora'&&p.rol==='cuidadora_principal')
+    ||(comp?.equipo||[]).find(p=>p.categoria==='cuidadora');
+  return principal?.nombre||c?.cuidadora||'';
+}
 function calcularEdad(fnac){
   if(!fnac) return null;
   const nac=new Date(fnac+'T12:00');
@@ -770,12 +803,12 @@ function renderHome(rol){
 
   const sem=(vitales)=>{
     const s=(v,ok)=>`<div class="sem${ok?vitales[v]?' ok':' empty':' empty'}"><div class="sem-ico">${{p:'❤️',a:'🍽️',m:'💊',n:'😊'}[v]}</div><div class="sem-lbl">${{p:'Presión',a:'Almuerzo',m:'Meds',n:'Ánimo'}[v]}</div><div class="sem-val">${vitales[v]||'—'}</div></div>`;
-    return`<div class="semaforo">${s('p',true)}${s('a',true)}<div class="sem${meds.length===0?' empty':medsHoy.length===0?' ok':' warn'}"><div class="sem-ico">💊</div><div class="sem-lbl">Salud</div><div class="sem-val">${meds.length===0?'—':medsHoy.length===0?'✓ Todo':medsHoy.length+' pend.'}</div></div>${s('n',true)}</div>`;
+    return`<div class="semaforo">${s('p',true)}${s('a',true)}<div class="sem${meds.length===0?' empty':medsHoy.length===0?' ok':' warn'}" style="cursor:pointer" onclick="navTo('s-salud-hub')"><div class="sem-ico">💊</div><div class="sem-lbl">Salud</div><div class="sem-val">${meds.length===0?'—':medsHoy.length===0?'✓ Todo':medsHoy.length+' pend.'}</div></div>${s('n',true)}</div>`;
   };
 
   const hero=`<div class="hero-card" onclick="navTo('s-perfil')">
     <div class="hc-name">${am.nombre||'tu familiar'} · ${am.edad||'—'} años</div>
-    <div class="hc-meta">Cuidadora: ${c.cuidadora||'Por configurar'} · turno activo</div>
+    <div class="hc-meta">Cuidadora: ${nombreCuidadoraPrincipal(c)||'Por configurar'} · turno activo</div>
     <div class="hc-pills">
       <div class="hc-pill"><div class="hc-dot" style="background:${bitaHoy?'#A8F0D8':'#FFD97D'}"></div>${bitaHoy?'Bitácora registrada':'Sin bitácora hoy'}</div>
       <div class="hc-pill"><div class="hc-dot" style="background:${medsHoy.length===0&&meds.length>0?'#A8F0D8':'#FFD97D'}"></div>${medsHoy.length===0&&meds.length>0?'Meds al día ✓':medsHoy.length+' meds pendientes'}</div>
@@ -812,10 +845,10 @@ function renderHome(rol){
             ${esActivo?'<span style="background:rgba(255,255,255,.25);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:#fff">Activo ✓</span>':'<span style="background:rgba(255,255,255,.15);border-radius:20px;padding:3px 10px;font-size:11px;color:rgba(255,255,255,.8)">Cambiar →</span>'}
           </div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
-            ${[['❤️','Presión',bitax?.presion||'—'],[' 🍽️','Almuerzo',bitax?.almuerzo||'—'],
-               ['💊','Meds',medsx.length===0?'—':medsHoyx.length===0?'✓':medsHoyx.length+' pend.'],
-               ['😊','Ánimo',bitax?.animo?.split(' ')[0]||'—']].map(([ico,lbl,val])=>
-              `<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px 4px;text-align:center">
+            ${[['❤️','Presión',bitax?.presion||'—',null],[' 🍽️','Almuerzo',bitax?.almuerzo||'—',null],
+               ['💊','Meds',medsx.length===0?'—':medsHoyx.length===0?'✓':medsHoyx.length+' pend.','s-salud-hub'],
+               ['😊','Ánimo',bitax?.animo?.split(' ')[0]||'—',null]].map(([ico,lbl,val,dest])=>
+              `<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px 4px;text-align:center${dest&&esActivo?';cursor:pointer':''}"${dest&&esActivo?` onclick="event.stopPropagation();navTo('${dest}')"`:''}>
                 <div style="font-size:16px">${ico}</div>
                 <div style="font-size:9px;color:rgba(255,255,255,.7);margin-top:2px">${lbl}</div>
                 <div style="font-size:12px;font-weight:700;color:#fff;margin-top:1px">${val}</div>
@@ -1019,7 +1052,7 @@ function abrirSwitcher(){
   $('switcher-lista').innerHTML=cuidados.map(c=>`
     <div class="mc-item${c.id===s.cuidadoId?' active':''}" onclick="selCuidado('${c.id}')">
       <div class="mc-ava" style="background:var(--sage)">${initials(c.am?.nombre||'?')}</div>
-      <div><div class="mc-name">${c.am?.nombre||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años · ${c.cuidadora||'Sin cuidadora'}</div></div>
+      <div><div class="mc-name">${c.am?.nombre||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años · ${nombreCuidadoraPrincipal(c)||'Sin cuidadora'}</div></div>
       ${c.id===s.cuidadoId?'<div class="mc-check">✓</div>':''}
     </div>`).join('');
   $('ov-switcher').classList.add('open');
@@ -1118,7 +1151,24 @@ let _cb=null;
 function confirmar(title,text,cb){ $('cb-title').textContent=title; $('cb-text').textContent=text; _cb=cb; $('confirm-ov').classList.add('open'); }
 $('cb-ok').onclick=()=>{ $('confirm-ov').classList.remove('open'); if(_cb)_cb(); };
 function cerrarConfirm(){ $('confirm-ov').classList.remove('open'); _cb=null; }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ cerrarSheet('ov-switcher'); cerrarConfirm(); }});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.querySelectorAll('.overlay.open').forEach(ov=>ov.classList.remove('open'));
+    cerrarConfirm();
+  }
+});
+// Contener el foco (Tab/Shift+Tab) dentro del sheet abierto para que no escape al fondo
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Tab') return;
+  const ov=document.querySelector('.overlay.open'); if(!ov) return;
+  const sheet=ov.querySelector('.sheet')||ov;
+  const focusables=[...sheet.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+    .filter(el=>el.offsetParent!==null);
+  if(!focusables.length) return;
+  const first=focusables[0], last=focusables[focusables.length-1];
+  if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+});
 
 /* ════ QA ════ */
 function qaAutoTest(){
@@ -1529,10 +1579,6 @@ function verDetalle(id){
   }
 
   $('detalle-body').innerHTML=html;
-
-  // Botones inferiores
-  $('detalle-btns-wrap').innerHTML=`
-    <button class="btn btn-s" onclick="navTo('s-bita-list')">← Volver al historial</button>`;
 
   navTo('s-bita-detalle');
 }
@@ -2018,7 +2064,7 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
     html+=`<div class="stock-alert"><div class="sa-ico">🚫</div><div class="sa-txt"><div class="sa-title">Sin stock · ${sinStock.map(m=>m.nombre).join(', ')}</div><div class="sa-sub">Comprar urgente para no interrumpir el tratamiento</div></div></div>`;
   }
   if(stockBajos.length){
-    html+=`<div class="stock-alert" style="background:var(--amber-lt)"><div class="sa-ico">⚠️</div><div class="sa-txt"><div class="sa-title" style="color:var(--amber)">Stock bajo · ${stockBajos.map(m=>`${m.nombre} (${m.stock} ud.)`).join(', ')}</div><div class="sa-sub">Reponer esta semana para no cortar el tratamiento</div></div></div>`;
+    html+=`<div class="stock-alert" style="background:var(--amber-lt)"><div class="sa-ico">⚠️</div><div class="sa-txt"><div class="sa-title" style="color:var(--amber-dk)">Stock bajo · ${stockBajos.map(m=>`${m.nombre} (${m.stock} ud.)`).join(', ')}</div><div class="sa-sub">Reponer esta semana para no cortar el tratamiento</div></div></div>`;
   }
 
   // Lista por turno
@@ -2052,7 +2098,7 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
             ${prox?`<div style="font-size:11px;color:var(--sage);margin-top:2px;font-weight:600">⏰ Próxima: ${prox}</div>`:''}
             <div class="med-meta" style="margin-top:3px">
               ${noStockReal?'<span style="color:var(--red);font-weight:600">Sin stock</span>':
-                stockRealLow?`<span style="color:var(--amber);font-weight:600">⚠ Stock bajo: ${stockReal} ud.</span>`:
+                stockRealLow?`<span style="color:var(--amber-dk);font-weight:600">⚠ Stock bajo: ${stockReal} ud.</span>`:
                 `<span style="color:var(--ink3)">Stock: ${stockReal} ud.</span>`}
               ${m.periocidad?`<span style="color:var(--ink3)"> · ${m.periocidad} días</span>`:''}
             </div>
@@ -2230,7 +2276,7 @@ function guardarReposicion(){
 function abrirSheetMed(){
   ST.salud.medEditando=null;
   if($('sh-med-titulo')) $('sh-med-titulo').textContent='Agregar medicamento';
-  ['am-nombre','am-dosis','am-medico','am-notas'].forEach(id=>{ if($(id)) $(id).value=''; });
+  ['am-nombre','am-dosis','am-medico','am-notas'].forEach(id=>{ if($(id)){ $(id).value=''; $(id).classList.remove('error'); } });
   if($('am-periocidad'))     $('am-periocidad').value='7';
   if($('am-frecuencia-hrs')) $('am-frecuencia-hrs').value='8';
   if($('am-hora-inicio'))    $('am-hora-inicio').value='08:00';
@@ -2274,7 +2320,13 @@ function editarMed(medId){
 
 function guardarMedManual(){
   const nombre=$('am-nombre').value.trim();
-  if(!nombre){ toast('Ingresa el nombre del medicamento','err'); return; }
+  if(!nombre){
+    toast('Ingresa el nombre del medicamento','err');
+    $('am-nombre').classList.add('error');
+    $('am-nombre').focus();
+    return;
+  }
+  $('am-nombre').classList.remove('error');
   const c=DB.getCuidado(); if(!c) return;
   if(!Array.isArray(c.meds)) c.meds=[];
 
@@ -2488,8 +2540,7 @@ function renderFicha(cuidado, esAdmin){
   let html=`
     <!-- Datos generales -->
     <div class="ficha-section">
-      <div class="fs-title">Datos generales${esAdmin?`<span class="fs-edit" onclick="navTo('s-ficha-editar')">Editar →</span>`:''}
-      </div>
+      <div class="fs-title">Datos generales</div>
       <div class="fs-valor">
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
           <div style="width:48px;height:48px;border-radius:50%;background:var(--sage);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0">${initials(am.nombre||'?')}</div>
@@ -3620,7 +3671,7 @@ function renderCuidadoras(c, esAdmin){
       </div>
       <div class="ia" style="margin:0 16px 20px">
         <div class="ia-ico">📱</div>
-        <div>Para que la cuidadora use la app, genera un código de invitación desde el Módulo 1. Aquí registras sus datos y turnos.</div>
+        <div>Para que la cuidadora use la app, genera un código de invitación desde <span style="color:var(--sage);font-weight:600;cursor:pointer" onclick="navTo('s-invitaciones')">Invitar personas →</span>. Aquí registras sus datos y turnos.</div>
       </div>`;
     return;
   }
@@ -3670,8 +3721,8 @@ function renderCuidadoras(c, esAdmin){
 
         ${esAdmin?`
           <div class="pc-actions">
-            <button class="pc-btn p" onclick="editarCuidadora('${p.id}')">✏ Editar turno</button>
-            <button class="pc-btn danger" onclick="eliminarPersona('${p.id}','${p.nombre}')">Eliminar</button>
+            <button class="btn btn-s" style="width:auto;flex:1;padding:10px" onclick="editarCuidadora('${p.id}')">✏ Editar turno</button>
+            <button class="btn btn-danger" style="width:auto;flex:1;padding:10px" onclick="eliminarPersona('${p.id}','${p.nombre}')">Eliminar</button>
           </div>`:''}
       </div>`;
   });
@@ -3679,7 +3730,7 @@ function renderCuidadoras(c, esAdmin){
   html+=`
     <div class="ia" style="margin:14px 16px 80px">
       <div class="ia-ico">✦</div>
-      <div>El ícono "En app" aparece cuando la cuidadora tiene acceso activo a Raíz. Para invitarla, genera un código desde el Módulo 1 → Gestión de accesos.</div>
+      <div>El ícono "En app" aparece cuando la cuidadora tiene acceso activo a Raíz. Para invitarla, genera un código desde <span style="color:var(--sage);font-weight:600;cursor:pointer" onclick="navTo('s-invitaciones')">Invitar personas →</span>.</div>
     </div>`;
   content.innerHTML=html;
 }
@@ -4477,7 +4528,7 @@ function renderInsumos(hogar, puedeEditar, esAdmin){
   if(sinStock.length){
     html+=`<div class="alerta-banner"><div class="ab-ico">🚫</div><div><div class="ab-title">Sin stock · ${sinStock.map(i=>i.nombre).join(', ')}</div><div class="ab-desc">Reponer urgente para no interrumpir el cuidado</div></div></div>`;
   } else if(stockBajos.length){
-    html+=`<div class="alerta-banner" style="background:var(--amber-lt)"><div class="ab-ico">⚠️</div><div><div class="ab-title" style="color:var(--amber)">Stock bajo · ${stockBajos.map(i=>i.nombre).join(', ')}</div><div class="ab-desc">Reponer esta semana</div></div></div>`;
+    html+=`<div class="alerta-banner" style="background:var(--amber-lt)"><div class="ab-ico">⚠️</div><div><div class="ab-title" style="color:var(--amber-dk)">Stock bajo · ${stockBajos.map(i=>i.nombre).join(', ')}</div><div class="ab-desc">Reponer esta semana</div></div></div>`;
   }
 
   // Filtros por categoría

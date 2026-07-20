@@ -54,7 +54,7 @@
     <button class="btn btn-s" onclick="navTo('s-registro-tipo')">Crear cuenta nueva</button>
   </div>
   <div style="flex-shrink:0;padding:12px 22px max(24px,env(safe-area-inset-bottom));text-align:center;background:var(--white);">
-    <div style="font-size:13px;color:var(--ink3)">¿Te invitaron? <span style="color:var(--sage);font-weight:600;cursor:pointer" onclick="navTo('s-ingresar-codigo')">Usar código de invitación →</span></div>
+    <div style="font-size:13px;color:var(--ink3)">¿Te invitaron? <button style="background:none;border:none;padding:0;font:inherit;color:var(--sage);font-weight:600;cursor:pointer" onclick="navTo('s-ingresar-codigo')">Usar código de invitación →</button></div>
   </div>
 </div>
 
@@ -1189,7 +1189,7 @@
         <!-- Nombre y dosis -->
         <div class="field" style="margin:0">
           <div class="flbl">Nombre del medicamento</div>
-          <input class="fin" id="am-nombre" placeholder="Ej: Paracetamol">
+          <input class="fin" id="am-nombre" placeholder="Ej: Paracetamol" oninput="this.classList.remove('error')">
         </div>
         <div class="g2">
           <div class="field" style="margin:0">
@@ -1473,7 +1473,7 @@
       </div>
       <div class="ia">
         <div class="ia-ico">📱</div>
-        <div>Si la cuidadora va a usar la app, invítala desde el Módulo 1 con un código de acceso. Aquí registras sus datos de contacto y turno.</div>
+        <div>Si la cuidadora va a usar la app, invítala desde <span style="color:var(--sage);font-weight:600;cursor:pointer" onclick="cerrarSheet('ov-add-cuidadora');navTo('s-invitaciones')">Invitar personas →</span> con un código de acceso. Aquí registras sus datos de contacto y turno.</div>
       </div>
     </div>
     <div class="btns"><button class="btn btn-p" onclick="guardarCuidadora()">Guardar cuidadora</button></div>
@@ -1805,7 +1805,7 @@
             <div style="font-size:11px;color:var(--ink3);margin-top:2px">JPG, PNG · Máx 5MB</div>
           </div>
           <div id="g-boleta-preview" style="display:none">
-            <img id="g-boleta-img" style="max-width:100%;max-height:160px;border-radius:6px;object-fit:cover">
+            <img id="g-boleta-img" alt="Boleta cargada" style="max-width:100%;max-height:160px;border-radius:6px;object-fit:cover">
             <div style="margin-top:8px;display:flex;gap:8px;justify-content:center">
               <button onclick="event.stopPropagation();document.getElementById('g-boleta-input').click()"
                 style="padding:5px 12px;border-radius:var(--rs);background:var(--surf);border:1.5px solid var(--line);font-size:12px;color:var(--ink3);cursor:pointer;font-family:inherit">
@@ -1906,7 +1906,7 @@
     </div>
   </div>
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/app.js"></script>
 </body>
