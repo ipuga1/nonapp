@@ -248,6 +248,11 @@ const ROL_DESC={
 
 /* ── HELPERS ── */
 const $=id=>document.getElementById(id);
+const _escapeMap={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function escapeHtml(str){
+  if(str===null||str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, ch=>_escapeMap[ch]);
+}
 let _guardarTs={};
 function _bloqueadoPorDobleClick(key,ms=800){
   const now=Date.now();
@@ -827,8 +832,8 @@ function renderHome(rol){
   };
 
   const hero=`<div class="hero-card" onclick="navTo('s-perfil')">
-    <div class="hc-name">${am.nombre||'tu familiar'} · ${am.edad||'—'} años</div>
-    <div class="hc-meta">Cuidadora: ${nombreCuidadoraPrincipal(c)||'Por configurar'} · turno activo</div>
+    <div class="hc-name">${escapeHtml(am.nombre)||'tu familiar'} · ${am.edad||'—'} años</div>
+    <div class="hc-meta">Cuidadora: ${escapeHtml(nombreCuidadoraPrincipal(c))||'Por configurar'} · turno activo</div>
     <div class="hc-pills">
       <div class="hc-pill"><div class="hc-dot" style="background:${bitaHoy?'#A8F0D8':'#FFD97D'}"></div>${bitaHoy?'Bitácora registrada':'Sin bitácora hoy'}</div>
       <div class="hc-pill"><div class="hc-dot" style="background:${medsHoy.length===0&&meds.length>0?'#A8F0D8':'#FFD97D'}"></div>${medsHoy.length===0&&meds.length>0?'Meds al día ✓':medsHoy.length+' meds pendientes'}</div>
@@ -858,7 +863,7 @@ function renderHome(rol){
              onclick="selCuidadoYNav('${cx.id}')">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
             <div>
-              <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px">${amx.nombre||'Sin nombre'} · ${calcularEdad(amx.fechaNacimiento)||amx.edad||'—'} años</div>
+              <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px">${escapeHtml(amx.nombre)||'Sin nombre'} · ${calcularEdad(amx.fechaNacimiento)||amx.edad||'—'} años</div>
               <div style="font-size:12px;color:rgba(255,255,255,.72);margin-top:2px">${amx.relacion||'—'}</div>
               ${(amx.condiciones?.length)?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${amx.condiciones.map(c=>`<span style="background:rgba(255,255,255,.18);border-radius:20px;padding:2px 8px;font-size:10px;color:#fff;white-space:nowrap">${c}</span>`).join('')}</div>`:'<div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:4px">Sin condiciones registradas</div>'}
             </div>
@@ -893,7 +898,7 @@ function renderHome(rol){
 
     // Acciones rápidas del Cuidado activo
     adminHtml+=`
-      <div class="slbl">Acciones rápidas · ${am.nombre||'tu familiar'}</div>
+      <div class="slbl">Acciones rápidas · ${escapeHtml(am.nombre)||'tu familiar'}</div>
       <div class="qa-grid">
         <div class="qa p" onclick="navTo('s-bita-new')"><div class="qa-ico">📋</div><div class="qa-lbl">Nueva bitácora</div><div class="qa-sub">${bitaHoy?'Registro adicional':'Registrar el día'}</div></div>
         <div class="qa" onclick="navTo('s-salud-hub')"><div class="qa-ico">💊</div><div class="qa-lbl">Salud</div><div class="qa-sub">${medsHoy.length>0?medsHoy.length+' pendientes hoy':'Todos confirmados ✓'}</div></div>
@@ -915,11 +920,11 @@ function renderHome(rol){
       .sort((a,b)=>a.fecha.localeCompare(b.fecha))
       .slice(0,3);
     const evHtml = proximosEv.length
-      ? proximosEv.map(e=>`<div style="display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)"><div style="width:36px;height:36px;border-radius:var(--rs);background:var(--sage-lt);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📅</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--ink)">${e.titulo||'Evento'}</div><div style="font-size:12px;color:var(--ink3)">${e.fecha===hoyStr?'Hoy':e.fecha} ${e.hora?'· '+e.hora:''}</div></div></div>`).join('')
+      ? proximosEv.map(e=>`<div style="display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)"><div style="width:36px;height:36px;border-radius:var(--rs);background:var(--sage-lt);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📅</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--ink)">${escapeHtml(e.titulo)||'Evento'}</div><div style="font-size:12px;color:var(--ink3)">${e.fecha===hoyStr?'Hoy':e.fecha} ${e.hora?'· '+e.hora:''}</div></div></div>`).join('')
       : `<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">Sin eventos próximos</div>`;
 
     $('home-fam-body').innerHTML=hero+sem({p:bitaHoy?.presion,a:bitaHoy?.almuerzo,n:bitaHoy?.animo})+
-      (bitaHoy?.resumen?`<div style="margin:0 16px 12px;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--r);padding:14px"><div style="font-size:11px;font-weight:700;color:var(--sage);margin-bottom:6px">✦ Resumen IA del día</div><div style="font-size:14px;color:var(--ink);line-height:1.7">${bitaHoy.resumen}</div></div>`:'')+`
+      (bitaHoy?.resumen?`<div style="margin:0 16px 12px;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--r);padding:14px"><div style="font-size:11px;font-weight:700;color:var(--sage);margin-bottom:6px">✦ Resumen IA del día</div><div style="font-size:14px;color:var(--ink);line-height:1.7">${escapeHtml(bitaHoy.resumen)}</div></div>`:'')+`
       <div class="slbl">Próximos eventos</div>
       <div style="margin:0 16px 14px;background:var(--white);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer" onclick="navTo('s-agenda')">${evHtml}<div style="padding:10px 16px;font-size:12px;color:var(--sage);font-weight:600;text-align:center">Ver agenda completa →</div></div>
       <div class="slbl">Acciones rápidas</div>
@@ -942,11 +947,11 @@ function renderHome(rol){
     $('home-obs-body').innerHTML=`
       <div style="background:linear-gradient(135deg,var(--sage-dk),var(--sage));padding:28px 18px 22px;text-align:center">
         <div style="font-size:48px;margin-bottom:10px">🌿</div>
-        <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:6px">${am.nombre||'—'} · ${calcularEdad(am.fechaNacimiento)||am.edad||'—'} años</div>
-        <div style="font-size:14px;color:rgba(255,255,255,.78)">${bitaHoy?`${am.nombre} estuvo bien hoy ✓`:'Sin registros hoy aún'}</div>
+        <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:6px">${escapeHtml(am.nombre)||'—'} · ${calcularEdad(am.fechaNacimiento)||am.edad||'—'} años</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.78)">${bitaHoy?`${escapeHtml(am.nombre)} estuvo bien hoy ✓`:'Sin registros hoy aún'}</div>
       </div>
       ${sem({p:bitaHoy?.presion,a:bitaHoy?.almuerzo,n:bitaHoy?.animo})}
-      ${bitaHoy?.resumen?`<div style="margin:0 16px 16px;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--r);padding:14px"><div style="font-size:11px;font-weight:700;color:var(--sage);margin-bottom:6px">✦ Resumen del día</div><div style="font-size:14px;color:var(--ink);line-height:1.7">${bitaHoy.resumen}</div></div>`:
+      ${bitaHoy?.resumen?`<div style="margin:0 16px 16px;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--r);padding:14px"><div style="font-size:11px;font-weight:700;color:var(--sage);margin-bottom:6px">✦ Resumen del día</div><div style="font-size:14px;color:var(--ink);line-height:1.7">${escapeHtml(bitaHoy.resumen)}</div></div>`:
       `<div class="empty" style="padding:28px"><div style="font-size:13px;color:var(--ink3)">Aún no hay registros del día de hoy.</div></div>`}
       <div class="ia" style="margin:0 16px 80px"><div class="ia-ico">✦</div><div>Como observador, ves el estado general del cuidado.</div></div>`;
 
@@ -1071,8 +1076,8 @@ function abrirSwitcher(){
   const cuidados=DB.getCuidados().filter(c=>c.adminId===s.userId||c.id===s.cuidadoId);
   $('switcher-lista').innerHTML=cuidados.map(c=>`
     <div class="mc-item${c.id===s.cuidadoId?' active':''}" onclick="selCuidado('${c.id}')">
-      <div class="mc-ava" style="background:var(--sage)">${initials(c.am?.nombre||'?')}</div>
-      <div><div class="mc-name">${c.am?.nombre||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años · ${nombreCuidadoraPrincipal(c)||'Sin cuidadora'}</div></div>
+      <div class="mc-ava" style="background:var(--sage)">${escapeHtml(initials(c.am?.nombre||'?'))}</div>
+      <div><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años · ${escapeHtml(nombreCuidadoraPrincipal(c))||'Sin cuidadora'}</div></div>
       ${c.id===s.cuidadoId?'<div class="mc-check">✓</div>':''}
     </div>`).join('');
   $('ov-switcher').classList.add('open');
@@ -1101,7 +1106,7 @@ function renderPerfil(){
   if(presSection) presSection.style.display = esAdmin ? 'block' : 'none';
   // Hero
   const hero=$('perfil-hero');
-  if(hero) hero.innerHTML=`<div style="display:flex;align-items:center;gap:14px"><div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff">${initials(s.nombre)}</div><div><div style="font-size:18px;font-weight:800;color:#fff">${s.nombre}</div><div style="font-size:13px;color:rgba(255,255,255,.72);margin-top:2px">${s.email}</div><div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">${ROL_EMOJI[s.rol]||''} ${ROL_LABEL[s.rol]||s.rol}</div></div></div>`;
+  if(hero) hero.innerHTML=`<div style="display:flex;align-items:center;gap:14px"><div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff">${escapeHtml(initials(s.nombre))}</div><div><div style="font-size:18px;font-weight:800;color:#fff">${escapeHtml(s.nombre)}</div><div style="font-size:13px;color:rgba(255,255,255,.72);margin-top:2px">${escapeHtml(s.email)}</div><div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">${ROL_EMOJI[s.rol]||''} ${ROL_LABEL[s.rol]||s.rol}</div></div></div>`;
   // Sección AM solo para admin
   const amSec=$('perfil-am-section');
   if(amSec){
@@ -1122,14 +1127,14 @@ function renderPerfil(){
         lista.innerHTML=todosLosCuidados.map(cx=>{
           const esActivo=cx.id===s.cuidadoId;
           const nombre=cx.am?.nombre||'Sin nombre';
-          const meta=`${calcularEdad(cx.am?.fechaNacimiento)||cx.am?.edad||'—'} años · ${cx.am?.relacion||'—'}`;
-          const rut=cx.am?.rut?` · ${cx.am.rut}`:'';
+          const meta=`${calcularEdad(cx.am?.fechaNacimiento)||cx.am?.edad||'—'} años · ${escapeHtml(cx.am?.relacion)||'—'}`;
+          const rut=cx.am?.rut?` · ${escapeHtml(cx.am.rut)}`:'';
           return `
             <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);${esActivo?'background:var(--sage-lt)':''}">
               <div style="flex:1;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="selCuidado('${cx.id}')">
-                <div style="width:40px;height:40px;border-radius:50%;background:${esActivo?'var(--sage)':'var(--surf)'};border:2px solid ${esActivo?'var(--sage)':'var(--line)'};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:${esActivo?'#fff':'var(--ink3)'};flex-shrink:0">${initials(nombre)}</div>
+                <div style="width:40px;height:40px;border-radius:50%;background:${esActivo?'var(--sage)':'var(--surf)'};border:2px solid ${esActivo?'var(--sage)':'var(--line)'};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:${esActivo?'#fff':'var(--ink3)'};flex-shrink:0">${escapeHtml(initials(nombre))}</div>
                 <div style="flex:1;min-width:0">
-                  <div style="font-size:14px;font-weight:700;color:var(--ink)">${nombre}</div>
+                  <div style="font-size:14px;font-weight:700;color:var(--ink)">${escapeHtml(nombre)}</div>
                   <div style="font-size:12px;color:var(--ink3);margin-top:2px">${meta}${rut}</div>
                 </div>
                 ${esActivo?'<span class="badge b-ok">Activo ✓</span>':'<span style="font-size:12px;color:var(--sage);font-weight:600">Cambiar →</span>'}
@@ -1342,7 +1347,7 @@ function initSelectorCuidado(){
       border:2px solid ${on?'var(--sage)':'var(--line)'};
       background:${on?'var(--sage-lt)':'var(--surf)'};
       color:${on?'var(--sage)':'var(--ink3)'};cursor:pointer;font-family:inherit;margin:0 6px 6px 0">
-      ${cx.am?.nombre||'Sin nombre'}
+      ${escapeHtml(cx.am?.nombre)||'Sin nombre'}
     </button>`;
   }).join('');
 }
@@ -1475,11 +1480,11 @@ function renderLista(){
               : ''}
           </div>
           ${badges.length?`<div class="bita-badges">${badges.join('')}</div>`:''}
-          ${b.nota?`<div class="bita-nota">${b.nota}</div>`:''}
+          ${b.nota?`<div class="bita-nota">${escapeHtml(b.nota)}</div>`:''}
           ${b.resumen?`
             <div class="bita-resumen">
               <span>✦</span>
-              <span>${b.resumen}</span>
+              <span>${escapeHtml(b.resumen)}</span>
             </div>`:''}
         </div>`;
     });
@@ -1561,7 +1566,7 @@ function verDetalle(id){
     html+=`
       <div class="det-section">
         <div class="det-sec-title">Nota del día</div>
-        <div style="font-size:13px;color:var(--ink2);line-height:1.6;padding-top:4px">${b.nota}</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.6;padding-top:4px">${escapeHtml(b.nota)}</div>
       </div>`;
   }
 
@@ -1571,7 +1576,7 @@ function verDetalle(id){
       <div style="margin:0;padding:0">
         <div class="resumen-ia-box" style="margin:0;border-radius:0">
           <div class="ria-header"><span>✦</span> Resumen IA</div>
-          <div class="ria-text">${b.resumen}</div>
+          <div class="ria-text">${escapeHtml(b.resumen)}</div>
           <div class="ria-actions">
             <button class="ria-btn ria-btn-wa" onclick="enviarWhatsAppResumen('${b.id}')">💬 WhatsApp</button>
             <button class="ria-btn ria-btn-copy" onclick="copiarResumenDetalle('${b.id}')">📋 Copiar</button>
@@ -2063,10 +2068,10 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
 
   // Alertas de stock
   if(sinStock.length){
-    html+=`<div class="stock-alert"><div class="sa-ico">🚫</div><div class="sa-txt"><div class="sa-title">Sin stock · ${sinStock.map(m=>m.nombre).join(', ')}</div><div class="sa-sub">Comprar urgente para no interrumpir el tratamiento</div></div></div>`;
+    html+=`<div class="stock-alert"><div class="sa-ico">🚫</div><div class="sa-txt"><div class="sa-title">Sin stock · ${escapeHtml(sinStock.map(m=>m.nombre).join(', '))}</div><div class="sa-sub">Comprar urgente para no interrumpir el tratamiento</div></div></div>`;
   }
   if(stockBajos.length){
-    html+=`<div class="stock-alert" style="background:var(--amber-lt)"><div class="sa-ico">⚠️</div><div class="sa-txt"><div class="sa-title" style="color:var(--amber-dk)">Stock bajo · ${stockBajos.map(m=>`${m.nombre} (${m.stock} ud.)`).join(', ')}</div><div class="sa-sub">Reponer esta semana para no cortar el tratamiento</div></div></div>`;
+    html+=`<div class="stock-alert" style="background:var(--amber-lt)"><div class="sa-ico">⚠️</div><div class="sa-txt"><div class="sa-title" style="color:var(--amber-dk)">Stock bajo · ${escapeHtml(stockBajos.map(m=>`${m.nombre} (${m.stock} ud.)`).join(', '))}</div><div class="sa-sub">Reponer esta semana para no cortar el tratamiento</div></div></div>`;
   }
 
   // Lista por turno
@@ -2095,7 +2100,7 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
         <div class="med-card" style="${i===lista.length-1?'border-bottom:none':''}">
           <div class="med-ico ${icoClassR}">💊</div>
           <div class="med-info" style="flex:1;min-width:0">
-            <div class="med-nombre">${m.nombre} <span style="font-weight:400;color:var(--ink3)">${m.dosis||''}</span></div>
+            <div class="med-nombre">${escapeHtml(m.nombre)} <span style="font-weight:400;color:var(--ink3)">${escapeHtml(m.dosis)}</span></div>
             <div class="med-meta" style="margin-top:3px">${horariosHtml}</div>
             ${prox?`<div style="font-size:11px;color:var(--sage);margin-top:2px;font-weight:600">⏰ Próxima: ${prox}</div>`:''}
             <div class="med-meta" style="margin-top:3px">
@@ -2222,7 +2227,7 @@ function editarStock(medId){
     hist.innerHTML='<div style="font-weight:700;margin-bottom:6px;color:var(--ink);font-size:13px">Historial de compras</div>'+
       (med.reposiciones||[]).slice().reverse().slice(0,5).map(r=>
         `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:12px">
-          <span>+${r.cantidad} ud.${r.nota?' · '+r.nota:''}</span>
+          <span>+${r.cantidad} ud.${r.nota?' · '+escapeHtml(r.nota):''}</span>
           <span style="color:var(--ink3)">${r.fecha||''}</span>
         </div>`).join('');
   } else if(hist) hist.innerHTML='';
@@ -2485,8 +2490,8 @@ function mostrarResultadoOCR(medsDetectados){
       <div class="ocr-med-row" onclick="toggleOcrMed(${i})">
         <div class="ocr-med-chk${m.seleccionado?' on':''}" id="ocr-chk-${i}">${m.seleccionado?'✓':''}</div>
         <div style="flex:1">
-          <div class="ocr-med-nombre">${m.nombre}</div>
-          <div class="ocr-med-info">${m.dosis} · ${m.freq}${!m.nuevo?' · <span style="color:var(--amber)">Ya en tu lista</span>':''}</div>
+          <div class="ocr-med-nombre">${escapeHtml(m.nombre)}</div>
+          <div class="ocr-med-info">${escapeHtml(m.dosis)} · ${escapeHtml(m.freq)}${!m.nuevo?' · <span style="color:var(--amber)">Ya en tu lista</span>':''}</div>
         </div>
         <span class="badge ${m.nuevo?'b-ok':'b-warn'}">${m.nuevo?'Nuevo':'Existente'}</span>
       </div>`).join('')}`;
@@ -2547,9 +2552,9 @@ function renderFicha(cuidado, esAdmin){
       <div class="fs-title">Datos generales</div>
       <div class="fs-valor">
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
-          <div style="width:48px;height:48px;border-radius:50%;background:var(--sage);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0">${initials(am.nombre||'?')}</div>
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--sage);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0">${escapeHtml(initials(am.nombre||'?'))}</div>
           <div>
-            <div style="font-size:16px;font-weight:800;color:var(--ink)">${am.nombre||'—'} ${am.apellido||''}</div>
+            <div style="font-size:16px;font-weight:800;color:var(--ink)">${escapeHtml(am.nombre)||'—'} ${escapeHtml(am.apellido)}</div>
             <div style="font-size:13px;color:var(--ink3)">${am.edad||'—'} años · ${am.relacion||'—'}</div>
           </div>
         </div>
@@ -2565,10 +2570,10 @@ function renderFicha(cuidado, esAdmin){
           <span style="font-size:18px">👨‍⚕️</span>
           <div>
             <div style="font-size:12px;color:var(--ink3)">Médico de cabecera</div>
-            <div style="font-size:14px;font-weight:600;color:var(--ink)">${am.medico||'Sin especificar'}</div>
+            <div style="font-size:14px;font-weight:600;color:var(--ink)">${escapeHtml(am.medico)||'Sin especificar'}</div>
           </div>
         </div>
-        ${am.especialistas?`<div style="font-size:13px;color:var(--ink3)">${am.especialistas}</div>`:''}
+        ${am.especialistas?`<div style="font-size:13px;color:var(--ink3)">${escapeHtml(am.especialistas)}</div>`:''}
       </div>
     </div>
 
@@ -2584,7 +2589,7 @@ function renderFicha(cuidado, esAdmin){
     <div class="ficha-section">
       <div class="fs-title">⚠️ Alergias</div>
       ${(am.alergias?.length||0)>0
-        ? `<div>${(Array.isArray(am.alergias)?am.alergias:[am.alergias]).map(a=>`<span class="chip danger" style="cursor:default;margin:2px">${a}</span>`).join('')}</div>`
+        ? `<div>${(Array.isArray(am.alergias)?am.alergias:[am.alergias]).map(a=>`<span class="chip danger" style="cursor:default;margin:2px">${escapeHtml(a)}</span>`).join('')}</div>`
         : `<div class="fs-vacío">Sin alergias registradas</div>`}
     </div>
 
@@ -2596,7 +2601,7 @@ function renderFicha(cuidado, esAdmin){
              ${(Array.isArray(am.restricciones)?am.restricciones:[am.restricciones]).map(r=>`
                <div class="restriccion-row">
                  <div class="rr-ico">🚫</div>
-                 <div class="rr-txt">${r}</div>
+                 <div class="rr-txt">${escapeHtml(r)}</div>
                </div>`).join('')}
            </div>`
         : `<div class="fs-vacío">Sin restricciones registradas</div>`}
@@ -2699,9 +2704,9 @@ function renderDocs(cuidado, puedeEditar){
         <div class="doc-card">
           <div class="doc-ico" style="background:${tipoColor[d.tipo]||'var(--surf)'}">${tipoIco[d.tipo]||'📁'}</div>
           <div style="flex:1;min-width:0">
-            <div class="doc-nombre">${d.nombre||'Documento sin nombre'}</div>
-            <div class="doc-meta">${d.medico?d.medico+' · ':''} ${fechaCorta(d.fecha)}</div>
-            ${d.notas?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${d.notas}</div>`:''}
+            <div class="doc-nombre">${escapeHtml(d.nombre)||'Documento sin nombre'}</div>
+            <div class="doc-meta">${d.medico?escapeHtml(d.medico)+' · ':''} ${fechaCorta(d.fecha)}</div>
+            ${d.notas?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${escapeHtml(d.notas)}</div>`:''}
           </div>
           <span class="badge b-muted doc-tipo">${d.tipo||'otro'}</span>
           ${puedeEditar?`<button class="doc-del" onclick="eliminarDoc('${d.id}')">Eliminar</button>`:''}
@@ -2814,8 +2819,8 @@ function renderHistorial(cuidado){
           </div>
           <div class="hist-fecha">${fechaCorta(ev.fecha)}<br>${ev.hora||''}</div>
           <div class="hist-content">
-            <div class="hist-titulo">${ev.titulo}</div>
-            ${ev.desc?`<div class="hist-desc">${ev.desc}</div>`:''}
+            <div class="hist-titulo">${escapeHtml(ev.titulo)}</div>
+            ${ev.desc?`<div class="hist-desc">${escapeHtml(ev.desc)}</div>`:''}
             <span class="hist-tipo badge ${tipoBadge[ev.tipo]||'b-muted'}">${tipoLabel[ev.tipo]||ev.tipo}</span>
           </div>
         </div>`;
@@ -2996,7 +3001,7 @@ function renderPlanSemanal(alim, puede, cuidado){
           html+=`
             <div class="comida-row">
               <div class="comida-momento">${MOMENTO_ICO[momento]} ${MOMENTO_LABEL[momento]}</div>
-              <div class="comida-desc">${c.desc}${c.notas?` <span style="font-size:11px;color:var(--ink3)">· ${c.notas}</span>`:''}
+              <div class="comida-desc">${escapeHtml(c.desc)}${c.notas?` <span style="font-size:11px;color:var(--ink3)">· ${escapeHtml(c.notas)}</span>`:''}
               </div>
               ${porcion?`<span class="comida-porcion ${porcionCls}">${porcion}</span>`:''}
               ${puede?`<button class="comida-del" onclick="eliminarComida('${dia}','${c.id}')">🗑</button>`:''}
@@ -3112,10 +3117,10 @@ function renderRestricciones(alim, am, esAdmin){
           <span class="badge b-err">${alergias.length+restrAM.length}</span>
         </div>`;
     alergias.forEach(a=>{
-      html+=`<div class="rest-item"><div class="ri-dot" style="background:var(--red)"></div><span class="ri-tipo badge b-err">Alergia</span><div><div class="ri-txt">${a}</div><div class="ri-razon">Registrado en ficha clínica</div></div></div>`;
+      html+=`<div class="rest-item"><div class="ri-dot" style="background:var(--red)"></div><span class="ri-tipo badge b-err">Alergia</span><div><div class="ri-txt">${escapeHtml(a)}</div><div class="ri-razon">Registrado en ficha clínica</div></div></div>`;
     });
     restrAM.forEach(r=>{
-      html+=`<div class="rest-item"><div class="ri-dot" style="background:var(--amber)"></div><span class="ri-tipo badge b-warn">Restricción</span><div><div class="ri-txt">${r}</div><div class="ri-razon">Registrado en ficha clínica</div></div></div>`;
+      html+=`<div class="rest-item"><div class="ri-dot" style="background:var(--amber)"></div><span class="ri-tipo badge b-warn">Restricción</span><div><div class="ri-txt">${escapeHtml(r)}</div><div class="ri-razon">Registrado en ficha clínica</div></div></div>`;
     });
     html+=`</div>`;
   }
@@ -3140,8 +3145,8 @@ function renderRestricciones(alim, am, esAdmin){
             <div class="ri-dot" style="background:${conf.color}"></div>
             <span class="ri-tipo badge ${conf.cls}">${conf.label}</span>
             <div style="flex:1">
-              <div class="ri-txt">${r.desc}</div>
-              ${r.razon?`<div class="ri-razon">${r.razon}</div>`:''}
+              <div class="ri-txt">${escapeHtml(r.desc)}</div>
+              ${r.razon?`<div class="ri-razon">${escapeHtml(r.razon)}</div>`:''}
             </div>
             ${esAdmin?`<button class="ri-del" onclick="eliminarRestriccion('${r.id}')">Eliminar</button>`:''}
           </div>`;
@@ -3428,8 +3433,8 @@ function renderCompras(alim, puede){
         html+=`
           <div class="compra-item" onclick="toggleCompra('${item.id}')">
             <div class="ci-chk"></div>
-            <div class="ci-nombre">${item.nombre}</div>
-            ${item.cantidad?`<div class="ci-cantidad">${item.cantidad}</div>`:''}
+            <div class="ci-nombre">${escapeHtml(item.nombre)}</div>
+            ${item.cantidad?`<div class="ci-cantidad">${escapeHtml(item.cantidad)}</div>`:''}
             ${puede?`<button class="ci-del" onclick="event.stopPropagation();eliminarCompra('${item.id}')">🗑</button>`:''}
           </div>`;
       });
@@ -3444,15 +3449,15 @@ function renderCompras(alim, puede){
       html+=`
         <div class="compra-item" onclick="toggleCompra('${item.id}')" style="opacity:.6">
           <div class="ci-chk on">✓</div>
-          <div class="ci-nombre done">${item.nombre}</div>
-          ${item.cantidad?`<div class="ci-cantidad">${item.cantidad}</div>`:''}
+          <div class="ci-nombre done">${escapeHtml(item.nombre)}</div>
+          ${item.cantidad?`<div class="ci-cantidad">${escapeHtml(item.cantidad)}</div>`:''}
           ${puede?`<button class="ci-del" onclick="event.stopPropagation();eliminarCompra('${item.id}')">🗑</button>`:''}
         </div>`;
     });
   }
 
   if(puede){
-    html+=`<div class="ia" style="margin:14px 16px 80px"><div class="ia-ico">✦</div><div>Toca "Sugerir con IA" para que la IA genere la lista basada en el plan semanal y las restricciones de ${DB.getCuidado()?.am?.nombre||'tu familiar'}.</div></div>`;
+    html+=`<div class="ia" style="margin:14px 16px 80px"><div class="ia-ico">✦</div><div>Toca "Sugerir con IA" para que la IA genere la lista basada en el plan semanal y las restricciones de ${escapeHtml(DB.getCuidado()?.am?.nombre)||'tu familiar'}.</div></div>`;
   } else {
     html+=`<div style="height:80px"></div>`;
   }
@@ -3702,17 +3707,17 @@ function renderCuidadoras(c, esAdmin){
     html+=`
       <div class="persona-card">
         <div class="pc-top">
-          <div class="pc-avatar" style="background:${pal.ava}">${initials(p.nombre)}</div>
+          <div class="pc-avatar" style="background:${pal.ava}">${escapeHtml(initials(p.nombre))}</div>
           <div style="flex:1">
-            <div class="pc-nombre">${p.nombre||'Sin nombre'}</div>
+            <div class="pc-nombre">${escapeHtml(p.nombre)||'Sin nombre'}</div>
             <div class="pc-rol">${TIPO_LABEL[p.rol]||'Cuidadora'}</div>
           </div>
           ${tieneApp?`<span class="en-app">✓ En app</span>`:''}
         </div>
 
         <div class="pc-meta">
-          ${p.telefono?`<span class="pc-tag">📞 ${p.telefono}</span>`:''}
-          ${p.notas?`<span class="pc-tag" style="color:var(--ink3)">${p.notas}</span>`:''}
+          ${p.telefono?`<span class="pc-tag">📞 ${escapeHtml(p.telefono)}</span>`:''}
+          ${p.notas?`<span class="pc-tag" style="color:var(--ink3)">${escapeHtml(p.notas)}</span>`:''}
           ${ultimaBita?`<span class="pc-tag" style="background:var(--sage-lt);color:var(--sage)">Último registro: ${ultimaBita.fecha}</span>`:''}
         </div>
 
@@ -3730,7 +3735,7 @@ function renderCuidadoras(c, esAdmin){
         ${esAdmin?`
           <div class="pc-actions">
             <button class="btn btn-s" style="width:auto;flex:1;padding:10px" onclick="editarCuidadora('${p.id}')">✏ Editar turno</button>
-            <button class="btn btn-danger" style="width:auto;flex:1;padding:10px" onclick="eliminarPersona('${p.id}','${p.nombre}')">Eliminar</button>
+            <button class="btn btn-danger" style="width:auto;flex:1;padding:10px" onclick="eliminarPersona('${p.id}')">Eliminar</button>
           </div>`:''}
       </div>`;
   });
@@ -3779,16 +3784,16 @@ function renderEspecialistas(esAdmin){
             <span style="font-size:22px">${TIPO_ICO[e.tipo]||'👤'}</span>
           </div>
           <div style="flex:1;min-width:0">
-            <div class="esp-nombre">${e.nombre||'Sin nombre'}</div>
-            <div class="esp-especialidad">${e.especializacion||TIPO_LABEL[e.tipo]||'Especialista'}</div>
+            <div class="esp-nombre">${escapeHtml(e.nombre)||'Sin nombre'}</div>
+            <div class="esp-especialidad">${escapeHtml(e.especializacion)||TIPO_LABEL[e.tipo]||'Especialista'}</div>
             <div class="esp-meta" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px">
-              ${e.centro?`<span style="color:var(--ink3)">🏥 ${e.centro}</span>`:''}
-              ${e.telefono?`<span style="color:var(--ink3)">📞 ${e.telefono}</span>`:''}
+              ${e.centro?`<span style="color:var(--ink3)">🏥 ${escapeHtml(e.centro)}</span>`:''}
+              ${e.telefono?`<span style="color:var(--ink3)">📞 ${escapeHtml(e.telefono)}</span>`:''}
               ${e.frecuencia?`<span class="badge b-info">${FREQ_LABEL[e.frecuencia]||e.frecuencia}</span>`:''}
             </div>
           </div>
           <div class="esp-right">
-            ${esAdmin?`<button class="esp-del" onclick="eliminarPersona('${e.id}','${e.nombre}')">Eliminar</button>`:''}
+            ${esAdmin?`<button class="esp-del" onclick="eliminarPersona('${e.id}')">Eliminar</button>`:''}
           </div>
         </div>`;
     });
@@ -3831,7 +3836,7 @@ function renderCalendario(){
     <div class="leyenda">
       ${cuidadoras.map((cu,i)=>{
         const p=paleta(i);
-        return `<div class="ley-item"><div class="ley-dot" style="background:${p.ava}"></div>${cu.nombre?.split(' ')[0]||'?'}</div>`;
+        return `<div class="ley-item"><div class="ley-dot" style="background:${p.ava}"></div>${escapeHtml(cu.nombre?.split(' ')[0])||'?'}</div>`;
       }).join('')}
     </div>`;
 
@@ -3852,7 +3857,7 @@ function renderCalendario(){
     html+=`
       <div class="cal-row">
         <div class="cal-persona-lbl">
-          <div class="cpl-avatar" style="background:${pal.ava}">${initials(cu.nombre)}</div>
+          <div class="cpl-avatar" style="background:${pal.ava}">${escapeHtml(initials(cu.nombre))}</div>
         </div>
         ${diasSemana.map(d=>{
           const trabaja=dias.includes(d.dia);
@@ -3874,12 +3879,12 @@ function renderCalendario(){
       ${cuidadorasHoy.length
         ? cuidadorasHoy.map((cu,i)=>`
             <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
-              <div style="width:32px;height:32px;border-radius:50%;background:${paleta(i).ava};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff">${initials(cu.nombre)}</div>
+              <div style="width:32px;height:32px;border-radius:50%;background:${paleta(i).ava};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff">${escapeHtml(initials(cu.nombre))}</div>
               <div>
-                <div style="font-size:13px;font-weight:700;color:var(--ink)">${cu.nombre}</div>
+                <div style="font-size:13px;font-weight:700;color:var(--ink)">${escapeHtml(cu.nombre)}</div>
                 <div style="font-size:12px;color:var(--ink3)">${cu.horaIni||'08:00'} – ${cu.horaFin||'18:00'} · ${TIPO_LABEL[cu.rol]||'Cuidadora'}</div>
               </div>
-              ${cu.telefono?`<a href="tel:${cu.telefono}" style="margin-left:auto;font-size:12px;color:var(--sage);font-weight:600;text-decoration:none">📞 Llamar</a>`:''}
+              ${cu.telefono?`<a href="tel:${escapeHtml(cu.telefono)}" style="margin-left:auto;font-size:12px;color:var(--sage);font-weight:600;text-decoration:none">📞 Llamar</a>`:''}
             </div>`).join('')
         : '<div style="font-size:13px;color:var(--amber)">⚠ Ninguna cuidadora asignada para hoy</div>'
       }
@@ -4019,7 +4024,9 @@ function guardarEspecialista(){
 }
 
 /* ════ ELIMINAR ════ */
-function eliminarPersona(id,nombre){
+function eliminarPersona(id){
+  const persona=DB.getEquipo().find(p=>p.id===id);
+  const nombre=persona?.nombre||'esta persona';
   confirmar(`¿Eliminar a ${nombre}?`,'Se eliminará del equipo de cuidado. Esta acción no se puede deshacer.',()=>{
     const equipo=DB.getEquipo().filter(p=>p.id!==id);
     DB.saveEquipo(equipo);
@@ -4240,14 +4247,14 @@ function renderEventoCard(ev){
         <div class="ev-dia-txt">${MESES_CORTO[m-1]}</div>
       </div>
       <div class="ev-body">
-        <div class="ev-titulo">${t.ico} ${ev.titulo||'Evento'}</div>
+        <div class="ev-titulo">${t.ico} ${escapeHtml(ev.titulo)||'Evento'}</div>
         <div class="ev-meta">
           ${ev.hora?`<span>🕐 ${ev.hora}</span>`:''}
-          ${ev.lugar?`<span>📍 ${ev.lugar}</span>`:''}
-          ${ev.acompanante?`<span>👤 ${ev.acompanante}</span>`:''}
-          ${(()=>{ const todosC=DB.getCuidadosAdmin(); if(todosC.length<=1) return ''; const nombreC=ev.cuidadoId?(DB.getCuidadoById(ev.cuidadoId)?.am?.nombre||''):'Todos'; return nombreC?`<span style="color:var(--sage);font-weight:600">🏷 ${nombreC}</span>`:''; })()}
+          ${ev.lugar?`<span>📍 ${escapeHtml(ev.lugar)}</span>`:''}
+          ${ev.acompanante?`<span>👤 ${escapeHtml(ev.acompanante)}</span>`:''}
+          ${(()=>{ const todosC=DB.getCuidadosAdmin(); if(todosC.length<=1) return ''; const nombreC=ev.cuidadoId?(DB.getCuidadoById(ev.cuidadoId)?.am?.nombre||''):'Todos'; return nombreC?`<span style="color:var(--sage);font-weight:600">🏷 ${escapeHtml(nombreC)}</span>`:''; })()}
         </div>
-        ${ev.notas?`<div style="font-size:12px;color:var(--ink3);margin-top:4px;font-style:italic">${ev.notas}</div>`:''}
+        ${ev.notas?`<div style="font-size:12px;color:var(--ink3);margin-top:4px;font-style:italic">${escapeHtml(ev.notas)}</div>`:''}
       </div>
       <div class="ev-right">
         ${ev.hora?`<div class="ev-hora">${ev.hora}</div>`:''}
@@ -4277,7 +4284,7 @@ function renderAlertas(){
         <div class="ap-ico">${icons[Math.min(d,3)]||'⏰'}</div>
         <div>
           <div class="ap-title">Próxima cita · ${d===1?'mañana':'en '+d+' días'}</div>
-          <div class="ap-desc">${t.ico} ${ev.titulo}${ev.hora?' a las '+ev.hora:''}${ev.lugar?' · '+ev.lugar:''}</div>
+          <div class="ap-desc">${t.ico} ${escapeHtml(ev.titulo)}${ev.hora?' a las '+ev.hora:''}${ev.lugar?' · '+escapeHtml(ev.lugar):''}</div>
         </div>
       </div>`;
   }).join('');
@@ -4306,7 +4313,7 @@ function renderChipsCuidadoEvento(todos, chips){
       border:2px solid ${on?'var(--sage)':'var(--line)'};
       background:${on?'var(--sage-lt)':'var(--surf)'};
       color:${on?'var(--sage)':'var(--ink3)'};cursor:pointer;font-family:inherit;margin:0 6px 6px 0">
-      ${op.nombre}
+      ${escapeHtml(op.nombre)}
     </button>`;
   }).join('');
 }
@@ -4564,7 +4571,7 @@ function renderInsumos(hogar, puedeEditar, esAdmin){
             ${catConf.ico}
           </div>
           <div style="flex:1;min-width:0">
-            <div class="insumo-nombre">${ins.nombre}</div>
+            <div class="insumo-nombre">${escapeHtml(ins.nombre)}</div>
             <div class="insumo-meta">${catConf.label} · mín. ${ins.stockMin} ${ins.unidad||'ud.'}</div>
             <div class="stock-level" style="width:80%;max-width:120px">
               <div class="sl-fill" style="width:${pct}%;background:${colorBar}"></div>
@@ -4711,14 +4718,14 @@ function renderProveedores(hogar, esAdmin){
             ${conf.ico}
           </div>
           <div style="flex:1;min-width:0">
-            <div class="prov-nombre">${p.nombre||'Sin nombre'}</div>
+            <div class="prov-nombre">${escapeHtml(p.nombre)||'Sin nombre'}</div>
             <div class="prov-tipo">${conf.label}</div>
-            ${p.horario?`<div style="font-size:11px;color:var(--ink3);margin-top:2px">🕐 ${p.horario}</div>`:''}
-            ${p.direccion?`<div style="font-size:11px;color:var(--ink3);margin-top:2px">📍 ${p.direccion}</div>`:''}
-            ${p.notas?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;font-style:italic">${p.notas}</div>`:''}
+            ${p.horario?`<div style="font-size:11px;color:var(--ink3);margin-top:2px">🕐 ${escapeHtml(p.horario)}</div>`:''}
+            ${p.direccion?`<div style="font-size:11px;color:var(--ink3);margin-top:2px">📍 ${escapeHtml(p.direccion)}</div>`:''}
+            ${p.notas?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;font-style:italic">${escapeHtml(p.notas)}</div>`:''}
           </div>
           <div class="prov-right">
-            ${p.telefono?`<a href="tel:${p.telefono}" class="prov-call">📞 Llamar</a>`:''}
+            ${p.telefono?`<a href="tel:${escapeHtml(p.telefono)}" class="prov-call">📞 Llamar</a>`:''}
             ${esAdmin?`<button class="prov-del" onclick="editarProveedor('${p.id}')">✏ Editar</button>`:''}
           </div>
         </div>`;
@@ -4975,7 +4982,7 @@ function renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin){
         <div class="gasto-row" onclick="editarGasto('${g.id}')" style="cursor:pointer">
           <div class="gasto-ico" style="background:${conf.bg}">${conf.ico}</div>
           <div style="flex:1;min-width:0">
-            <div class="gasto-desc">${g.desc||'Sin descripción'}</div>
+            <div class="gasto-desc">${escapeHtml(g.desc)||'Sin descripción'}</div>
             <div class="gasto-meta">${conf.label}${g.boleta?' · 📎 Boleta':''}</div>
             ${aprobBadge?`<div style="margin-top:4px">${aprobBadge}</div>`:''}
           </div>
@@ -5102,10 +5109,10 @@ function renderRendicion(gastos, presupuesto, esFamiliar, esAdmin){
         <div class="aprobacion-card">
           <div class="ac-header">
             <span style="font-size:16px">${conf.ico}</span>
-            <div class="ac-gasto-desc">${g.desc}</div>
+            <div class="ac-gasto-desc">${escapeHtml(g.desc)}</div>
             <div class="ac-monto">${fmt(g.monto)}</div>
           </div>
-          <div style="font-size:11px;color:var(--ink3);padding:6px 14px;border-bottom:1px solid var(--line)">${conf.label}${g.nota?' · '+g.nota:''} · ${g.fecha||'—'}</div>
+          <div style="font-size:11px;color:var(--ink3);padding:6px 14px;border-bottom:1px solid var(--line)">${conf.label}${g.nota?' · '+escapeHtml(g.nota):''} · ${g.fecha||'—'}</div>
           ${esFamiliar||esAdmin?`
           <div class="ac-btns">
             <button class="ac-btn ac-aprobar" onclick="aprobarGasto('${g.id}',true)">✓ Aprobar</button>
@@ -5122,7 +5129,7 @@ function renderRendicion(gastos, presupuesto, esFamiliar, esAdmin){
       const conf=CATS[g.cat]||CATS.otro;
       html+=`<div class="gasto-row" style="cursor:default">
         <div class="gasto-ico" style="background:${conf.bg}">${conf.ico}</div>
-        <div style="flex:1"><div class="gasto-desc">${g.desc}</div><div class="gasto-meta">${conf.label} · ${g.fecha||'—'}</div></div>
+        <div style="flex:1"><div class="gasto-desc">${escapeHtml(g.desc)}</div><div class="gasto-meta">${conf.label} · ${g.fecha||'—'}</div></div>
         <div class="gasto-monto">${fmt(g.monto)}</div>
         <span class="badge b-ok">✓</span>
       </div>`;
@@ -5329,7 +5336,7 @@ function renderHub(){
   const body=$('inf-hub-body');
   let html=`
     <div class="gen-hero">
-      <div class="gh-label">${am.nombre||'tu familiar'} · ${mesLabel(mesHoy)}</div>
+      <div class="gh-label">${escapeHtml(am.nombre)||'tu familiar'} · ${mesLabel(mesHoy)}</div>
       <div class="gh-title">Informe mensual con IA</div>
       <div class="gh-pills">
         <div class="gh-pill"><div class="gh-dot" style="background:#A8F0D8"></div>${diasConRegistro} días en bitácora</div>
@@ -5789,7 +5796,7 @@ function abrirSheetInvitacion(){
   } else {
     wrap.style.display = 'block';
     sel.innerHTML = cuidados.map(c =>
-      `<option value="${c.id}">${c.am?.nombre||'Sin nombre'}</option>`
+      `<option value="${c.id}">${escapeHtml(c.am?.nombre)||'Sin nombre'}</option>`
     ).join('');
   }
 
@@ -5912,9 +5919,9 @@ function renderInvitaciones(){
             ${ROL_EMOJI[u.rol]||'👤'}
           </div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:14px;font-weight:700;color:var(--ink)">${u.nombre}</div>
+            <div style="font-size:14px;font-weight:700;color:var(--ink)">${escapeHtml(u.nombre)}</div>
             <div style="font-size:12px;color:var(--ink3);margin-top:2px">${ROL_LABEL[u.rol]||u.rol}</div>
-            ${cuidadoU && cuidados.length>1 ? `<div style="font-size:11px;color:var(--sage);margin-top:2px">🏷 ${cuidadoU.am?.nombre||'—'}</div>` : ''}
+            ${cuidadoU && cuidados.length>1 ? `<div style="font-size:11px;color:var(--sage);margin-top:2px">🏷 ${escapeHtml(cuidadoU.am?.nombre)||'—'}</div>` : ''}
           </div>
           ${esAdmin ? `<button onclick="revocarAcceso('${u.id}')"
             style="padding:6px 12px;border-radius:var(--rs);background:var(--red-lt);
@@ -5945,7 +5952,7 @@ function renderInvitaciones(){
           ⏳
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:700;color:var(--ink)">${inv.nombreInv}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink)">${escapeHtml(inv.nombreInv)}</div>
           <div style="font-size:12px;color:var(--ink3);margin-top:2px">
             ${ROL_LABEL[inv.rol]||inv.rol} · Código:
             <span style="font-family:monospace;font-weight:800;letter-spacing:2px;color:var(--sage)">${inv.codigo}</span>
@@ -5953,10 +5960,10 @@ function renderInvitaciones(){
           <div style="font-size:11px;color:${diasRestantes<=1?'var(--red)':'var(--ink3)'};margin-top:2px">
             ${diasRestantes > 0 ? `Expira en ${diasRestantes} día${diasRestantes!==1?'s':''}` : '⚠ Expirado'}
           </div>
-          ${cuidadoInv && cuidados.length>1 ? `<div style="font-size:11px;color:var(--sage);margin-top:2px">🏷 ${cuidadoInv.am?.nombre||'—'}</div>` : ''}
+          ${cuidadoInv && cuidados.length>1 ? `<div style="font-size:11px;color:var(--sage);margin-top:2px">🏷 ${escapeHtml(cuidadoInv.am?.nombre)||'—'}</div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-          <button onclick="reenviarInvitacion('${inv.codigo}','${inv.nombreInv}')"
+          <button onclick="reenviarInvitacion('${inv.codigo}')"
             style="padding:5px 10px;border-radius:var(--rs);background:var(--surf);
             border:1.5px solid var(--sage-md);color:var(--sage);font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap">
             Reenviar
@@ -6010,8 +6017,10 @@ function cancelarInvitacion(invId){
 }
 
 /* Reenviar / compartir el código de una invitación existente */
-function reenviarInvitacion(codigo, nombre){
+function reenviarInvitacion(codigo){
   _invCodigoActual = codigo;
+  const inv = DB.getInvs().find(i=>i.codigo===codigo);
+  const nombre = inv?.nombreInv || 'ahí';
   const c = DB.getCuidado();
   const nombreAM = c?.am?.nombre || 'tu familiar';
   const texto = encodeURIComponent(
