@@ -16,14 +16,17 @@
 const _cache = {};
 
 // Helper: guardar en Firestore de forma no bloqueante
+// Devuelve true si el guardado llegó al servidor, false si falló (sin lanzar excepción)
 async function _fsSet(path, data) {
   try {
     const fb = window._fb;
-    if (!fb) return; // Firebase aún no cargó
+    if (!fb) return false; // Firebase aún no cargó
     const ref = fb.doc(fb.db, ...path.split('/'));
     await fb.setDoc(ref, data, { merge: false });
+    return true;
   } catch(e) {
     console.warn('Firestore write error:', e.message);
+    return false;
   }
 }
 
@@ -54,10 +57,11 @@ async function _fsDelete(path) {
 }
 
 // Cargar todos los datos del hogar en el caché (llamado tras login)
+// Devuelve true si la carga fue exitosa, false si falló (sin lanzar excepción)
 async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
   try {
     const fb = window._fb;
-    if (!fb) return;
+    if (!fb) return false;
 
     // Cargar usuarios del hogar
     const usersSnap = await fb.getDocs(
@@ -89,8 +93,10 @@ async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
     }
 
     console.log('✓ Datos cargados desde Firestore');
+    return true;
   } catch(e) {
     console.warn('Error cargando datos:', e.message);
+    return false;
   }
 }
 
@@ -412,8 +418,11 @@ function hacerLogin(){
         return;
       }
       const adminId=uData.adminId||uid;
-      await _cargarDatosFirestore(uid, uData.cuidadoId, adminId);
+      const cargaOk=await _cargarDatosFirestore(uid, uData.cuidadoId, adminId);
       DB.setSesion({userId:uid,nombre:uData.nombre,email:uData.email,rol:uData.rol,cuidadoId:uData.cuidadoId});
+      if(!cargaOk){
+        toast('⚠ No se pudo sincronizar con el servidor. Verifica tu conexión y reintenta desde el inicio si faltan datos.','err',6000);
+      }
       // Mostrar feedback de éxito antes de navegar
       if($('login-ok')) $('login-ok').style.display='block';
       setTimeout(()=>{ mostrarBienvenida(uData); }, 800);
@@ -460,13 +469,13 @@ function registrarAdmin(){
 
       // Crear usuario en Firestore
       const userData={id:uid,nombre,email,rol:'admin',cuidadoId:cid,adminId:uid,creado:hoy()};
-      await _fsSet('usuarios/'+uid, userData);
-      await _fsSet('cuidados/'+cid, cuidado);
+      const ok1=await _fsSet('usuarios/'+uid, userData);
+      const ok2=await _fsSet('cuidados/'+cid, cuidado);
       // Compartido vacío
       const comp={alimentacion:{plan:{},compras:[],restricciones:[]},
         hogar:{insumos:[],proveedores:[]},
         gastos:[],presupuesto:150000,presupuestoCats:{},equipo:[],eventos:[]};
-      await _fsSet('compartido/'+uid, comp);
+      const ok3=await _fsSet('compartido/'+uid, comp);
 
       // Cargar en caché
       _cache['raiz_users']=[userData];
@@ -474,6 +483,10 @@ function registrarAdmin(){
       _cache['raiz_compartido_'+uid]=comp;
       _cache['raiz_invitaciones']=[];
       DB.setSesion({userId:uid,nombre,email,rol:'admin',cuidadoId:cid});
+
+      if(!(ok1&&ok2&&ok3)){
+        toast('⚠ Tu cuenta se creó, pero no se pudo sincronizar con el servidor. Solo funcionará en este dispositivo hasta que reintentes.','err',6000);
+      }
 
       // Actualizar onboarding con nombre
       const ns=$('onb-nombre-salud'); if(ns) ns.textContent=nombre.split(' ')[0];
@@ -754,11 +767,16 @@ async function guardarOnbSalud(){
   // No precargar medicamentos — el usuario los ingresará en el módulo de Salud
   // Persistir explícitamente todo en Firestore al terminar el onboarding
   const s=DB.getSesion();
+  let syncOk=true;
   if(s){
-    await _fsSet('cuidados/'+c.id, c).catch(()=>{});
-    await _fsSet('compartido/'+s.userId, comp).catch(()=>{});
+    const ok1=await _fsSet('cuidados/'+c.id, c);
+    const ok2=await _fsSet('compartido/'+s.userId, comp);
+    syncOk=ok1&&ok2;
   }
   DB.saveCuidado(c);
+  if(!syncOk){
+    toast('⚠ Se guardó en este dispositivo, pero no se pudo sincronizar con el servidor. No estará disponible en otros dispositivos hasta que reintentes.','err',6000);
+  }
   $('act-nombre').textContent=c.am.nombre||'tu familiar';
   $('act-meds').textContent=c.meds.length||0;
   $('act-cond').textContent=c.am.condiciones?.length||0;
