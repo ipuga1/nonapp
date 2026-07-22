@@ -725,7 +725,17 @@ function guardarOnbAM(){
   if(!nombre){ toast('Escribe el nombre de tu familiar','err'); return; }
   const fnac=$('onb-fnac').value;
   const edad=calcularEdad(fnac);
-  const c=DB.getCuidado(); if(!c) return;
+  let c=DB.getCuidado();
+  if(!c){
+    // No existe un cuidado local (p.ej. nunca llegó a guardarse en Firestore
+    // y se perdió al recargar la página) — crear uno vacío para no quedar
+    // pegado en este paso sin ningún aviso.
+    const s=DB.getSesion(); if(!s) return;
+    c={ id: s.cuidadoId||('c-'+s.userId+'-'+Date.now()), adminId: s.userId, creado: hoy(),
+      am:{nombre:'',edad:0,fechaNacimiento:'',rut:'',relacion:'',condiciones:[],alergias:[],medico:'',restricciones:[]},
+      meds:[], bitacoras:[], confirmaciones:{}, informes:[] };
+    if(!s.cuidadoId) DB.setSesion({...s, cuidadoId:c.id});
+  }
   c.am={...c.am,
     nombre,
     fechaNacimiento: fnac||'',
@@ -1230,7 +1240,15 @@ window._raizOnAuth = async (firebaseUser) => {
     // Verificar que los datos llegaron correctamente
     const cuidados = DB.getCuidados();
     if(cuidados.length === 0 && uData.rol === 'admin'){
-      // Firestore está vacío — llevar al onboarding para que complete el registro
+      // Firestore está vacío (o el cuidado nunca llegó a guardarse) — crear un
+      // cuidado vacío local con el mismo id para que el onboarding tenga algo
+      // que completar. Sin esto, guardarOnbAM() no encuentra ningún cuidado
+      // y se queda pegado en el paso 1 sin ningún aviso.
+      DB.saveCuidado({
+        id: uData.cuidadoId, adminId: adminId, creado: hoy(),
+        am:{nombre:'',edad:0,fechaNacimiento:'',rut:'',relacion:'',condiciones:[],alergias:[],medico:'',restricciones:[]},
+        meds:[], bitacoras:[], confirmaciones:{}, informes:[],
+      });
       const sbEl = document.getElementById('sidebar');
       if(sbEl) sbEl.style.display = '';
       renderSidebar();
