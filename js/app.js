@@ -557,7 +557,7 @@ function validarCodigo(){
     _invActual=inv;
     // Cargar datos básicos del hogar para mostrar el nombre del familiar
     _fsGet('cuidados/'+inv.cuidadoId).then(c=>{
-      if(c && $('inv-bienvenida-nombre')) $('inv-bienvenida-nombre').textContent=c.am?.nombre||'tu familiar';
+      if(c && $('inv-bienvenida-nombre')) $('inv-bienvenida-nombre').textContent=c.am?.nombre||'la persona cuidada';
       if($('inv-bienvenida-rol')) $('inv-bienvenida-rol').textContent=ROL_LABEL[inv.rol]||inv.rol;
       navTo('s-registro-invitado');
     });
@@ -622,7 +622,7 @@ function mostrarBienvenida(u){
   b.textContent=(ROL_EMOJI[r]||'👤')+' '+ROL_LABEL[r];
   $('bv-rol-desc').textContent=ROL_DESC[r]||'';
   if(c?.am?.nombre){ $('bv-am-nombre').textContent=c.am.nombre+' '+(c.am.apellido||''); $('bv-am-meta').textContent=(c.am.edad||'—')+' años · Cuidadora: '+(nombreCuidadoraPrincipal(c)||'Por configurar'); }
-  $('bv-ia-txt').textContent=r==='admin'?`Registra la bitácora de hoy para que la IA tenga su primer dato.`:`Recibirás actualizaciones del cuidado de ${c?.am?.nombre||'tu familiar'}.`;
+  $('bv-ia-txt').textContent=r==='admin'?`Registra la bitácora de hoy para que la IA tenga su primer dato.`:`Recibirás actualizaciones del cuidado de ${c?.am?.nombre||'la persona cuidada'}.`;
 // El sidebar solo se muestra en desktop (≥768px via @media CSS)
   // No modificar el inline style — el CSS lo controla
   renderSidebar();
@@ -715,7 +715,7 @@ function eliminarCuidado(cid){
   const s=DB.getSesion(); if(!s||s.rol!=='admin') return;
   if(cid===s.cuidadoId){ toast('No puedes eliminar el cuidado activo','err'); return; }
   const c=DB.getCuidadoById(cid);
-  const nombre=c?.am?.nombre||'este familiar';
+  const nombre=c?.am?.nombre||'esta persona';
   confirmar(
     `¿Eliminar el cuidado de ${nombre}?`,
     'Se eliminarán todos sus datos: bitácora, medicamentos e informes. Esta acción no se puede deshacer.',
@@ -732,7 +732,7 @@ function eliminarCuidado(cid){
 /* ════ MÓDULO 2 — ONBOARDING ════ */
 function guardarOnbAM(){
   const nombre=$('onb-nombre').value.trim();
-  if(!nombre){ toast('Escribe el nombre de tu familiar','err'); return; }
+  if(!nombre){ toast('Escribe el nombre de la persona cuidada','err'); return; }
   const fnac=$('onb-fnac').value;
   const edad=calcularEdad(fnac);
   let c=DB.getCuidado();
@@ -797,7 +797,7 @@ async function guardarOnbSalud(){
   if(!syncOk){
     toast('⚠ Se guardó en este dispositivo, pero no se pudo sincronizar con el servidor. No estará disponible en otros dispositivos hasta que reintentes.','err',6000);
   }
-  $('act-nombre').textContent=c.am.nombre||'tu familiar';
+  $('act-nombre').textContent=c.am.nombre||'la persona cuidada';
   $('act-meds').textContent=c.meds.length||0;
   $('act-cond').textContent=c.am.condiciones?.length||0;
   $('act-cuid').textContent=cuidadoras.length||1;
@@ -826,7 +826,7 @@ function renderHome(rol){
         bodyEl.innerHTML=`<div class="empty" style="padding:40px 18px">
           <div class="empty-ico">🌿</div>
           <div class="empty-title">Completa tu perfil</div>
-          <div class="empty-txt">Para comenzar, completa los datos de tu familiar.<br>Tarda menos de 2 minutos.</div>
+          <div class="empty-txt">Para comenzar, completa los datos de la persona cuidada.<br>Tarda menos de 2 minutos.</div>
           <button class="btn btn-p" style="margin-top:20px" onclick="navTo('s-onb-am')">Agregar familiar →</button>
           <button class="btn btn-s" style="margin-top:8px" onclick="recargarDesdeFB()">↺ Reintentar sincronización</button>
         </div>`;
@@ -870,7 +870,7 @@ function renderHome(rol){
   };
 
   const hero=`<div class="hero-card" onclick="navTo('s-perfil')">
-    <div class="hc-name">${escapeHtml(am.nombre)||'tu familiar'} · ${am.edad||'—'} años</div>
+    <div class="hc-name">${escapeHtml(am.nombre)||'la persona cuidada'} · ${am.edad||'—'} años</div>
     <div class="hc-meta">Cuidadora: ${escapeHtml(nombreCuidadoraPrincipal(c))||'Por configurar'} · turno activo</div>
     <div class="hc-pills">
       <div class="hc-pill"><div class="hc-dot" style="background:${bitaHoy?'#A8F0D8':'#FFD97D'}"></div>${bitaHoy?'Bitácora registrada':'Sin bitácora hoy'}</div>
@@ -936,7 +936,7 @@ function renderHome(rol){
 
     // Acciones rápidas del Cuidado activo
     adminHtml+=`
-      <div class="slbl">Acciones rápidas · ${escapeHtml(am.nombre)||'tu familiar'}</div>
+      <div class="slbl">Acciones rápidas · ${escapeHtml(am.nombre)||'la persona cuidada'}</div>
       <div class="qa-grid">
         <div class="qa p" onclick="navTo('s-bita-new')"><div class="qa-ico">📋</div><div class="qa-lbl">Nueva bitácora</div><div class="qa-sub">${bitaHoy?'Registro adicional':'Registrar el día'}</div></div>
         <div class="qa" onclick="navTo('s-salud-hub')"><div class="qa-ico">💊</div><div class="qa-lbl">Salud</div><div class="qa-sub">${medsHoy.length>0?medsHoy.length+' pendientes hoy':'Todos confirmados ✓'}</div></div>
@@ -1281,7 +1281,7 @@ window._raizOnAuth = async (firebaseUser) => {
       if(sbEl) sbEl.style.display = '';
       renderSidebar();
       navTo('s-onb-am');
-      toast('Completa el perfil de tu familiar para comenzar', 'ok');
+      toast('Completa el perfil de la persona cuidada para comenzar', 'ok');
       return;
     }
     mostrarBienvenida(uData);
@@ -1463,7 +1463,7 @@ function renderLista(){
   const am=cuidado.am||{};
 
   // Sub-titulo con nombre del AM
-  const sub=`${am.nombre||'tu familiar'} · historial completo`;
+  const sub=`${am.nombre||'la persona cuidada'} · historial completo`;
   if($('bita-list-sub')) $('bita-list-sub').textContent=sub;
   if($('bita-list-sub-d')) $('bita-list-sub-d').textContent=sub;
 
@@ -1506,7 +1506,7 @@ function renderLista(){
         <div class="empty-ico">📋</div>
         <div class="empty-title">${ST.bitacora.filtro==='hoy'?'Sin registros hoy':'Sin registros'}</div>
         <div class="empty-txt">${puedeEscribir
-          ? 'Toca ＋ para registrar el día de '+( am.nombre||'tu familiar')+'.'
+          ? 'Toca ＋ para registrar el día de '+( am.nombre||'la persona cuidada')+'.'
           : 'El administrador o la cuidadora aún no han registrado nada.'}</div>
       </div>`;
     return;
@@ -1838,7 +1838,7 @@ function guardarBitacora(){
     // ── GENERACIÓN DEL RESUMEN IA ──
     // Simula lo que haría Claude API en producción.
     // Construye una frase natural con todos los datos.
-    registro.resumen = generarResumenIA(registro, am.nombre||'tu familiar');
+    registro.resumen = generarResumenIA(registro, am.nombre||'la persona cuidada');
 
     // Guardar en la lista de bitácoras
     if(!Array.isArray(cuidado.bitacoras)) cuidado.bitacoras=[];
@@ -2044,7 +2044,7 @@ function renderTab(tab){
   const puedeEditar=['admin','cuidadora'].includes(sesion.rol);
   const esAdmin=sesion.rol==='admin';
   const fab=$('salud-fab');
-  const edadDisplay=calcularEdad(am.fechaNacimiento)||am.edad||'—'; const sub=`${am.nombre||'tu familiar'} · ${edadDisplay} años`;
+  const edadDisplay=calcularEdad(am.fechaNacimiento)||am.edad||'—'; const sub=`${am.nombre||'la persona cuidada'} · ${edadDisplay} años`;
   if($('salud-sub')) $('salud-sub').textContent=sub;
   if($('salud-sub-d')) $('salud-sub-d').textContent=sub;
 
@@ -2968,7 +2968,7 @@ function renderTabAlim(tab){
   const fab=$('alim-fab');
   const alim=DB.getAlim();
   const am=c.am||{};
-  const sub=`${am.nombre||'tu familiar'}`;
+  const sub=`${am.nombre||'la persona cuidada'}`;
   if($('alim-sub')) $('alim-sub').textContent=sub;
   if($('alim-sub-d')) $('alim-sub-d').textContent=sub;
 
@@ -3469,7 +3469,7 @@ function renderCompras(alim, puede){
   }
 
   if(!compras.length){
-    html=`<div class="empty"><div class="empty-ico">🛒</div><div class="empty-title">Lista de compras vacía</div><div class="empty-txt">${puede?'Agrega los productos que necesitas comprar para el cuidado de tu familiar.':'El administrador aún no ha creado la lista de compras.'}</div></div>`;
+    html=`<div class="empty"><div class="empty-ico">🛒</div><div class="empty-title">Lista de compras vacía</div><div class="empty-txt">${puede?'Agrega los productos que necesitas comprar para el cuidado de la persona cuidada.':'El administrador aún no ha creado la lista de compras.'}</div></div>`;
     if(puede){
       html+=`<div style="padding:0 18px 16px;display:flex;gap:10px">
         <button class="btn btn-p" onclick="generarListaIA()">✦ Sugerir con IA</button>
@@ -3521,7 +3521,7 @@ function renderCompras(alim, puede){
   }
 
   if(puede){
-    html+=`<div class="ia" style="margin:14px 16px 80px"><div class="ia-ico">✦</div><div>Toca "Sugerir con IA" para que la IA genere la lista basada en el plan semanal y las restricciones de ${escapeHtml(DB.getCuidado()?.am?.nombre)||'tu familiar'}.</div></div>`;
+    html+=`<div class="ia" style="margin:14px 16px 80px"><div class="ia-ico">✦</div><div>Toca "Sugerir con IA" para que la IA genere la lista basada en el plan semanal y las restricciones de ${escapeHtml(DB.getCuidado()?.am?.nombre)||'la persona cuidada'}.</div></div>`;
   } else {
     html+=`<div style="height:80px"></div>`;
   }
@@ -3699,7 +3699,7 @@ function renderTabEquip(tab){
   const am=c.am||{};
   const esAdmin=s.rol==='admin';
   const fab=$('equipo-fab');
-  const sub=`${am.nombre||'tu familiar'} · ${comp.equipo?.length||0} personas en el equipo`;
+  const sub=`${am.nombre||'la persona cuidada'} · ${comp.equipo?.length||0} personas en el equipo`;
   if($('equipo-sub')) $('equipo-sub').textContent=sub;
   if($('equipo-sub-d')) $('equipo-sub-d').textContent=sub;
 
@@ -4157,7 +4157,7 @@ function renderAgenda(){
   if(!ST.agenda.diaSeleccionado) ST.agenda.diaSeleccionado=hoy();
 
   // Sub-título
-  const sub=`${am.nombre||'tu familiar'} · agenda de citas`;
+  const sub=`${am.nombre||'la persona cuidada'} · agenda de citas`;
   if($('agenda-sub')) $('agenda-sub').textContent=sub;
   if($('agenda-sub-d')) $('agenda-sub-d').textContent=sub;
 
@@ -4577,7 +4577,7 @@ function renderTabHogar(tab){
   const fab=$('hogar-fab');
   const am=c.am||{};
   const hogar=DB.getHogar();
-  const sub=`${am.nombre||'tu familiar'} · hogar`;
+  const sub=`${am.nombre||'la persona cuidada'} · hogar`;
   if($('hogar-sub')) $('hogar-sub').textContent=sub;
   if($('hogar-sub-d')) $('hogar-sub-d').textContent=sub;
 
@@ -4943,8 +4943,8 @@ function renderTabGastos(tab){
   const am=c.am||{};
   const presupuesto=comp.presupuesto||150000;
 
-  if($('gastos-sub')) $('gastos-sub').textContent=`${am.nombre||'tu familiar'} · ${mesLabel(ST.gastos.mesVista)}`;
-  if($('gastos-sub-d')) $('gastos-sub-d').textContent=`${am.nombre||'tu familiar'} · ${mesLabel(ST.gastos.mesVista)}`;
+  if($('gastos-sub')) $('gastos-sub').textContent=`${am.nombre||'la persona cuidada'} · ${mesLabel(ST.gastos.mesVista)}`;
+  if($('gastos-sub-d')) $('gastos-sub-d').textContent=`${am.nombre||'la persona cuidada'} · ${mesLabel(ST.gastos.mesVista)}`;
 
   const deskBtn=(label,fn)=>`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="${fn}">${label}</button>`;
 
@@ -5400,7 +5400,7 @@ function renderHub(){
   const body=$('inf-hub-body');
   let html=`
     <div class="gen-hero">
-      <div class="gh-label">${escapeHtml(am.nombre)||'tu familiar'} · ${mesLabel(mesHoy)}</div>
+      <div class="gh-label">${escapeHtml(am.nombre)||'la persona cuidada'} · ${mesLabel(mesHoy)}</div>
       <div class="gh-title">Informe mensual con IA</div>
       <div class="gh-pills">
         <div class="gh-pill"><div class="gh-dot" style="background:#A8F0D8"></div>${diasConRegistro} días en bitácora</div>
@@ -5565,7 +5565,7 @@ function generarInformeIA(){
 }
 
 function generarResumenFamiliar(am, diasR, diasT, presion, pctComio, animo, gastos, pres, eventos, meds){
-  const nombre=am.nombre||'tu familiar';
+  const nombre=am.nombre||'la persona cuidada';
   const mes=MESES[new Date().getMonth()];
   let txt=`Durante ${mes}, ${nombre} estuvo bajo cuidado durante ${diasR} de ${diasT} días del mes.\n\n`;
 
@@ -5765,7 +5765,7 @@ function seccionIco(titulo){
 function compartirInformeWA(){
   const inf=ST.informe.informeActual; if(!inf) return;
   const am=inf.am||{};
-  const texto=`🌿 *Informe Mensual · ${mesLabel(inf.mes)}*\n*${am.nombre||'tu familiar'} · ${am.edad||'—'} años*\n\n${inf.resumenFamiliar?.replace(/\*\*/g,'')||'—'}\n\n_Generado por Raíz_`;
+  const texto=`🌿 *Informe Mensual · ${mesLabel(inf.mes)}*\n*${am.nombre||'la persona cuidada'} · ${am.edad||'—'} años*\n\n${inf.resumenFamiliar?.replace(/\*\*/g,'')||'—'}\n\n_Generado por Raíz_`;
   window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank');
   // Marcar como enviado
   marcarInformeEnviado(inf.id);
@@ -5926,7 +5926,7 @@ function crearInvitacion(){
 function copiarCodigoInv(){
   if(!_invCodigoActual) return;
   const c = DB.getCuidado();
-  const nombre = c?.am?.nombre || 'tu familiar';
+  const nombre = c?.am?.nombre || 'la persona cuidada';
   const texto = `Te invito a usar Raíz para coordinar el cuidado de ${nombre}.\n\nCódigo de acceso: ${_invCodigoActual}\n\nDescarga la app en raiz.app e ingresa este código para unirte.`;
   navigator.clipboard.writeText(texto).then(() => toast('✓ Código copiado','ok'));
 }
@@ -5935,7 +5935,7 @@ function copiarCodigoInv(){
 function compartirCodigoInv(){
   if(!_invCodigoActual) return;
   const c = DB.getCuidado();
-  const nombre = c?.am?.nombre || 'tu familiar';
+  const nombre = c?.am?.nombre || 'la persona cuidada';
   const texto = encodeURIComponent(
     `Te invito a usar Raíz para coordinar el cuidado de ${nombre}.\n\nCódigo de acceso: *${_invCodigoActual}*\n\nDescarga la app en raiz.app e ingresa este código.`
   );
@@ -5952,7 +5952,7 @@ function renderInvitaciones(){
 
   // Actualizar sub-título
   const c = DB.getCuidado();
-  const sub = `${c?.am?.nombre||'tu familiar'} · ${esAdmin?'administra accesos':'acceso compartido'}`;
+  const sub = `${c?.am?.nombre||'la persona cuidada'} · ${esAdmin?'administra accesos':'acceso compartido'}`;
   if($('inv-sub')) $('inv-sub').textContent = sub;
   if($('inv-sub-d')) $('inv-sub-d').textContent = sub;
 
@@ -6086,7 +6086,7 @@ function reenviarInvitacion(codigo){
   const inv = DB.getInvs().find(i=>i.codigo===codigo);
   const nombre = inv?.nombreInv || 'ahí';
   const c = DB.getCuidado();
-  const nombreAM = c?.am?.nombre || 'tu familiar';
+  const nombreAM = c?.am?.nombre || 'la persona cuidada';
   const texto = encodeURIComponent(
     `Hola ${nombre}, te invito a usar Raíz para coordinar el cuidado de ${nombreAM}.\n\nTu código de acceso es: *${codigo}*\n\nDescarga la app en raiz.app e ingresa este código.`
   );

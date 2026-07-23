@@ -46,7 +46,7 @@
   <div class="auth-splash" style="flex:1;min-height:0;">
     <div class="splash-logo">🌿</div>
     <div class="splash-name">Raíz</div>
-    <div class="splash-tag">El sistema operativo del cuidado<br>de tu familiar mayor</div>
+    <div class="splash-tag">El sistema operativo del cuidado<br>de personas mayores</div>
     <div class="splash-pill"><span>✦</span> El cuidado organizado, en un solo lugar</div>
   </div>
   <div style="flex-shrink:0;padding:20px 20px 0;display:flex;flex-direction:column;gap:12px;background:var(--white);">
@@ -97,7 +97,7 @@
   <div class="scroll" style="padding:16px 22px">
     <div class="rol-card sel" id="tipo-admin" onclick="selTipoRegistro('admin')">
       <div class="rol-ico">👩‍💼</div>
-      <div style="flex:1"><div class="rol-name">Soy el administrador del cuidado</div><div class="rol-desc">Gestiono el día a día. Quiero crear una cuenta nueva para mi familiar.</div></div>
+      <div style="flex:1"><div class="rol-name">Soy el administrador del cuidado</div><div class="rol-desc">Gestiono el día a día. Quiero crear una cuenta nueva para la persona que cuido.</div></div>
       <div class="rol-chk on" id="tipo-chk-admin">✓</div>
     </div>
     <div class="rol-card" id="tipo-invitado" onclick="selTipoRegistro('invitado')">
@@ -216,12 +216,12 @@
   </div>
   <div class="scroll" style="padding:0 20px">
     <div style="height:16px"></div>
-    <div class="prog"><div class="prog-track"><div class="prog-fill" style="width:33%"></div></div><div class="prog-meta"><span>Paso 1 de 3</span><span>Perfil del familiar</span></div></div>
+    <div class="prog"><div class="prog-track"><div class="prog-fill" style="width:33%"></div></div><div class="prog-meta"><span>Paso 1 de 3</span><span>Perfil de la persona cuidada</span></div></div>
     <div style="height:16px"></div>
-    <div class="field"><div class="flbl">Nombre de tu familiar</div><input class="fin" id="onb-nombre" placeholder="Ej: Marta" value="Marta"></div>
+    <div class="field"><div class="flbl">Nombre persona cuidada</div><input class="fin" id="onb-nombre" placeholder="Ej: Marta" value="Marta"></div>
     <div class="g2">
       <div class="field"><div class="flbl">Fecha de nacimiento</div><input class="fin" id="onb-fnac" type="date" placeholder="DD/MM/AAAA"></div>
-      <div class="field"><div class="flbl">Relación</div><select class="fin" id="onb-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro familiar</option></select></div>
+      <div class="field"><div class="flbl">Relación</div><select class="fin" id="onb-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro familiar</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
     </div>
     <div class="field"><div class="flbl">RUT</div><input class="fin" id="onb-rut" placeholder="Ej: 12.345.678-9" oninput="formatearRut(this)"><div class="fhint">Con puntos y guión</div></div>
     <div class="field"><div class="flbl">Tu mayor preocupación</div>
@@ -232,7 +232,7 @@
         <div class="chip" onclick="this.classList.toggle('on')">Gastos</div>
       </div>
     </div>
-    <div class="ia"><div class="ia-ico">✦</div><div>Puedes agregar más familiares después desde el panel principal. Cada uno tiene su propia bitácora, medicamentos y gastos.</div></div>
+    <div class="ia"><div class="ia-ico">✦</div><div>Puedes agregar más personas cuidadas después desde el panel principal. Cada una tiene su propia bitácora, medicamentos y gastos.</div></div>
   </div>
   <div class="btns"><button class="btn btn-p" onclick="guardarOnbAM()">Continuar →</button></div>
 </div>
@@ -241,7 +241,7 @@
 <div class="screen" id="s-onb-salud">
   <div class="onb-hero">
     <div class="oh-logo">🏥</div>
-    <div class="oh-title">Salud de <span id="onb-nombre-salud">tu familiar</span></div>
+    <div class="oh-title">Salud de <span id="onb-nombre-salud">la persona cuidada</span></div>
     <div class="oh-sub">Condiciones y equipo médico.</div>
   </div>
   <div class="scroll" style="padding:0 20px">
@@ -287,7 +287,7 @@
   <div class="act">
     <div class="act-ico">🌿</div>
     <div class="act-title">¡Todo listo!</div>
-    <div class="act-sub">El cuidado de <strong id="act-nombre" style="color:#fff">tu familiar</strong> ya está organizado en Raíz.</div>
+    <div class="act-sub">El cuidado de <strong id="act-nombre" style="color:#fff">esta persona</strong> ya está organizado en Raíz.</div>
     <div class="act-stats">
       <div><div class="as-n" id="act-meds">0</div><div class="as-l">Medicamentos</div></div>
       <div><div class="as-n" id="act-cond">0</div><div class="as-l">Condiciones</div></div>
@@ -296,7 +296,7 @@
   </div>
   <div class="btns" style="background:var(--white)">
     <button class="btn btn-p" onclick="irAlHome()">Ir al panel →</button>
-    <button class="btn btn-s" onclick="crearNuevoCuidado()">＋ Agregar otro familiar cuidado</button>
+    <button class="btn btn-s" onclick="crearNuevoCuidado()">＋ Agregar otra persona cuidada</button>
   </div>
   <div style="padding:0 18px 20px">
     <div class="ia"><div class="ia-ico">✦</div><div><strong>Próximos pasos:</strong> Agrega los medicamentos en el módulo de Salud, registra la primera bitácora del día e invita a familiares desde el menú.</div></div>
@@ -398,13 +398,13 @@
   <div class="scroll">
     <div class="pf-hero" id="perfil-hero"></div>
     <div id="perfil-am-section" style="display:none">
-      <div class="slbl">Familiar cuidado activo</div>
+      <div class="slbl">Persona cuidada activa</div>
       <div style="padding:0 18px 14px;background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
         <div style="display:flex;flex-direction:column;gap:12px;padding-top:14px">
-          <div class="field" style="margin:0"><div class="flbl">Nombre</div><input class="fin" id="pf-am-nombre" placeholder="Nombre del familiar"></div>
+          <div class="field" style="margin:0"><div class="flbl">Nombre</div><input class="fin" id="pf-am-nombre" placeholder="Nombre de la persona cuidada"></div>
           <div class="g2">
             <div class="field" style="margin:0"><div class="flbl">Fecha de nacimiento</div><input class="fin" id="pf-am-fnac" type="date"></div>
-            <div class="field" style="margin:0"><div class="flbl">Relación</div><select class="fin" id="pf-am-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro</option></select></div>
+            <div class="field" style="margin:0"><div class="flbl">Relación</div><select class="fin" id="pf-am-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
           </div>
           <div class="field" style="margin:0"><div class="flbl">RUT</div><input class="fin" id="pf-am-rut" placeholder="Ej: 12.345.678-9" oninput="formatearRut(this)"><div class="fhint">Con puntos y guión</div></div>
           <div class="field" style="margin:0"><div class="flbl">Cuidadora principal</div><input class="fin" id="pf-cuidadora" placeholder="Ej: Carmen Fuentes"></div>
@@ -416,14 +416,14 @@
         </div>
       </div>
 
-      <!-- Lista de todos los familiares cuidados -->
-      <div class="slbl">Todos los familiares cuidados</div>
+      <!-- Lista de todas las personas cuidadas -->
+      <div class="slbl">Todas las personas cuidadas</div>
       <div id="pf-cuidados-lista" style="background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
         <!-- Se rellena dinámicamente -->
       </div>
       <div style="padding:12px 18px">
         <button onclick="crearNuevoCuidado()" style="display:flex;align-items:center;gap:8px;background:var(--sage-lt);border:1.5px dashed var(--sage-md);border-radius:var(--rs);padding:12px 16px;font-size:13px;font-weight:600;color:var(--sage);cursor:pointer;font-family:inherit;width:100%">
-          <span style="font-size:18px">＋</span> Agregar otro familiar cuidado
+          <span style="font-size:18px">＋</span> Agregar otra persona cuidada
         </button>
       </div>
     </div>
@@ -1042,12 +1042,12 @@
   <div class="mob-hdr">
     <div>
       <div class="mob-hdr-title">Equipo de cuidado</div>
-      <div class="mob-hdr-sub" id="equipo-sub">Personas que cuidan a tu familiar</div>
+      <div class="mob-hdr-sub" id="equipo-sub">Personas que la cuidan</div>
     </div>
     <div id="equipo-hdr-action"></div>
   </div>
   <div class="desk-hdr">
-    <div><div class="dh-title">Equipo de cuidado</div><div class="dh-sub" id="equipo-sub-d">Personas que cuidan a tu familiar</div></div>
+    <div><div class="dh-title">Equipo de cuidado</div><div class="dh-sub" id="equipo-sub-d">Personas que la cuidan</div></div>
     <div id="equipo-hdr-action-d"></div>
   </div>
 
@@ -1188,7 +1188,7 @@
     <div id="switcher-lista"></div>
     <div style="padding:12px 18px;border-top:1px solid var(--line)">
       <button onclick="crearNuevoCuidado();cerrarSheet('ov-switcher')" style="display:flex;align-items:center;gap:8px;background:var(--sage-lt);border:1.5px dashed var(--sage-md);border-radius:var(--rs);padding:11px 14px;font-size:13px;font-weight:600;color:var(--sage);cursor:pointer;font-family:inherit;width:100%">
-        <span style="font-size:18px">＋</span> Agregar otro familiar cuidado
+        <span style="font-size:18px">＋</span> Agregar otra persona cuidada
       </button>
     </div>
     <div style="padding:0 18px 14px"><button class="btn btn-s" onclick="cerrarSheet('ov-switcher')">Cerrar</button></div>
@@ -1900,7 +1900,7 @@
       </div>
       <!-- Selector de Cuidado si hay más de uno -->
       <div class="field" style="margin:0" id="inv-selector-cuidado">
-        <div class="flbl">¿A qué familiar cuidado da acceso?</div>
+        <div class="flbl">¿A qué persona cuidada da acceso?</div>
         <select class="fin" id="inv-cuidado-select"></select>
       </div>
       <!-- Preview del código generado -->
