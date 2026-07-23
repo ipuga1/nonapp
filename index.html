@@ -499,16 +499,16 @@
 </div>
 <div class="screen" id="s-bita-new">
   <div class="mob-hdr">
-    <div class="mob-hdr-row" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
       <button class="back-btn" onclick="navTo('s-bita-list')">‹ Bitácora</button>
-      <div style="font-size:12px;color:var(--ink3)" id="new-hora-display"></div>
+      <div class="mob-hdr-title" style="margin-top:4px" id="new-titulo">Nuevo registro</div>
+      <div class="mob-hdr-sub" id="new-fecha-display"></div>
     </div>
-    <div class="mob-hdr-title" style="margin-top:4px">Nuevo registro</div>
-    <div class="mob-hdr-sub" id="new-fecha-display"></div>
+    <div style="font-size:12px;color:var(--ink3)" id="new-hora-display"></div>
   </div>
   <div class="desk-hdr">
     <div>
-      <div class="dh-title">Nuevo registro</div>
+      <div class="dh-title" id="new-titulo-d">Nuevo registro</div>
       <div class="dh-sub" id="new-fecha-display-d"></div>
     </div>
     <button class="back-btn" onclick="navTo('s-bita-list')">‹ Volver a Bitácora</button>
@@ -806,11 +806,11 @@
 
 <div class="screen" id="s-ocr-receta">
   <div class="mob-hdr">
-    <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+    <div>
       <button class="back-btn" onclick="navTo('s-salud-hub')">‹ Salud</button>
+      <div class="mob-hdr-title" style="margin-top:4px">Cargar receta médica</div>
+      <div class="mob-hdr-sub">La IA detecta los medicamentos automáticamente</div>
     </div>
-    <div class="mob-hdr-title" style="margin-top:4px">Cargar receta médica</div>
-    <div class="mob-hdr-sub">La IA detecta los medicamentos automáticamente</div>
   </div>
   <div class="desk-hdr">
     <div><div class="dh-title">Cargar receta médica</div><div class="dh-sub">La IA detecta los medicamentos automáticamente</div></div>
@@ -862,11 +862,11 @@
 </div>
 <div class="screen" id="s-ficha-editar">
   <div class="mob-hdr">
-    <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+    <div>
       <button class="back-btn" onclick="navTo('s-salud-hub')">‹ Salud</button>
-      <button class="hdr-action" onclick="guardarFicha()">Guardar</button>
+      <div class="mob-hdr-title" style="margin-top:4px">Editar ficha clínica</div>
     </div>
-    <div class="mob-hdr-title" style="margin-top:4px">Editar ficha clínica</div>
+    <button class="hdr-action" onclick="guardarFicha()">Guardar</button>
   </div>
   <div class="desk-hdr">
     <div><div class="dh-title">Editar ficha clínica</div></div>
@@ -957,12 +957,12 @@
 
 <div class="screen" id="s-bita-detalle">
   <div class="mob-hdr">
-    <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
       <button class="back-btn" onclick="navTo('s-bita-list')">‹ Bitácora</button>
-      <div id="detalle-acciones-hdr"></div>
+      <div class="mob-hdr-title" style="margin-top:4px" id="detalle-titulo">Registro del día</div>
+      <div class="mob-hdr-sub" id="detalle-sub"></div>
     </div>
-    <div class="mob-hdr-title" style="margin-top:4px" id="detalle-titulo">Registro del día</div>
-    <div class="mob-hdr-sub" id="detalle-sub"></div>
+    <div id="detalle-acciones-hdr"></div>
   </div>
   <div class="desk-hdr">
     <div>
@@ -983,12 +983,12 @@
 
 <div class="screen" id="s-resumen-ia">
   <div class="mob-hdr">
-    <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
       <button class="back-btn" onclick="navTo('s-bita-list')">‹ Bitácora</button>
-      <div style="font-size:12px;color:var(--ink3)" id="resumen-hora-display"></div>
+      <div class="mob-hdr-title" style="margin-top:4px">Resumen del día</div>
+      <div class="mob-hdr-sub" id="resumen-fecha-display"></div>
     </div>
-    <div class="mob-hdr-title" style="margin-top:4px">Resumen del día</div>
-    <div class="mob-hdr-sub" id="resumen-fecha-display"></div>
+    <div style="font-size:12px;color:var(--ink3)" id="resumen-hora-display"></div>
   </div>
   <div class="desk-hdr">
     <div>

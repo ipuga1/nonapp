@@ -301,6 +301,10 @@ function navTo(id){
     id='s-splash';
   }
   cerrarConfirm();
+  // Salir de modo edición de bitácora si se navega a cualquier pantalla que no sea el formulario.
+  // try/catch: navTo() se invoca durante el bootstrap inicial (IIFE init()), antes de que
+  // "const ST" (declarado más abajo en el archivo) exista todavía.
+  try{ if(id!=='s-bita-new') ST.bitacora.bitaEditandoId=null; }catch(e){}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const sc=$(id);
   if(!sc){ console.warn('Pantalla no encontrada:',id); return; }
@@ -1320,6 +1324,7 @@ const ST = {
     bitaCuidadoId: null,
     filtro: 'todos',
     bitacoraActual: null,
+    bitaEditandoId: null,
     form: {
       quien:'Cuidadora', presion:'', temp:'', sato:'',
       desayuno:'', almuerzo:'', cena:'',
@@ -1458,7 +1463,7 @@ function renderLista(){
   const sesion=DB.getSesion(); if(!sesion) return;
   const _cid=DB.getSesion()?.cuidadoId;
   const cuidado=DB.getCuidadoById(_cid)||DB.getCuidado(); if(!cuidado) return;
-  const puedeEscribir=['admin','cuidadora'].includes(sesion.rol);
+  const puedeEscribir=['admin','familiar','cuidadora'].includes(sesion.rol);
   const esObservador=sesion.rol==='observador';
   const am=cuidado.am||{};
 
@@ -1467,7 +1472,7 @@ function renderLista(){
   if($('bita-list-sub')) $('bita-list-sub').textContent=sub;
   if($('bita-list-sub-d')) $('bita-list-sub-d').textContent=sub;
 
-  // Botón de nuevo registro (solo Admin y Cuidadora)
+  // Botón de nuevo registro (Admin, Familiar y Cuidadora pueden registrar)
   const btnHTML=puedeEscribir
     ? `<button class="hdr-action" onclick="navTo('s-bita-new')">+ Nuevo</button>`
     : '';
@@ -1480,14 +1485,12 @@ function renderLista(){
   const fab=$('bita-fab');
   if(fab) fab.style.display=puedeEscribir?'flex':'none';
 
-  // Aviso de solo lectura
+  // Aviso de solo lectura (únicamente observador es de solo lectura)
   const notice=$('bita-obs-notice');
   if(notice){
-    notice.style.display=(sesion.rol==='familiar'||sesion.rol==='observador')?'block':'none';
+    notice.style.display=esObservador?'block':'none';
     const txt=$('bita-obs-txt');
-    if(txt) txt.textContent=esObservador
-      ? 'Como observador solo ves el resumen del día. Para el historial completo, el administrador debe cambiar tu rol.'
-      : 'Solo puedes ver los registros. El administrador o la cuidadora son quienes registran.';
+    if(txt) txt.textContent='Como observador solo ves el resumen del día. Para el historial completo, el administrador debe cambiar tu rol.';
   }
 
   // Filtrar bitácoras
@@ -1572,12 +1575,13 @@ function verDetalle(id){
   if($('detalle-sub')) $('detalle-sub').textContent=sub;
   if($('detalle-sub-d')) $('detalle-sub-d').textContent=sub;
 
-  // Acciones en header (solo admin puede eliminar)
+  // Acciones en header
   const puedeEliminar=['admin','familiar'].includes(sesion.rol);
+  const puedeEditar=['admin','cuidadora'].includes(sesion.rol);
   if($('detalle-acciones-hdr')){
-    $('detalle-acciones-hdr').innerHTML=puedeEliminar
-      ? `<button style="font-size:11px;color:var(--red);background:var(--red-lt);border:1px solid #F0B0AE;border-radius:6px;padding:4px 10px;cursor:pointer;font-family:inherit" onclick="eliminarBitacora('${b.id}')">Eliminar</button>`
-      : '';
+    $('detalle-acciones-hdr').innerHTML=
+      (puedeEditar?`<button style="font-size:11px;color:var(--sage);background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:inherit;margin-right:6px" onclick="editarBitacora('${b.id}')">Editar</button>`:'')+
+      (puedeEliminar?`<button style="font-size:11px;color:var(--red);background:var(--red-lt);border:1px solid #F0B0AE;border-radius:6px;padding:4px 10px;cursor:pointer;font-family:inherit" onclick="eliminarBitacora('${b.id}')">Eliminar</button>`:'');
   }
 
   // Contenido del detalle
@@ -1674,54 +1678,81 @@ function initFormulario(){
   const sesion=DB.getSesion(); if(!sesion) return;
   const cuidado=DB.getCuidado();
 
-  // Fechas y hora
-  const fechaStr=fechaLarga();
-  const horaStr=horaActual();
+  const editId=ST.bitacora.bitaEditandoId;
+  const b=editId ? (cuidado?.bitacoras||[]).find(x=>x.id===editId) : null;
+  if(editId && !b) ST.bitacora.bitaEditandoId=null; // registro ya no existe, salir de modo edición
+
+  // Fechas y hora (al editar, se muestra la fecha/hora original del registro)
+  const fechaStr=b?fechaLarga(b.fecha):fechaLarga();
+  const horaStr=b?b.hora:horaActual();
   if($('new-hora-display')) $('new-hora-display').textContent=horaStr;
   if($('new-fecha-display')) $('new-fecha-display').textContent=fechaStr;
   if($('new-fecha-display-d')) $('new-fecha-display-d').textContent=fechaStr;
+  if($('new-titulo'))   $('new-titulo').textContent=b?'Editar registro':'Nuevo registro';
+  if($('new-titulo-d')) $('new-titulo-d').textContent=b?'Editar registro':'Nuevo registro';
 
-  // Reset del estado
-  ST.bitacora.form={
+  // Estado del formulario: datos del registro si se edita, o valores por defecto si es nuevo
+  ST.bitacora.form=b ? {
+    quien: b.quien||'Cuidadora',
+    presion: b.presion||'', temp: b.temp||'', sato: b.sato||'',
+    desayuno: b.desayuno||'', almuerzo: b.almuerzo||'', cena: b.cena||'',
+    bano: !!b.bano, hidra: !!b.hidra, activ: !!b.activ, visita: !!b.visita,
+    animo: b.animo||'Muy bien 😊', nota: b.nota||'',
+  } : {
     quien: sesion.rol==='cuidadora'?'Cuidadora':sesion.rol==='admin'?'Administradora':'Familiar',
     presion:'', temp:'', sato:'',
     desayuno:'Todo', almuerzo:'Todo', cena:'',
     bano:false, hidra:false, activ:false, visita:false,
     animo:'Muy bien 😊', nota:'',
   };
+  const f=ST.bitacora.form;
 
-  // Limpiar inputs
-  ['v-presion','v-temp','v-sato','nota-libre'].forEach(id=>{ const el=$(id); if(el) el.value=''; el?.classList.remove('warn','ok'); });
+  // Inputs de texto
+  if($('v-presion')) $('v-presion').value=f.presion;
+  if($('v-temp'))    $('v-temp').value=f.temp;
+  if($('v-sato'))    $('v-sato').value=f.sato;
+  if($('nota-libre')) $('nota-libre').value=f.nota;
+  ['v-presion','v-temp','v-sato'].forEach(id=>$(id)?.classList.remove('warn','ok'));
   ['presion-msg','temp-msg','sato-msg'].forEach(id=>{ const el=$(id); if(el) el.style.display='none'; });
 
-  // Reset checkboxes
+  // Checkboxes
   ['bano','hidra','activ','visita'].forEach(k=>{
     const cb=$('cb-'+k), cl=$('cl-'+k);
-    if(cb){ cb.classList.remove('on'); cb.textContent=''; }
-    if(cl){ cl.classList.remove('done'); }
+    if(cb){ cb.classList.toggle('on',f[k]); cb.textContent=f[k]?'✓':''; }
+    if(cl){ cl.classList.toggle('done',f[k]); }
   });
 
-  // Reset porciones (desayuno=Todo, almuerzo=Todo, cena sin seleccionar)
+  // Porciones (desayuno/almuerzo/cena) — el valor real está en el onclick, no en el texto del botón
   ['desayuno','almuerzo','cena'].forEach(c=>{
     const btns=$('pbs-'+c)?.querySelectorAll('.pb');
-    btns?.forEach(b=>{ b.classList.remove('todo','mitad','nada'); });
-  });
-  $('pbs-desayuno')?.querySelectorAll('.pb')[0]?.classList.add('todo');
-  $('pbs-almuerzo')?.querySelectorAll('.pb')[0]?.classList.add('todo');
-
-  // Reset ánimo
-  $('animo-btns')?.querySelectorAll('.ab').forEach((b,i)=>{
-    b.classList.toggle('on',i===0);
+    btns?.forEach(bt=>{
+      bt.classList.remove('todo','mitad','nada');
+      const val=bt.getAttribute('onclick')?.match(/selPorcion\('[^']+','([^']+)'/)?.[1];
+      if(val && val===f[c]) bt.classList.add(val==='Todo'?'todo':val==='Mitad'?'mitad':'nada');
+    });
   });
 
-  // Reset quien
-  $('quien-btns')?.querySelectorAll('.qb').forEach(b=>{
-    b.classList.toggle('on', b.textContent.includes(ST.bitacora.form.quien));
+  // Ánimo
+  $('animo-btns')?.querySelectorAll('.ab').forEach(bt=>{
+    bt.classList.toggle('on', bt.textContent===f.animo || (!f.animo && bt.textContent==='Muy bien 😊'));
   });
 
-  // Actualizar btn guardar
+  // Quien registra
+  $('quien-btns')?.querySelectorAll('.qb').forEach(bt=>{
+    bt.classList.toggle('on', bt.textContent.includes(f.quien));
+  });
+
+  // Botón guardar
   const btn=$('btn-guardar');
-  if(btn) btn.textContent='Guardar registro ✓';
+  if(btn) btn.textContent=b?'Guardar cambios ✓':'Guardar registro ✓';
+}
+
+// Abre el formulario en modo edición, precargado con un registro existente
+function editarBitacora(id){
+  const sesion=DB.getSesion(); if(!sesion) return;
+  if(!['admin','cuidadora'].includes(sesion.rol)){ toast('No tienes permiso para editar','err'); return; }
+  ST.bitacora.bitaEditandoId=id;
+  navTo('s-bita-new');
 }
 
 /* Selectors del formulario */
@@ -1798,8 +1829,11 @@ function validarSato(inp){
 function guardarBitacora(){
   const sesion=DB.getSesion(); if(!sesion) return;
   const cuidado=DB.getCuidado(); if(!cuidado) return;
-  const puedeEscribir=['admin','familiar','cuidadora'].includes(sesion.rol);
-  if(!puedeEscribir){ toast('No tienes permiso para registrar','err'); return; }
+  const editId=ST.bitacora.bitaEditandoId;
+  const puedeEscribir = editId
+    ? ['admin','cuidadora'].includes(sesion.rol)
+    : ['admin','familiar','cuidadora'].includes(sesion.rol);
+  if(!puedeEscribir){ toast(editId?'No tienes permiso para editar':'No tienes permiso para registrar','err'); return; }
 
   // Leer valores actuales del formulario
   const presion=$('v-presion').value.trim();
@@ -1809,17 +1843,17 @@ function guardarBitacora(){
 
   // Animación de carga
   const btn=$('btn-guardar');
-  btn.textContent='Guardando...';
+  btn.textContent=editId?'Guardando cambios...':'Guardando...';
   btn.disabled=true;
 
   setTimeout(()=>{
-    const id='b-'+Date.now();
     const am=cuidado.am||{};
+    const original = editId ? (cuidado.bitacoras||[]).find(x=>x.id===editId) : null;
 
     const registro={
-      id,
-      fecha: hoy(),
-      hora:  horaActual(),
+      id:    original?.id || ('b-'+Date.now()),
+      fecha: original?.fecha || hoy(),
+      hora:  original?.hora  || horaActual(),
       quien: ST.bitacora.form.quien,
       presion,
       temp,
@@ -1840,16 +1874,27 @@ function guardarBitacora(){
     // Construye una frase natural con todos los datos.
     registro.resumen = generarResumenIA(registro, am.nombre||'la persona cuidada');
 
-    // Guardar en la lista de bitácoras
     if(!Array.isArray(cuidado.bitacoras)) cuidado.bitacoras=[];
-    cuidado.bitacoras.push(registro);
+    if(original){
+      const idx=cuidado.bitacoras.findIndex(x=>x.id===editId);
+      if(idx>=0) cuidado.bitacoras[idx]=registro;
+    } else {
+      cuidado.bitacoras.push(registro);
+    }
     DB.saveCuidado(cuidado);
 
-    btn.textContent='Guardar registro ✓';
     btn.disabled=false;
+    ST.bitacora.bitaEditandoId=null;
 
-    toast('✓ Registro guardado','ok');
-    mostrarResumenIA(registro);
+    if(original){
+      btn.textContent='Guardar cambios ✓';
+      toast('✓ Registro actualizado','ok');
+      verDetalle(registro.id);
+    } else {
+      btn.textContent='Guardar registro ✓';
+      toast('✓ Registro guardado','ok');
+      mostrarResumenIA(registro);
+    }
   }, 600);
 }
 
@@ -6234,10 +6279,13 @@ function fabActionEquip(){
 }
 function fabActionHogar(){
   const s=DB.getSesion(); if(!s) return;
-  if(!['admin','cuidadora'].includes(s.rol)) return;
-  // Abrir sheet según el tab activo en Hogar
-  if(ST.hogar.tabHogar==='insumos') abrirSheetInsumo();
-  else if(ST.hogar.tabHogar==='proveedores') abrirSheetProveedor();
+  // El permiso debe coincidir con el que muestra/oculta el FAB en renderTabHogar:
+  // insumos = admin/familiar/cuidadora, proveedores = solo admin
+  if(ST.hogar.tabHogar==='insumos'){
+    if(['admin','familiar','cuidadora'].includes(s.rol)) abrirSheetInsumo();
+  } else if(ST.hogar.tabHogar==='proveedores'){
+    if(s.rol==='admin') abrirSheetProveedor();
+  }
 }
 function fabActionGastos(){
   const s=DB.getSesion(); if(!s) return;
