@@ -649,7 +649,7 @@ function cerrarSesion(){
 
 /* ════ MÓDULO 2 — ONBOARDING CUIDADORAS ════ */
 // Estado de la lista de cuidadoras del onboarding
-let _onbCuidadoras = ['Carmen Fuentes'];
+let _onbCuidadoras = [''];
 
 function onbRenderCuidadoras(){
   const lista = document.getElementById('onb-cuidadoras-lista');
