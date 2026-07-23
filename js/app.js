@@ -278,6 +278,16 @@ function hoy(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth
 function fechaHoy(){ return new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}); }
 function fmt(n){ return '$'+Number(n||0).toLocaleString('es-CL'); }
 
+// Altura real de viewport visible (evita que la barra del navegador mobile
+// tape el tabbar cuando 100vh/100dvh no se actualiza de forma confiable)
+function _fixVh(){
+  document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
+}
+_fixVh();
+window.addEventListener('resize', _fixVh);
+window.addEventListener('orientationchange', _fixVh);
+window.visualViewport?.addEventListener('resize', _fixVh);
+
 /* ── NAVEGACIÓN CENTRAL ── */
 // Pantallas que requieren sesión activa
 const SCREENS_AUTH = ['s-home-admin','s-home-familiar','s-home-observador','s-home-cuidadora',
@@ -1023,21 +1033,10 @@ function renderHome(rol){
   }
 }
 
-/* ════ SIDEBAR ════ */
-function renderSidebar(){
-  const s=DB.getSesion(); if(!s) return;
-  const c=DB.getCuidado(); if(!c) return;
-  const ava=$('sb-ava'); if(ava){ ava.textContent=initials(s.nombre); ava.style.background=ROL_COLOR[s.rol]||'#888'; }
-  $('sb-user-name').textContent=s.nombre.split(' ')[0];
-  $('sb-user-rol').textContent=ROL_LABEL[s.rol]||s.rol;
-  // Switcher
-  const sw=$('sb-switcher'); if(sw) sw.style.display=s.rol==='admin'?'block':'none';
-  $('sb-sw-ava').textContent=initials(c.am?.nombre||'M');
-  $('sb-sw-name').textContent=`${c.am?.nombre||'—'} · ${calcularEdad(c.am?.fechaNacimiento)||c.am?.edad||'—'} años`;
-
+/* ════ NAVEGACIÓN POR ROL (fuente única: sidebar desktop y sheet "Más" mobile) ════ */
+function _navItemsRol(s,c){
   const meds=c.meds||[];
   const medsHoy=meds.filter(m=>!(c.confirmaciones||{})[m.id+'_'+hoy()]);
-
   const navMap={
     admin:[
       {ico:'🏠',lbl:'Inicio',screen:'s-home-admin'},
@@ -1056,7 +1055,36 @@ function renderSidebar(){
     observador:[{ico:'🏠',lbl:'Inicio',screen:'s-home-observador'},{ico:'📋',lbl:'Historial',screen:'s-bita-list'},{ico:'📊',lbl:'Informe',screen:'s-informe-hub'},{ico:'⚙️',lbl:'Perfil',screen:'s-perfil'}],
     cuidadora:[{ico:'🏠',lbl:'Inicio',screen:'s-home-cuidadora'},{ico:'📋',lbl:'Registrar turno',screen:'s-bita-new'},{ico:'💊',lbl:'Salud',screen:'s-salud-hub',badge:medsHoy.length||0},{ico:'🍽️',lbl:'Alimentación',screen:'s-alim-hub'},{ico:'⚙️',lbl:'Perfil',screen:'s-perfil'}],
   };
-  const items=navMap[s.rol]||navMap.familiar;
+  return navMap[s.rol]||navMap.familiar;
+}
+
+// Sheet mobile "Más" — lista completa de módulos según el rol (equivalente al sidebar de escritorio)
+function abrirMas(){
+  const s=DB.getSesion(); if(!s) return;
+  const c=DB.getCuidado(); if(!c) return;
+  const items=_navItemsRol(s,c);
+  const actual=document.querySelector('.screen.active')?.id;
+  $('mas-lista').innerHTML=items.map(it=>`
+    <div class="sb-item${it.screen===actual?' on':''}" onclick="navTo('${it.screen}');cerrarSheet('ov-mas')">
+      <div class="sb-item-ico">${it.ico}</div>${escapeHtml(it.lbl)}
+      ${it.badge?`<span class="sb-item-badge">${it.badge}</span>`:''}
+    </div>`).join('');
+  $('ov-mas').classList.add('open');
+}
+
+/* ════ SIDEBAR ════ */
+function renderSidebar(){
+  const s=DB.getSesion(); if(!s) return;
+  const c=DB.getCuidado(); if(!c) return;
+  const ava=$('sb-ava'); if(ava){ ava.textContent=initials(s.nombre); ava.style.background=ROL_COLOR[s.rol]||'#888'; }
+  $('sb-user-name').textContent=s.nombre.split(' ')[0];
+  $('sb-user-rol').textContent=ROL_LABEL[s.rol]||s.rol;
+  // Switcher
+  const sw=$('sb-switcher'); if(sw) sw.style.display=s.rol==='admin'?'block':'none';
+  $('sb-sw-ava').textContent=initials(c.am?.nombre||'M');
+  $('sb-sw-name').textContent=`${c.am?.nombre||'—'} · ${calcularEdad(c.am?.fechaNacimiento)||c.am?.edad||'—'} años`;
+
+  const items=_navItemsRol(s,c);
   $('sb-nav').innerHTML=items.map(it=>`
     <div class="sb-item" data-screen="${it.screen}" onclick="navTo('${it.screen}')">
       <div class="sb-item-ico">${it.ico}</div>${it.lbl}
