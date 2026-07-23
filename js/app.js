@@ -1691,21 +1691,29 @@ function initFormulario(){
   if($('new-titulo'))   $('new-titulo').textContent=b?'Editar registro':'Nuevo registro';
   if($('new-titulo-d')) $('new-titulo-d').textContent=b?'Editar registro':'Nuevo registro';
 
-  // Estado del formulario: datos del registro si se edita, o valores por defecto si es nuevo
+  // Estado del formulario: datos del registro si se edita, o valores por defecto si es nuevo.
+  // "quien" siempre viene de la sesión autenticada, nunca es una selección manual.
   ST.bitacora.form=b ? {
-    quien: b.quien||'Cuidadora',
+    quien: b.quien||sesion.nombre,
     presion: b.presion||'', temp: b.temp||'', sato: b.sato||'',
     desayuno: b.desayuno||'', almuerzo: b.almuerzo||'', cena: b.cena||'',
     bano: !!b.bano, hidra: !!b.hidra, activ: !!b.activ, visita: !!b.visita,
     animo: b.animo||'Muy bien 😊', nota: b.nota||'',
   } : {
-    quien: sesion.rol==='cuidadora'?'Cuidadora':sesion.rol==='admin'?'Administradora':'Familiar',
+    quien: sesion.nombre,
     presion:'', temp:'', sato:'',
     desayuno:'Todo', almuerzo:'Todo', cena:'',
     bano:false, hidra:false, activ:false, visita:false,
     animo:'Muy bien 😊', nota:'',
   };
   const f=ST.bitacora.form;
+
+  // Quien registra: solo informativo, no seleccionable
+  if($('quien-display')){
+    $('quien-display').textContent = b
+      ? `Registrado por ${f.quien}`
+      : `${ROL_EMOJI[sesion.rol]||''} ${ROL_LABEL[sesion.rol]||''} — ${sesion.nombre}`;
+  }
 
   // Inputs de texto
   if($('v-presion')) $('v-presion').value=f.presion;
@@ -1737,11 +1745,6 @@ function initFormulario(){
     bt.classList.toggle('on', bt.textContent===f.animo || (!f.animo && bt.textContent==='Muy bien 😊'));
   });
 
-  // Quien registra
-  $('quien-btns')?.querySelectorAll('.qb').forEach(bt=>{
-    bt.classList.toggle('on', bt.textContent.includes(f.quien));
-  });
-
   // Botón guardar
   const btn=$('btn-guardar');
   if(btn) btn.textContent=b?'Guardar cambios ✓':'Guardar registro ✓';
@@ -1756,12 +1759,6 @@ function editarBitacora(id){
 }
 
 /* Selectors del formulario */
-function selQuien(val, btn){
-  ST.bitacora.form.quien=val;
-  $('quien-btns')?.querySelectorAll('.qb').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-}
-
 function selPorcion(comida, val, btn){
   ST.bitacora.form[comida]=val;
   const cls=val==='Todo'?'todo':val==='Mitad'?'mitad':'nada';

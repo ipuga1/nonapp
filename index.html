@@ -516,15 +516,9 @@
 
   <div class="scroll">
 
-    <!-- Quien registra -->
+    <!-- Quien registra: siempre según la sesión activa, no es seleccionable -->
     <div class="slbl">Quien registra</div>
-    <div style="padding:0 18px 14px">
-      <div class="quien-btns" id="quien-btns">
-        <button class="qb on" onclick="selQuien('Cuidadora',this)">👩‍⚕️ Cuidadora</button>
-        <button class="qb" onclick="selQuien('Administradora',this)">👩‍💼 Administradora</button>
-        <button class="qb" onclick="selQuien('Familiar',this)">👨 Familiar</button>
-      </div>
-    </div>
+    <div style="padding:0 18px 14px;font-size:14px;color:var(--ink2);font-weight:600" id="quien-display"></div>
 
     <!-- Signos vitales -->
     <div class="slbl">Signos vitales</div>
