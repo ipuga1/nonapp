@@ -2806,13 +2806,22 @@ function renderDocs(cuidado, puedeEditar){
   } else {
     html+=`<div style="background:var(--white)">`;
     sorted.forEach(d=>{
+      const tieneImg=d.archivoTipo==='imagen' && d.archivoUrl;
+      const tienePdf=d.archivoTipo==='pdf' && d.archivoUrl;
+      const iconoHtml=tieneImg
+        ? `<a href="${d.archivoUrl}" download="${escapeHtml(d.archivoNombre||d.nombre)}" onclick="event.stopPropagation()"><img src="${d.archivoUrl}" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;display:block"></a>`
+        : `<div class="doc-ico" style="background:${tipoColor[d.tipo]||'var(--surf)'}">${tipoIco[d.tipo]||'📁'}</div>`;
+      const verArchivoHtml=tienePdf
+        ? `<a href="${d.archivoUrl}" download="${escapeHtml(d.archivoNombre||d.nombre)}" onclick="event.stopPropagation()" style="font-size:11px;color:var(--sage);font-weight:600;text-decoration:none;display:inline-block;margin-top:2px">📄 Ver / descargar PDF</a>`
+        : '';
       html+=`
         <div class="doc-card">
-          <div class="doc-ico" style="background:${tipoColor[d.tipo]||'var(--surf)'}">${tipoIco[d.tipo]||'📁'}</div>
+          ${iconoHtml}
           <div style="flex:1;min-width:0">
             <div class="doc-nombre">${escapeHtml(d.nombre)||'Documento sin nombre'}</div>
             <div class="doc-meta">${d.medico?escapeHtml(d.medico)+' · ':''} ${fechaCorta(d.fecha)}</div>
             ${d.notas?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${escapeHtml(d.notas)}</div>`:''}
+            ${verArchivoHtml}
           </div>
           <span class="badge b-muted doc-tipo">${d.tipo||'otro'}</span>
           ${puedeEditar?`<button class="doc-del" onclick="eliminarDoc('${d.id}')">Eliminar</button>`:''}
@@ -2836,7 +2845,77 @@ function setDocFiltro(filtro, btn){
 function abrirSheetDoc(){
   $('doc-nombre').value=''; $('doc-medico').value=''; $('doc-notas').value='';
   $('doc-fecha').value=hoy();
+  limpiarArchivoDoc();
   $('ov-add-doc').classList.add('open');
+}
+
+// Carga de archivo del documento médico (foto o PDF).
+// Sin Firebase Storage: las fotos se comprimen y se guardan como dataURL igual
+// que la boleta de Gastos. Un PDF no se puede comprimir, así que se limita a
+// 700KB para no arriesgar que el documento completo del cuidado supere el
+// límite de tamaño de Firestore (~1MB).
+let _docArchivoDataUrl=null, _docArchivoTipo=null, _docArchivoNombre=null;
+
+function previewArchivoDoc(input){
+  const file=input.files[0]; if(!file) return;
+  const esPdf=file.type==='application/pdf';
+  if(esPdf && file.size > 700*1024){
+    toast('El PDF supera 700KB — usa uno más liviano o sube una foto','err');
+    input.value=''; return;
+  }
+  if(!esPdf && file.size > 10*1024*1024){
+    toast('La imagen supera 10MB','err');
+    input.value=''; return;
+  }
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    if(esPdf){
+      _docArchivoDataUrl=e.target.result;
+      _docArchivoTipo='pdf';
+      _docArchivoNombre=file.name;
+      _mostrarPreviewArchivoDoc();
+    } else {
+      const imgEl=new Image();
+      imgEl.onload=()=>{
+        const MAX=900;
+        let w=imgEl.width, h=imgEl.height;
+        if(w>MAX||h>MAX){ const ratio=Math.min(MAX/w,MAX/h); w=Math.round(w*ratio); h=Math.round(h*ratio); }
+        const canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(imgEl,0,0,w,h);
+        _docArchivoDataUrl=canvas.toDataURL('image/jpeg',0.75);
+        _docArchivoTipo='imagen';
+        _docArchivoNombre=file.name;
+        _mostrarPreviewArchivoDoc();
+      };
+      imgEl.src=e.target.result;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function _mostrarPreviewArchivoDoc(){
+  $('doc-archivo-placeholder').style.display='none';
+  $('doc-archivo-preview').style.display='block';
+  $('doc-archivo-area').style.borderColor='var(--sage)';
+  const img=$('doc-archivo-img'), pdfInfo=$('doc-archivo-pdf-info');
+  if(_docArchivoTipo==='pdf'){
+    img.style.display='none';
+    pdfInfo.style.display='block';
+    $('doc-archivo-nombre-pdf').textContent=_docArchivoNombre;
+  } else {
+    img.src=_docArchivoDataUrl;
+    img.style.display='block';
+    pdfInfo.style.display='none';
+  }
+}
+
+function limpiarArchivoDoc(){
+  _docArchivoDataUrl=null; _docArchivoTipo=null; _docArchivoNombre=null;
+  const input=$('doc-archivo-input'); if(input) input.value='';
+  $('doc-archivo-placeholder').style.display='block';
+  $('doc-archivo-preview').style.display='none';
+  $('doc-archivo-area').style.borderColor='var(--line)';
 }
 
 function guardarDocumento(){
@@ -2852,6 +2931,9 @@ function guardarDocumento(){
     medico:$('doc-medico').value.trim(),
     fecha:$('doc-fecha').value||hoy(),
     notas:$('doc-notas').value.trim(),
+    archivoUrl:_docArchivoDataUrl||null,
+    archivoTipo:_docArchivoTipo||null,
+    archivoNombre:_docArchivoNombre||null,
     creadoEl:hoy(),
   });
   DB.saveCuidado(c);
@@ -5089,7 +5171,7 @@ function renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin){
           <div class="gasto-ico" style="background:${conf.bg}">${conf.ico}</div>
           <div style="flex:1;min-width:0">
             <div class="gasto-desc">${escapeHtml(g.desc)||'Sin descripción'}</div>
-            <div class="gasto-meta">${conf.label}${g.boleta?' · 📎 Boleta':''}</div>
+            <div class="gasto-meta">${conf.label}${g.boleta?` · <a href="${g.boleta}" download="${escapeHtml(g.boletaNombre||'boleta')}" onclick="event.stopPropagation()" style="color:inherit;text-decoration:underline">${g.boletaTipo==='pdf'?'📄 PDF':'📎 Boleta'}</a>`:''}</div>
             ${aprobBadge?`<div style="margin-top:4px">${aprobBadge}</div>`:''}
           </div>
           <div class="gasto-monto">${fmt(g.monto)}</div>
@@ -5290,7 +5372,7 @@ function editarGasto(id){
   $('g-desc').value=g.desc||'';
   $('g-fecha').value=g.fecha||hoy();
   $('g-aprobacion').value=g.aprobacion||'no';
-  cargarBoletaExistente(g.boleta||null); // Mostrar boleta si existe
+  cargarBoletaExistente(g.boleta||null, g.boletaTipo, g.boletaNombre); // Mostrar boleta si existe
   _catActual=g.cat||'otro';
   document.querySelectorAll('#cat-grid-gasto .cat-btn').forEach(b=>{ b.classList.remove('on'); b.style.borderColor=''; b.style.background=''; });
   const catBtn=document.querySelector(`#cat-grid-gasto [data-cat="${_catActual}"]`)||document.querySelector('#cat-grid-gasto .cat-btn');
@@ -5312,6 +5394,8 @@ function guardarGasto(){
     cat:_catActual, desc, monto,
     fecha:$('g-fecha').value||hoy(),
     boleta: _boletaDataUrl||null,
+    boletaTipo: _boletaTipo||null,
+    boletaNombre: _boletaNombre||null,
     aprobacion:$('g-aprobacion').value,
     emoji:CATS[_catActual]?.ico||'📦',
   };
@@ -6172,69 +6256,93 @@ function proximaToma(horarios) {
   return horarios[0]; // mañana a la primera hora
 }
 
-/* ── Módulo Gastos — boleta fotográfica ── */
-let _boletaDataUrl = null; // base64 de la imagen de boleta actual
+/* ── Módulo Gastos — boleta fotográfica o PDF ── */
+// Sin Firebase Storage: igual que los documentos médicos, las fotos se
+// comprimen y se guardan como dataURL; un PDF no se puede comprimir, así que
+// se limita a 700KB para no arriesgar el límite de tamaño de Firestore.
+let _boletaDataUrl = null;
+let _boletaTipo = null; // 'imagen' | 'pdf'
+let _boletaNombre = null;
 
 function previewBoleta(input){
   const file = input.files[0];
   if(!file) return;
-  if(file.size > 10 * 1024 * 1024){ toast('La imagen supera 10MB','err'); return; }
+  const esPdf = file.type === 'application/pdf';
+  if(esPdf && file.size > 700*1024){ toast('El PDF supera 700KB — usa uno más liviano o sube una foto','err'); input.value=''; return; }
+  if(!esPdf && file.size > 10*1024*1024){ toast('La imagen supera 10MB','err'); input.value=''; return; }
   const reader = new FileReader();
   reader.onload = (e) => {
-    // Comprimir imagen antes de guardar (para no superar límite de Firestore ~900KB)
-    const imgEl = new Image();
-    imgEl.onload = () => {
-      const MAX = 900; // px máximo lado más largo
-      let w = imgEl.width, h = imgEl.height;
-      if(w > MAX || h > MAX){
-        const ratio = Math.min(MAX/w, MAX/h);
-        w = Math.round(w * ratio);
-        h = Math.round(h * ratio);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(imgEl, 0, 0, w, h);
-      _boletaDataUrl = canvas.toDataURL('image/jpeg', 0.75); // ~150-300KB
-      const domImg = document.getElementById('g-boleta-img');
-      const preview = document.getElementById('g-boleta-preview');
-      const placeholder = document.getElementById('g-boleta-placeholder');
-      const area = document.getElementById('g-boleta-area');
-      if(domImg) domImg.src = _boletaDataUrl;
-      if(preview) preview.style.display = 'block';
-      if(placeholder) placeholder.style.display = 'none';
-      if(area) area.style.borderColor = 'var(--sage)';
-    };
-    imgEl.src = e.target.result;
+    if(esPdf){
+      _boletaDataUrl = e.target.result;
+      _boletaTipo = 'pdf';
+      _boletaNombre = file.name;
+      _mostrarPreviewBoleta();
+    } else {
+      // Comprimir imagen antes de guardar (para no superar límite de Firestore ~900KB)
+      const imgEl = new Image();
+      imgEl.onload = () => {
+        const MAX = 900; // px máximo lado más largo
+        let w = imgEl.width, h = imgEl.height;
+        if(w > MAX || h > MAX){
+          const ratio = Math.min(MAX/w, MAX/h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imgEl, 0, 0, w, h);
+        _boletaDataUrl = canvas.toDataURL('image/jpeg', 0.75); // ~150-300KB
+        _boletaTipo = 'imagen';
+        _boletaNombre = file.name;
+        _mostrarPreviewBoleta();
+      };
+      imgEl.src = e.target.result;
+    }
   };
   reader.readAsDataURL(file);
 }
 
+function _mostrarPreviewBoleta(){
+  const domImg = document.getElementById('g-boleta-img');
+  const pdfInfo = document.getElementById('g-boleta-pdf-info');
+  const preview = document.getElementById('g-boleta-preview');
+  const placeholder = document.getElementById('g-boleta-placeholder');
+  const area = document.getElementById('g-boleta-area');
+  if(preview) preview.style.display = 'block';
+  if(placeholder) placeholder.style.display = 'none';
+  if(area) area.style.borderColor = 'var(--sage)';
+  if(_boletaTipo==='pdf'){
+    if(domImg) domImg.style.display = 'none';
+    if(pdfInfo){ pdfInfo.style.display = 'block'; const n=document.getElementById('g-boleta-nombre-pdf'); if(n) n.textContent=_boletaNombre; }
+  } else {
+    if(domImg){ domImg.src = _boletaDataUrl; domImg.style.display = 'block'; }
+    if(pdfInfo) pdfInfo.style.display = 'none';
+  }
+}
+
 function limpiarBoleta(){
-  _boletaDataUrl = null;
+  _boletaDataUrl = null; _boletaTipo = null; _boletaNombre = null;
   const input = document.getElementById('g-boleta-input');
   const img = document.getElementById('g-boleta-img');
+  const pdfInfo = document.getElementById('g-boleta-pdf-info');
   const preview = document.getElementById('g-boleta-preview');
   const placeholder = document.getElementById('g-boleta-placeholder');
   const area = document.getElementById('g-boleta-area');
   if(input) input.value = '';
   if(img) img.src = '';
+  if(pdfInfo) pdfInfo.style.display = 'none';
   if(preview) preview.style.display = 'none';
   if(placeholder) placeholder.style.display = 'block';
   if(area) area.style.borderColor = '';
 }
 
-function cargarBoletaExistente(dataUrl){
+function cargarBoletaExistente(dataUrl, tipo, nombre){
   if(!dataUrl){ limpiarBoleta(); return; }
   _boletaDataUrl = dataUrl;
-  const img = document.getElementById('g-boleta-img');
-  const preview = document.getElementById('g-boleta-preview');
-  const placeholder = document.getElementById('g-boleta-placeholder');
-  const area = document.getElementById('g-boleta-area');
-  if(img) img.src = dataUrl;
-  if(preview) preview.style.display = 'block';
-  if(placeholder) placeholder.style.display = 'none';
-  if(area) area.style.borderColor = 'var(--sage)';
+  _boletaTipo = tipo || 'imagen'; // boletas guardadas antes de soportar PDF siempre eran imagen
+  _boletaNombre = nombre || 'Documento PDF';
+  _mostrarPreviewBoleta();
 }
 
 

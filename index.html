@@ -1307,7 +1307,33 @@
         <div class="flbl">Notas o indicaciones</div>
         <textarea class="fin" id="doc-notas" style="min-height:60px;resize:none" placeholder="Indicaciones, resultados importantes, seguimiento necesario..."></textarea>
       </div>
-      <div class="ia"><div class="ia-ico">✦</div><div>En la versión de producción puedes adjuntar la foto o PDF del documento. Por ahora se guarda el registro con los datos.</div></div>
+      <div class="field" style="margin:0">
+        <div class="flbl">Archivo <span style="font-weight:400;color:var(--ink3)">(opcional)</span></div>
+        <div id="doc-archivo-area" onclick="document.getElementById('doc-archivo-input').click()"
+          style="border:2px dashed var(--line);border-radius:var(--rs);padding:16px;text-align:center;cursor:pointer;background:var(--surf);transition:border-color .2s">
+          <div id="doc-archivo-placeholder">
+            <div style="font-size:24px;margin-bottom:6px">📎</div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink3)">Toca para subir foto o PDF</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:2px">JPG, PNG (máx 10MB) · PDF (máx 700KB)</div>
+          </div>
+          <div id="doc-archivo-preview" style="display:none">
+            <img id="doc-archivo-img" alt="Documento cargado" style="max-width:100%;max-height:160px;border-radius:6px;object-fit:cover;display:none">
+            <div id="doc-archivo-pdf-info" style="display:none;font-size:13px;font-weight:600;color:var(--ink2)">📄 <span id="doc-archivo-nombre-pdf"></span></div>
+            <div style="margin-top:8px;display:flex;gap:8px;justify-content:center">
+              <button onclick="event.stopPropagation();document.getElementById('doc-archivo-input').click()"
+                style="padding:5px 12px;border-radius:var(--rs);background:var(--surf);border:1.5px solid var(--line);font-size:12px;color:var(--ink3);cursor:pointer;font-family:inherit">
+                Cambiar
+              </button>
+              <button onclick="event.stopPropagation();limpiarArchivoDoc()"
+                style="padding:5px 12px;border-radius:var(--rs);background:var(--red-lt);border:1px solid var(--red);font-size:12px;color:var(--red);cursor:pointer;font-family:inherit">
+                Quitar
+              </button>
+            </div>
+          </div>
+        </div>
+        <input type="file" id="doc-archivo-input" accept="image/*,application/pdf"
+          style="display:none" onchange="previewArchivoDoc(this)">
+      </div>
     </div>
     <div class="btns"><button class="btn btn-p" onclick="guardarDocumento()">Guardar documento</button></div>
   </div>
@@ -1817,16 +1843,17 @@
       </div>
       <div class="field" style="margin:0">
         <div class="flbl">Boleta / comprobante <span style="font-weight:400;color:var(--ink3)">(opcional)</span></div>
-        <!-- Área de carga de imagen -->
+        <!-- Área de carga de imagen o PDF -->
         <div id="g-boleta-area" onclick="document.getElementById('g-boleta-input').click()"
           style="border:2px dashed var(--line);border-radius:var(--rs);padding:16px;text-align:center;cursor:pointer;background:var(--surf);transition:border-color .2s">
           <div id="g-boleta-placeholder">
             <div style="font-size:24px;margin-bottom:6px">📷</div>
-            <div style="font-size:13px;font-weight:600;color:var(--ink3)">Toca para subir foto de boleta</div>
-            <div style="font-size:11px;color:var(--ink3);margin-top:2px">JPG, PNG · Máx 5MB</div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink3)">Toca para subir foto o PDF de la boleta</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:2px">JPG, PNG (máx 10MB) · PDF (máx 700KB)</div>
           </div>
           <div id="g-boleta-preview" style="display:none">
-            <img id="g-boleta-img" alt="Boleta cargada" style="max-width:100%;max-height:160px;border-radius:6px;object-fit:cover">
+            <img id="g-boleta-img" alt="Boleta cargada" style="max-width:100%;max-height:160px;border-radius:6px;object-fit:cover;display:none">
+            <div id="g-boleta-pdf-info" style="display:none;font-size:13px;font-weight:600;color:var(--ink2)">📄 <span id="g-boleta-nombre-pdf"></span></div>
             <div style="margin-top:8px;display:flex;gap:8px;justify-content:center">
               <button onclick="event.stopPropagation();document.getElementById('g-boleta-input').click()"
                 style="padding:5px 12px;border-radius:var(--rs);background:var(--surf);border:1.5px solid var(--line);font-size:12px;color:var(--ink3);cursor:pointer;font-family:inherit">
@@ -1839,7 +1866,7 @@
             </div>
           </div>
         </div>
-        <input type="file" id="g-boleta-input" accept="image/*"
+        <input type="file" id="g-boleta-input" accept="image/*,application/pdf"
           style="display:none" onchange="previewBoleta(this)">
       </div>
     </div>
