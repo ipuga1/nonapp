@@ -551,7 +551,7 @@ function validarCodigo(){
   buscarInvitacion().then(inv=>{
     setLoading('codigo-spinner','codigo-btn-txt',false);
     if(!inv){
-      $('code-err').style.display='block';
+      showErr('code-err','Código no válido, ya fue usado, o expiró. Verifica que esté bien escrito.');
       return;
     }
     // Verificar expiración
@@ -5998,7 +5998,7 @@ function abrirSheetInvitacion(){
 }
 
 /* Crear la invitación y mostrar el código */
-function crearInvitacion(){
+async function crearInvitacion(){
   const s = DB.getSesion(); if(!s || s.rol !== 'admin') return;
   const nombre = $('inv-nombre-input').value.trim();
   const email  = $('inv-email-input').value.trim().toLowerCase();
@@ -6038,7 +6038,7 @@ function crearInvitacion(){
 
   DB.setInvs([...invs, nuevaInv]);
   // Guardar código en Firestore para que sea validable desde cualquier dispositivo
-  _fsSet('codigos_inv/'+codigo, nuevaInv);
+  const ok = await _fsSet('codigos_inv/'+codigo, nuevaInv);
   _invCodigoActual = codigo;
 
   // Mostrar el código generado
@@ -6048,7 +6048,11 @@ function crearInvitacion(){
   $('inv-btns-listo').style.display = 'block';
   $('sh-inv-titulo').textContent = '✓ Invitación creada';
 
-  toast('✓ Código generado — compártelo', 'ok');
+  if(ok){
+    toast('✓ Código generado — compártelo', 'ok');
+  } else {
+    toast('⚠ El código se creó localmente pero no se pudo guardar en la nube — puede no funcionar en otro dispositivo', 'err');
+  }
 }
 
 /* Copiar el código al portapapeles */
@@ -6201,9 +6205,18 @@ function cancelarInvitacion(invId){
   confirmar(
     `¿Cancelar la invitación de ${inv.nombreInv}?`,
     `El código ${inv.codigo} quedará inválido.`,
-    () => {
+    async () => {
       DB.setInvs(invs.map(i => i.id === invId ? {...i, estado: 'cancelada'} : i));
-      toast('Invitación cancelada', 'ok');
+      // Invalidar también el código independiente en Firestore — es el que se
+      // consulta desde un dispositivo nuevo sin sesión (ver validarCodigo()).
+      // Sin esto, quien ya tenga el código puede registrarse igual aunque la
+      // invitación se haya cancelado aquí.
+      const ok = await _fsSet('codigos_inv/'+inv.codigo, {...inv, estado:'cancelada'});
+      if(ok){
+        toast('Invitación cancelada', 'ok');
+      } else {
+        toast('⚠ Se canceló localmente, pero el código sigue activo para quien ya lo tenga — reintenta', 'err');
+      }
       renderInvitaciones();
     }
   );
