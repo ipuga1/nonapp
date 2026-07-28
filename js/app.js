@@ -2207,6 +2207,7 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
           <div class="med-ico ${icoClassR}">💊</div>
           <div class="med-info" style="flex:1;min-width:0">
             <div class="med-nombre">${escapeHtml(m.nombre)} <span style="font-weight:400;color:var(--ink3)">${escapeHtml(m.dosis)}</span></div>
+            ${m.cantidadPorToma?`<div style="font-size:12px;color:var(--sage);font-weight:600;margin-top:1px">💊 ${escapeHtml(m.cantidadPorToma)} por toma</div>`:''}
             <div class="med-meta" style="margin-top:3px">${horariosHtml}</div>
             ${prox?`<div style="font-size:11px;color:var(--sage);margin-top:2px;font-weight:600">⏰ Próxima: ${prox}</div>`:''}
             <div class="med-meta" style="margin-top:3px">
@@ -2318,7 +2319,7 @@ function editarStock(medId){
   const totalComprado=(med.reposiciones||[]).reduce((s,r)=>s+(r.cantidad||0),0);
   const consumidos=Math.max(0,totalComprado-stockAct);
 
-  $('stock-med-nombre').textContent=med.nombre+' · '+med.dosis;
+  $('stock-med-nombre').textContent=med.nombre+' · '+med.dosis+(med.cantidadPorToma?' · '+med.cantidadPorToma:'');
   $('stock-valor').value=0;
   if($('stock-fecha')) $('stock-fecha').value=hoy();
   if($('stock-nota'))  $('stock-nota').value='';
@@ -2390,7 +2391,7 @@ function guardarReposicion(){
 function abrirSheetMed(){
   ST.salud.medEditando=null;
   if($('sh-med-titulo')) $('sh-med-titulo').textContent='Agregar medicamento';
-  ['am-nombre','am-dosis','am-medico','am-notas'].forEach(id=>{ if($(id)){ $(id).value=''; $(id).classList.remove('error'); } });
+  ['am-nombre','am-dosis','am-cantidad','am-medico','am-notas'].forEach(id=>{ if($(id)){ $(id).value=''; $(id).classList.remove('error'); } });
   if($('am-periocidad'))     $('am-periocidad').value='7';
   if($('am-frecuencia-hrs')) $('am-frecuencia-hrs').value='8';
   if($('am-hora-inicio'))    $('am-hora-inicio').value='08:00';
@@ -2422,6 +2423,7 @@ function editarMed(medId){
   if($('sh-med-titulo')) $('sh-med-titulo').textContent='Editar medicamento';
   if($('am-nombre'))         $('am-nombre').value=med.nombre||'';
   if($('am-dosis'))          $('am-dosis').value=med.dosis||'';
+  if($('am-cantidad'))       $('am-cantidad').value=med.cantidadPorToma||'';
   if($('am-medico'))         $('am-medico').value=med.indicadoPor||'';
   if($('am-notas'))          $('am-notas').value=med.notas||'';
   if($('am-periocidad'))     $('am-periocidad').value=med.periocidad||7;
@@ -2455,6 +2457,7 @@ function guardarMedManual(){
     id:'m-'+Date.now(),
     nombre,
     dosis:$('am-dosis').value.trim(),
+    cantidadPorToma:$('am-cantidad').value.trim(),
     indicadoPor:$('am-medico').value.trim(),
     notas:$('am-notas').value.trim(),
     agregadoEl:hoy(),
@@ -5722,7 +5725,7 @@ function generarResumenClinico(am, bitMes, meds, presionProm, pctComio, eventos)
 
   txt+=`ADHERENCIA TERAPÉUTICA\n`;
   txt+=`Medicamentos activos: ${meds.length}\n`;
-  meds.forEach(m=>{ txt+=`  · ${m.nombre} ${m.dosis} — ${m.freq}\n`; });
+  meds.forEach(m=>{ txt+=`  · ${m.nombre} ${m.dosis}${m.cantidadPorToma?' ('+m.cantidadPorToma+')':''} — ${m.freq}\n`; });
   txt+=`\n`;
 
   txt+=`SIGNOS VITALES (registros del período)\n`;
