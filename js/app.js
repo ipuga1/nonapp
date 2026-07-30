@@ -851,7 +851,7 @@ function renderHome(rol){
   const bitaHoy=(c.bitacoras||[]).filter(b=>b.fecha===hoy()).slice(-1)[0];
   const meds=c.meds||[];
   const medsConf=c.confirmaciones||{};
-  const medsHoy=meds.filter(m=>!medsConf[m.id+'_'+hoy()]);
+  const medsHoy=meds.filter(m=>medPendienteHoy(m,medsConf,hoy()));
   // Datos compartidos del hogar
   const comp=DB.getCompartido();
   const gastos=comp.gastos||[];
@@ -869,7 +869,7 @@ function renderHome(rol){
   };
 
   const sem=(vitales)=>{
-    const s=(v,ok)=>`<div class="sem${ok?vitales[v]?' ok':' empty':' empty'}"><div class="sem-ico">${{p:'❤️',a:'🍽️',m:'💊',n:'😊'}[v]}</div><div class="sem-lbl">${{p:'Presión',a:'Almuerzo',m:'Meds',n:'Ánimo'}[v]}</div><div class="sem-val">${vitales[v]||'—'}</div></div>`;
+    const s=(v,ok)=>`<div class="sem${ok?vitales[v]?' ok':' empty':' empty'}"><div class="sem-ico">${{p:'❤️',a:'🍽️',m:'💊',n:'😊'}[v]}</div><div class="sem-lbl">${{p:'Presión',a:'Almuerzo',m:'Meds',n:'Ánimo'}[v]}</div><div class="sem-val">${escapeHtml(vitales[v])||'—'}</div></div>`;
     return`<div class="semaforo">${s('p',true)}${s('a',true)}<div class="sem${meds.length===0?' empty':medsHoy.length===0?' ok':' warn'}" style="cursor:pointer" onclick="navTo('s-salud-hub')"><div class="sem-ico">💊</div><div class="sem-lbl">Salud</div><div class="sem-val">${meds.length===0?'—':medsHoy.length===0?'✓ Todo':medsHoy.length+' pend.'}</div></div>${s('n',true)}</div>`;
   };
 
@@ -895,7 +895,7 @@ function renderHome(rol){
       const bitax=(cx.bitacoras||[]).filter(b=>b.fecha===hoy()).slice(-1)[0];
       const medsx=cx.meds||[];
       const confx=cx.confirmaciones||{};
-      const medsHoyx=medsx.filter(m=>!confx[m.id+'_'+hoy()]);
+      const medsHoyx=medsx.filter(m=>medPendienteHoy(m,confx,hoy()));
       const esActivo=cx.id===s.cuidadoId;
       const grad=GRADIENTS[idx%GRADIENTS.length];
       const cardStyle=esActivo?'':'opacity:.85;';
@@ -912,9 +912,9 @@ function renderHome(rol){
             ${esActivo?'<span style="background:rgba(255,255,255,.25);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:#fff">Activo ✓</span>':'<span style="background:rgba(255,255,255,.15);border-radius:20px;padding:3px 10px;font-size:11px;color:rgba(255,255,255,.8)">Cambiar →</span>'}
           </div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
-            ${[['❤️','Presión',bitax?.presion||'—',null],[' 🍽️','Almuerzo',bitax?.almuerzo||'—',null],
+            ${[['❤️','Presión',escapeHtml(bitax?.presion)||'—',null],[' 🍽️','Almuerzo',escapeHtml(bitax?.almuerzo)||'—',null],
                ['💊','Meds',medsx.length===0?'—':medsHoyx.length===0?'✓':medsHoyx.length+' pend.','s-salud-hub'],
-               ['😊','Ánimo',bitax?.animo?.split(' ')[0]||'—',null]].map(([ico,lbl,val,dest])=>
+               ['😊','Ánimo',escapeHtml(bitax?.animo?.split(' ')[0])||'—',null]].map(([ico,lbl,val,dest])=>
               `<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px 4px;text-align:center${dest&&esActivo?';cursor:pointer':''}"${dest&&esActivo?` onclick="event.stopPropagation();navTo('${dest}')"`:''}>
                 <div style="font-size:16px">${ico}</div>
                 <div style="font-size:9px;color:rgba(255,255,255,.7);margin-top:2px">${lbl}</div>
@@ -937,6 +937,13 @@ function renderHome(rol){
         <span style="font-size:16px">＋</span>
         <span style="font-size:13px;font-weight:600;color:var(--sage);margin-left:6px">Agregar otro familiar cuidado</span>
       </div>`;
+
+    // Hoy requiere atención · Cuidado activo — medicamentos atrasados (por dosis
+    // puntual, no por día), citas de hoy que aún no pasaron, bitácora sin
+    // registrar y stock bajo. El stock de insumos es del hogar completo, sin
+    // separar por persona cuidada (decisión explícita, por ahora).
+    adminHtml+=`<div class="slbl">Hoy requiere atención</div>`;
+    adminHtml+=renderAtencionHoyHTML(atencionHoyItems('admin', c, meds, medsConf, bitaHoy));
 
     // Acciones rápidas del Cuidado activo
     adminHtml+=`
@@ -967,6 +974,8 @@ function renderHome(rol){
 
     $('home-fam-body').innerHTML=hero+sem({p:bitaHoy?.presion,a:bitaHoy?.almuerzo,n:bitaHoy?.animo})+
       (bitaHoy?.resumen?`<div style="margin:0 16px 12px;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--r);padding:14px"><div style="font-size:11px;font-weight:700;color:var(--sage);margin-bottom:6px">✦ Resumen IA del día</div><div style="font-size:14px;color:var(--ink);line-height:1.7">${escapeHtml(bitaHoy.resumen)}</div></div>`:'')+`
+      <div class="slbl">Hoy requiere atención</div>
+      ${renderAtencionHoyHTML(atencionHoyItems('familiar', c, meds, medsConf, bitaHoy))}
       <div class="slbl">Próximos eventos</div>
       <div style="margin:0 16px 14px;background:var(--white);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer" onclick="navTo('s-agenda')">${evHtml}<div style="padding:10px 16px;font-size:12px;color:var(--sage);font-weight:600;text-align:center">Ver agenda completa →</div></div>
       <div class="slbl">Acciones rápidas</div>
@@ -981,7 +990,7 @@ function renderHome(rol){
         <div class="sum-row"><div class="sum-ico" style="background:var(--sage-lt)">💰</div><div class="sum-lbl">Total registrado</div><span class="badge b-ok">${fmt(totalGastos)}</span></div>
         <div class="sum-row" style="border:none"><div class="sum-ico" style="background:var(--surf)">📊</div><div class="sum-lbl">Presupuesto mensual</div><span class="badge b-muted">${fmt(comp.presupuesto||150000)}</span></div>
       </div>
-      <div class="ia" style="margin:0 16px 80px"><div class="ia-ico">✦</div><div>Solo puedes ver la información. El registro lo hace la administradora o la cuidadora.</div></div>`;
+      <div class="ia" style="margin:0 16px 80px"><div class="ia-ico">✦</div><div>Puedes registrar la bitácora y la agenda. La confirmación de medicamentos la hace la administradora o la cuidadora.</div></div>`;
 
   } else if(rol==='observador'){
     setHdr('home-obs','var(--purple)');
@@ -1010,6 +1019,8 @@ function renderHome(rol){
     const done=Object.values(checks).filter(Boolean).length;
     const total=Object.keys(checks).length;
     $('home-cui-body').innerHTML=hero+`
+      <div class="slbl">Hoy requiere atención</div>
+      ${renderAtencionHoyHTML(atencionHoyItems('cuidadora', c, meds, medsConf, bitaHoy))}
       <div class="slbl">Tu turno de hoy</div>
       <div style="margin:0 16px 14px;background:var(--white);border:1px solid var(--line);border-radius:var(--r);overflow:hidden">
         <div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between">
@@ -1040,7 +1051,8 @@ function renderHome(rol){
 /* ════ NAVEGACIÓN POR ROL (fuente única: sidebar desktop y sheet "Más" mobile) ════ */
 function _navItemsRol(s,c){
   const meds=c.meds||[];
-  const medsHoy=meds.filter(m=>!(c.confirmaciones||{})[m.id+'_'+hoy()]);
+  const confs=c.confirmaciones||{};
+  const medsHoy=meds.filter(m=>medPendienteHoy(m,confs,hoy()));
   const navMap={
     admin:[
       {ico:'🏠',lbl:'Inicio',screen:'s-home-admin'},
@@ -1529,18 +1541,18 @@ function renderLista(){
 
     items.forEach(b=>{
       const badges=[];
-      if(b.presion) badges.push(`<span class="badge b-ok">❤️ ${b.presion}</span>`);
-      if(b.temp)    badges.push(`<span class="badge b-ok">🌡️ ${b.temp}°C</span>`);
-      if(b.almuerzo&&b.almuerzo!=='Nada') badges.push(`<span class="badge ${b.almuerzo==='Todo'?'b-ok':'b-warn'}">🍽️ ${b.almuerzo}</span>`);
+      if(b.presion) badges.push(`<span class="badge b-ok">❤️ ${escapeHtml(b.presion)}</span>`);
+      if(b.temp)    badges.push(`<span class="badge b-ok">🌡️ ${escapeHtml(b.temp)}°C</span>`);
+      if(b.almuerzo&&b.almuerzo!=='Nada') badges.push(`<span class="badge ${b.almuerzo==='Todo'?'b-ok':'b-warn'}">🍽️ ${escapeHtml(b.almuerzo)}</span>`);
       else if(b.almuerzo==='Nada') badges.push(`<span class="badge b-err">🍽️ No comió</span>`);
       if(b.bano)  badges.push(`<span class="badge b-ok">🚽 ✓</span>`);
-      if(b.animo) badges.push(`<span class="badge b-info">${b.animo}</span>`);
+      if(b.animo) badges.push(`<span class="badge b-info">${escapeHtml(b.animo)}</span>`);
 
       html+=`
         <div class="bita-card" onclick="verDetalle('${b.id}')">
           <div class="bita-header">
             <div>
-              <div class="bita-hora">${b.hora||'—'} · ${b.quien||'—'}</div>
+              <div class="bita-hora">${b.hora||'—'} · ${escapeHtml(b.quien)||'—'}</div>
             </div>
             ${puedeEscribir
               ? `<button class="bita-del" onclick="event.stopPropagation();eliminarBitacora('${b.id}')">Eliminar</button>`
@@ -1589,17 +1601,17 @@ function verDetalle(id){
     {
       titulo:'Signos vitales',
       filas:[
-        ['❤️ Presión arterial', b.presion||'—', b.presion?'b-ok':'b-muted'],
-        ['🌡️ Temperatura',      b.temp?b.temp+'°C':'—', b.temp?'b-ok':'b-muted'],
-        ['🫁 Saturación O₂',    b.sato?b.sato+'%':'—', b.sato?'b-ok':'b-muted'],
+        ['❤️ Presión arterial', escapeHtml(b.presion)||'—', b.presion?'b-ok':'b-muted'],
+        ['🌡️ Temperatura',      b.temp?escapeHtml(b.temp)+'°C':'—', b.temp?'b-ok':'b-muted'],
+        ['🫁 Saturación O₂',    b.sato?escapeHtml(b.sato)+'%':'—', b.sato?'b-ok':'b-muted'],
       ]
     },
     {
       titulo:'Alimentación',
       filas:[
-        ['☀️ Desayuno',b.desayuno||'—', b.desayuno==='Todo'?'b-ok':b.desayuno==='Nada'?'b-err':'b-warn'],
-        ['🌤 Almuerzo', b.almuerzo||'—', b.almuerzo==='Todo'?'b-ok':b.almuerzo==='Nada'?'b-err':'b-warn'],
-        ['🌙 Cena',     b.cena||'—',    b.cena==='Todo'?'b-ok':b.cena==='Nada'?'b-err':b.cena?'b-warn':'b-muted'],
+        ['☀️ Desayuno',escapeHtml(b.desayuno)||'—', b.desayuno==='Todo'?'b-ok':b.desayuno==='Nada'?'b-err':'b-warn'],
+        ['🌤 Almuerzo', escapeHtml(b.almuerzo)||'—', b.almuerzo==='Todo'?'b-ok':b.almuerzo==='Nada'?'b-err':'b-warn'],
+        ['🌙 Cena',     escapeHtml(b.cena)||'—',    b.cena==='Todo'?'b-ok':b.cena==='Nada'?'b-err':b.cena?'b-warn':'b-muted'],
       ]
     },
     {
@@ -1614,7 +1626,7 @@ function verDetalle(id){
     {
       titulo:'Estado de ánimo',
       filas:[
-        ['😊 Ánimo', b.animo||'—', b.animo?'b-ok':'b-muted'],
+        ['😊 Ánimo', escapeHtml(b.animo)||'—', b.animo?'b-ok':'b-muted'],
       ]
     },
   ];
@@ -1975,12 +1987,12 @@ function mostrarResumenIA(b){
 
   // Tabla de datos registrados
   const filas=[
-    {ico:'❤️',bg:'var(--red-lt)',lbl:'Presión arterial',val:b.presion||'—',cls:b.presion?'b-ok':'b-muted'},
-    {ico:'🌡️',bg:'var(--amber-lt)',lbl:'Temperatura',val:b.temp?b.temp+'°C':'—',cls:b.temp?'b-ok':'b-muted'},
-    {ico:'🫁',bg:'var(--blue-lt)',lbl:'Saturación O₂',val:b.sato?b.sato+'%':'—',cls:b.sato?'b-ok':'b-muted'},
-    {ico:'🍽️',bg:'var(--sage-lt)',lbl:'Almuerzo',val:b.almuerzo||'—',cls:b.almuerzo==='Todo'?'b-ok':b.almuerzo==='Nada'?'b-err':'b-warn'},
+    {ico:'❤️',bg:'var(--red-lt)',lbl:'Presión arterial',val:escapeHtml(b.presion)||'—',cls:b.presion?'b-ok':'b-muted'},
+    {ico:'🌡️',bg:'var(--amber-lt)',lbl:'Temperatura',val:b.temp?escapeHtml(b.temp)+'°C':'—',cls:b.temp?'b-ok':'b-muted'},
+    {ico:'🫁',bg:'var(--blue-lt)',lbl:'Saturación O₂',val:b.sato?escapeHtml(b.sato)+'%':'—',cls:b.sato?'b-ok':'b-muted'},
+    {ico:'🍽️',bg:'var(--sage-lt)',lbl:'Almuerzo',val:escapeHtml(b.almuerzo)||'—',cls:b.almuerzo==='Todo'?'b-ok':b.almuerzo==='Nada'?'b-err':'b-warn'},
     {ico:'🚽',bg:'var(--surf)',lbl:'Baño',val:b.bano?'Sí ✓':'No',cls:b.bano?'b-ok':'b-muted'},
-    {ico:'😊',bg:'var(--sage-lt)',lbl:'Ánimo',val:b.animo||'—',cls:'b-ok'},
+    {ico:'😊',bg:'var(--sage-lt)',lbl:'Ánimo',val:escapeHtml(b.animo)||'—',cls:'b-ok'},
   ];
 
   if($('resumen-datos-tabla')){
@@ -2126,11 +2138,12 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
   const confs=cuidado.confirmaciones||{};
   const hoyStr=hoy();
 
-  // Progress del día
-  const confirmedHoy=meds.filter(m=>confs[m.id+'_'+hoyStr]);
-  const pct=meds.length?Math.round(confirmedHoy.length/meds.length*100):0;
+  // Progress del día — por dosis, no por medicamento (un med con 2 horarios cuenta 2 tomas)
+  const totalDosis=meds.reduce((sum,m)=>sum+(m.horarios?.length||1),0);
+  const dosisConfirmadas=meds.reduce((sum,m)=>sum+dosisDeHoy(m,confs,hoyStr).filter(d=>d.confirmada).length,0);
+  const pct=totalDosis?Math.round(dosisConfirmadas/totalDosis*100):0;
   const dot=$('tab-meds-dot');
-  if(dot) dot.classList.toggle('show', confirmedHoy.length<meds.length && meds.length>0);
+  if(dot) dot.classList.toggle('show', meds.some(m=>medPendienteHoy(m,confs,hoyStr)));
 
   // Agrupar por turno
   // Agrupar meds: los que tienen horarios calculados van en "Tratamiento activo"
@@ -2166,7 +2179,7 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
       <div class="meds-progress">
         <div class="mp-top">
           <div class="mp-label">Adherencia de hoy</div>
-          <div class="mp-count" id="mp-count">${confirmedHoy.length}/${meds.length} confirmados</div>
+          <div class="mp-count" id="mp-count">${dosisConfirmadas}/${totalDosis} tomas confirmadas</div>
         </div>
         <div class="mp-track"><div class="mp-fill" id="mp-fill" style="width:${pct}%"></div></div>
       </div>`;
@@ -2186,7 +2199,6 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
     html+=`<div class="turno-label">${turno}</div>`;
     html+=`<div style="background:var(--white);border-bottom:1px solid var(--line)">`;
     lista.forEach((m,i)=>{
-      const conf=confs[m.id+'_'+hoyStr];
       const stockLow=m.stock>0&&m.stock<=5;
       const noStock=m.stock===0;
       // Stock real (retrocompat)
@@ -2195,12 +2207,26 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
       const noStockReal=stockReal===0;
       const icoClassR=noStockReal?'sin-stock':stockRealLow?'stock-low':'normal';
 
-      // Horarios del día
+      // Horarios del día: cada uno se confirma por separado (dosis puntual)
       const hors=m.horarios||[];
+      const dosis=hors.length?dosisDeHoy(m,confs,hoyStr):[];
+      const nowMins=new Date().getHours()*60+new Date().getMinutes();
+      const vencidas=dosis.filter(d=>!d.confirmada && _horaAMinutos(d.horario)<=nowMins);
       const prox=hors.length?proximaToma(hors):null;
+
       const horariosHtml=hors.length
-        ? hors.map(h=>`<span style="background:var(--sage-lt);color:var(--sage);padding:1px 6px;border-radius:12px;font-size:11px;font-weight:600;margin-right:4px">${h}</span>`).join('')
+        ? dosis.map(d=>{
+            const esVencida=!d.confirmada && _horaAMinutos(d.horario)<=nowMins;
+            const cls=`dose-chip${d.confirmada?' confirmada':''}${esVencida?' vencida':''}`;
+            const icono=d.confirmada?'✓ ':esVencida?'⚠ ':'';
+            return puedeEditar
+              ? `<button type="button" class="${cls}" onclick="confMed('${m.id}','${d.horario}')">${icono}${d.horario}</button>`
+              : `<span class="${cls}">${icono}${d.horario}</span>`;
+          }).join('')
         : `<span style="color:var(--ink3);font-size:12px">${m.freq||'—'}</span>`;
+
+      // Sin horarios (legacy): una sola confirmación diaria, como antes
+      const confLegacy=!hors.length && confs[m.id+'_'+hoyStr];
 
       html+=`
         <div class="med-card" style="${i===lista.length-1?'border-bottom:none':''}">
@@ -2209,7 +2235,8 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
             <div class="med-nombre">${escapeHtml(m.nombre)} <span style="font-weight:400;color:var(--ink3)">${escapeHtml(m.dosis)}</span></div>
             ${m.cantidadPorToma?`<div style="font-size:12px;color:var(--sage);font-weight:600;margin-top:1px">💊 ${escapeHtml(m.cantidadPorToma)} por toma</div>`:''}
             <div class="med-meta" style="margin-top:3px">${horariosHtml}</div>
-            ${prox?`<div style="font-size:11px;color:var(--sage);margin-top:2px;font-weight:600">⏰ Próxima: ${prox}</div>`:''}
+            ${vencidas.length?`<div style="font-size:11px;color:var(--red);margin-top:2px;font-weight:600">⚠ Atrasada desde las ${vencidas[vencidas.length-1].horario}</div>`
+              :prox?`<div style="font-size:11px;color:var(--sage);margin-top:2px;font-weight:600">⏰ Próxima: ${prox}</div>`:''}
             <div class="med-meta" style="margin-top:3px">
               ${noStockReal?'<span style="color:var(--red);font-weight:600">Sin stock</span>':
                 stockRealLow?`<span style="color:var(--amber-dk);font-weight:600">⚠ Stock bajo: ${stockReal} ud.</span>`:
@@ -2218,7 +2245,7 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
             </div>
           </div>
           <div class="med-actions">
-            ${puedeEditar?`<button class="med-chk-btn${conf?' confirmado':''}" onclick="confMed('${m.id}',this)">${conf?'✓':''}</button>`:''}
+            ${!hors.length&&puedeEditar?`<button class="med-chk-btn${confLegacy?' confirmado':''}" onclick="confMed('${m.id}',null)">${confLegacy?'✓':''}</button>`:''}
             ${esAdmin?`<button class="med-del-btn" onclick="editarMed('${m.id}')" title="Editar">✏️</button>
                        <button class="med-del-btn" onclick="editarStock('${m.id}')" title="Gestionar stock">📦</button>
                        <button class="med-del-btn" onclick="eliminarMed('${m.id}')" title="Eliminar">🗑</button>`:''}
@@ -2250,10 +2277,14 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
 }
 
 /* Confirmar medicamento */
-function confMed(medId, btn){
+// horario: hora puntual de la dosis (ej. "08:00"), o null/undefined para
+// medicamentos sin horarios calculados (frecuencia "Solo si necesita"), que
+// siguen con una sola confirmación por día.
+function confMed(medId, horario){
   const cuidado=DB.getCuidado(); if(!cuidado) return;
   if(!cuidado.confirmaciones) cuidado.confirmaciones={};
-  const key=medId+'_'+hoy();
+  const fechaHoy=hoy();
+  const key=_claveDosis(medId, fechaHoy, horario);
   const yaConfirmado=!!cuidado.confirmaciones[key];
 
   const med=cuidado.meds.find(m=>m.id===medId);
@@ -2266,7 +2297,6 @@ function confMed(medId, btn){
       med.stock=med.stockActual;
     }
     DB.saveCuidado(cuidado);
-    if(btn){ btn.classList.remove('confirmado'); btn.textContent=''; }
     toast('Confirmación eliminada','ok');
   } else {
     // Confirmar — descontar 1 unidad del stock
@@ -2276,21 +2306,21 @@ function confMed(medId, btn){
       med.stock=med.stockActual;
     }
     DB.saveCuidado(cuidado);
-    if(btn){ btn.classList.add('confirmado'); btn.textContent='✓'; }
-    toast('✓ Medicamento confirmado','ok');
+    toast('✓ Toma confirmada','ok');
   }
 
-  // Actualizar dot del tab
-  const meds=cuidado.meds||[];
-  const pendientes=meds.filter(m=>!cuidado.confirmaciones[m.id+'_'+hoy()]);
-  const dot=$('tab-meds-dot');
-  if(dot) dot.classList.toggle('show', pendientes.length>0);
-  // Actualizar barra de progreso
-  const confirmedHoy=meds.filter(m=>!!cuidado.confirmaciones[m.id+'_'+hoy()]);
-  const pct=meds.length?Math.round(confirmedHoy.length/meds.length*100):0;
-  const fill=$('mp-fill'); if(fill) fill.style.width=pct+'%';
-  const count=$('mp-count'); if(count) count.textContent=`${confirmedHoy.length}/${meds.length} confirmados`;
+  // Re-renderizar en vez de parchar el DOM a mano: con dosis por horario hay
+  // varios textos que dependen de confs/stock (adherencia, "Próxima"/"Atrasada",
+  // stock restante) y parchar cada uno por separado queda frágil.
+  if(ST.salud.tabActivo) renderTab(ST.salud.tabActivo);
   renderSidebar();
+}
+
+// Confirmar una toma directo desde "Hoy requiere atención" en Inicio, sin
+// pasar por Salud, y refrescar la lista para que la tarjeta desaparezca.
+function confMedDesdeInicio(medId, horario){
+  confMed(medId, horario);
+  const s=DB.getSesion(); if(s) renderHome(s.rol);
 }
 
 /* Eliminar medicamento */
@@ -3443,9 +3473,9 @@ function renderDiario(cuidado, puede){
           <div class="pc-titulo">Desayuno</div>
           <div class="pc-plan">Plan: ${planRef('desayuno')}</div>
         </div>
-        ${ST.alimentacion.porciones.desayuno?`<span class="badge ${ST.alimentacion.porciones.desayuno==='Todo'?'b-ok':ST.alimentacion.porciones.desayuno==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${ST.alimentacion.porciones.desayuno}</span>`:''}
+        ${ST.alimentacion.porciones.desayuno?`<span class="badge ${ST.alimentacion.porciones.desayuno==='Todo'?'b-ok':ST.alimentacion.porciones.desayuno==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${escapeHtml(ST.alimentacion.porciones.desayuno)}</span>`:''}
       </div>
-      ${puede?porcionBtns('desayuno'):`<div style="font-size:13px;color:var(--ink3)">${ST.alimentacion.porciones.desayuno||'No registrado'}</div>`}
+      ${puede?porcionBtns('desayuno'):`<div style="font-size:13px;color:var(--ink3)">${escapeHtml(ST.alimentacion.porciones.desayuno)||'No registrado'}</div>`}
     </div>`;
 
   // Almuerzo
@@ -3457,9 +3487,9 @@ function renderDiario(cuidado, puede){
           <div class="pc-titulo">Almuerzo</div>
           <div class="pc-plan">Plan: ${planRef('almuerzo')}</div>
         </div>
-        ${ST.alimentacion.porciones.almuerzo?`<span class="badge ${ST.alimentacion.porciones.almuerzo==='Todo'?'b-ok':ST.alimentacion.porciones.almuerzo==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${ST.alimentacion.porciones.almuerzo}</span>`:''}
+        ${ST.alimentacion.porciones.almuerzo?`<span class="badge ${ST.alimentacion.porciones.almuerzo==='Todo'?'b-ok':ST.alimentacion.porciones.almuerzo==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${escapeHtml(ST.alimentacion.porciones.almuerzo)}</span>`:''}
       </div>
-      ${puede?porcionBtns('almuerzo'):`<div style="font-size:13px;color:var(--ink3)">${ST.alimentacion.porciones.almuerzo||'No registrado'}</div>`}
+      ${puede?porcionBtns('almuerzo'):`<div style="font-size:13px;color:var(--ink3)">${escapeHtml(ST.alimentacion.porciones.almuerzo)||'No registrado'}</div>`}
     </div>`;
 
   // Cena
@@ -3471,9 +3501,9 @@ function renderDiario(cuidado, puede){
           <div class="pc-titulo">Cena</div>
           <div class="pc-plan">Plan: ${planRef('cena')}</div>
         </div>
-        ${ST.alimentacion.porciones.cena?`<span class="badge ${ST.alimentacion.porciones.cena==='Todo'?'b-ok':ST.alimentacion.porciones.cena==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${ST.alimentacion.porciones.cena}</span>`:''}
+        ${ST.alimentacion.porciones.cena?`<span class="badge ${ST.alimentacion.porciones.cena==='Todo'?'b-ok':ST.alimentacion.porciones.cena==='Nada'?'b-err':'b-warn'}" style="margin-left:auto">${escapeHtml(ST.alimentacion.porciones.cena)}</span>`:''}
       </div>
-      ${puede?porcionBtns('cena'):`<div style="font-size:13px;color:var(--ink3)">${ST.alimentacion.porciones.cena||'No registrado'}</div>`}
+      ${puede?porcionBtns('cena'):`<div style="font-size:13px;color:var(--ink3)">${escapeHtml(ST.alimentacion.porciones.cena)||'No registrado'}</div>`}
     </div>`;
 
   // Hidratación
@@ -6270,6 +6300,122 @@ function proximaToma(horarios) {
     if (tomaMin > nowMins) return h;
   }
   return horarios[0]; // mañana a la primera hora
+}
+
+/* ── Precisión de dosis: confirmación por horario específico, no por día ── */
+function _horaAMinutos(h){ const [hh,mm]=h.split(':').map(Number); return hh*60+(mm||0); }
+
+// Clave de confirmación de una toma puntual. Meds sin horarios calculados
+// (frecuencia "Solo si necesita") no tienen una hora específica que confirmar,
+// así que mantienen la clave por día como antes (retrocompatible).
+function _claveDosis(medId, fecha, horario){
+  return horario ? `${medId}_${fecha}_${horario}` : `${medId}_${fecha}`;
+}
+
+// Todas las dosis de hoy de un medicamento, con su estado de confirmación.
+function dosisDeHoy(med, confs, fecha){
+  const hors = med.horarios?.length ? med.horarios : [null];
+  return hors.map(h => ({
+    horario: h,
+    clave: _claveDosis(med.id, fecha, h),
+    confirmada: !!confs[_claveDosis(med.id, fecha, h)],
+  }));
+}
+
+// ¿Le queda alguna dosis de hoy sin confirmar a este medicamento? Mismo uso
+// que antes para badges/puntos de aviso, ahora calculado dosis por dosis.
+function medPendienteHoy(med, confs, fecha){
+  return dosisDeHoy(med, confs, fecha).some(d => !d.confirmada);
+}
+
+// Dosis de hoy que ya debieron tomarse y siguen sin confirmar, de la más
+// atrasada a la más reciente. Es la base de "Hoy requiere atención".
+function dosisVencidasHoy(meds, confs, fecha){
+  const nowMins = new Date().getHours()*60 + new Date().getMinutes();
+  const vencidas = [];
+  (meds||[]).forEach(m => {
+    (m.horarios||[]).forEach(h => {
+      const clave = _claveDosis(m.id, fecha, h);
+      const tomaMin = _horaAMinutos(h);
+      if(!confs[clave] && tomaMin <= nowMins){
+        vencidas.push({ med:m, horario:h, clave, minutosAtraso: nowMins-tomaMin });
+      }
+    });
+  });
+  return vencidas.sort((a,b)=>b.minutosAtraso-a.minutosAtraso);
+}
+
+// "Hoy requiere atención": mismos ítems para admin/cuidadora/familiar, pero
+// cada categoría solo aparece si el rol tiene tanto el permiso real de
+// escritura (los mismos puedeEditar/puedeEscribir que usan renderMeds,
+// renderAgenda y guardarBitacora) como acceso de navegación al módulo — así
+// el widget nunca ofrece una acción que la pantalla de destino luego bloquea,
+// ni abre una puerta trasera a un módulo fuera del menú del rol. Insumos es
+// exclusivo de admin (único rol con "Hogar e insumos" en su nav) y observador
+// no tiene ningún permiso de escritura real, así que no genera ítems.
+function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
+  const items=[];
+  if(['admin','cuidadora'].includes(rol)){
+    dosisVencidasHoy(meds, medsConf, hoy()).forEach(v=>{
+      const atrasoTxt=v.minutosAtraso<60?`${v.minutosAtraso} min`:`${Math.floor(v.minutosAtraso/60)}h ${v.minutosAtraso%60}min`;
+      items.push({tipo:'urgente',
+        badge:`Atrasada ${atrasoTxt}`,
+        titulo:`${escapeHtml(v.med.nombre)} ${escapeHtml(v.med.dosis||'')}`,
+        sub:`${v.med.cantidadPorToma?escapeHtml(v.med.cantidadPorToma)+' · ':''}toma programada ${v.horario}`,
+        accionTxt:'Confirmar toma',
+        accion:`confMedDesdeInicio('${v.med.id}','${v.horario}')`});
+    });
+  }
+  if(['admin','familiar'].includes(rol)){
+    const nowMinsHoy=new Date().getHours()*60+new Date().getMinutes();
+    DB.getEventos()
+      .filter(ev=>ev.fecha===hoy() && (!ev.cuidadoId || ev.cuidadoId===cuidado.id))
+      .filter(ev=>!ev.hora || _horaAMinutos(ev.hora)>nowMinsHoy)
+      .sort((a,b)=>(a.hora||'').localeCompare(b.hora||''))
+      .forEach(ev=>{
+        items.push({tipo:'aviso',
+          badge:ev.hora?`Hoy · ${ev.hora}`:'Hoy',
+          titulo:escapeHtml(ev.titulo)||'Evento',
+          sub:escapeHtml(ev.lugar)||'',
+          accionTxt:'Ver agenda',
+          accion:`navTo('s-agenda')`});
+      });
+  }
+  if(['admin','familiar','cuidadora'].includes(rol) && !bitaHoy){
+    items.push({tipo:'normal',
+      badge:'Registro diario',
+      titulo:'Bitácora de hoy pendiente',
+      sub:'Alimentación, ánimo y novedades del turno',
+      accionTxt:'Registrar el día',
+      accion:`navTo('s-bita-new')`});
+  }
+  if(rol==='admin'){
+    const insumosBajos=(DB.getHogar().insumos||[]).filter(i=>i.stock<=i.stockMin);
+    insumosBajos.forEach(i=>{
+      items.push({tipo:i.stock===0?'urgente':'aviso',
+        badge:i.stock===0?'Sin stock':'Stock bajo',
+        titulo:escapeHtml(i.nombre),
+        sub:`Quedan ${i.stock} ${escapeHtml(i.unidad||'unidades')} · mínimo ${i.stockMin}`,
+        accionTxt:'Ver insumo',
+        accion:`navTo('s-hogar-hub')`});
+    });
+  }
+  return items;
+}
+
+function renderAtencionHoyHTML(items){
+  return items.length
+    ? `<div class="atencion-list">${items.map(it=>`
+        <div class="atencion-card${it.tipo!=='normal'?' '+it.tipo:''}" onclick="${it.accion}">
+          <div class="atencion-stripe"></div>
+          <div class="atencion-body">
+            <span class="atencion-badge">${it.badge}</span>
+            <div class="atencion-titulo">${it.titulo}</div>
+            ${it.sub?`<div class="atencion-sub">${it.sub}</div>`:''}
+          </div>
+          <button type="button" class="atencion-accion" onclick="event.stopPropagation();${it.accion}">${it.accionTxt}</button>
+        </div>`).join('')}</div>`
+    : `<div class="atencion-empty">✓ Nada urgente por ahora — todo al día.</div>`;
 }
 
 /* ── Módulo Gastos — boleta fotográfica o PDF ── */
