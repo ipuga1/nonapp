@@ -6436,7 +6436,7 @@ function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
       items.push({tipo:'normal',
         badge:`Próxima · ${prox.horario}`,
         titulo:`${escapeHtml(prox.med.nombre)} ${escapeHtml(prox.med.dosis||'')}`,
-        sub:`En ${horasFaltan>0?horasFaltan+'h ':''}${minFaltan}min`,
+        sub:`${prox.med.cantidadPorToma?escapeHtml(prox.med.cantidadPorToma)+' · ':''}En ${horasFaltan>0?horasFaltan+'h ':''}${minFaltan}min`,
         acciones:[{txt:'Ver en Salud', accion:`navTo('s-salud-hub')`}]});
     }
   }
