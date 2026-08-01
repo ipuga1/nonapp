@@ -259,6 +259,20 @@ function escapeHtml(str){
   if(str===null||str===undefined) return '';
   return String(str).replace(/[&<>"']/g, ch=>_escapeMap[ch]);
 }
+
+// "Cantidad por toma" es texto libre: algunos medicamentos quedan con una
+// unidad ("1 comprimido", "5ml"), otros solo con el número ("1"). Cuando es
+// un número puro, se le agrega "píldora(s)" para que el n° de píldoras por
+// toma quede explícito en vez de un número suelto sin contexto.
+function formatCantidadPorToma(valor){
+  if(!valor) return '';
+  const v=String(valor).trim();
+  if(/^\d+([.,]\d+)?$/.test(v)){
+    const n=parseFloat(v.replace(',','.'));
+    return `${v} ${n===1?'píldora':'píldoras'}`;
+  }
+  return v;
+}
 let _guardarTs={};
 function _bloqueadoPorDobleClick(key,ms=800){
   const now=Date.now();
@@ -2227,7 +2241,7 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
           <div class="med-ico ${icoClassR}">💊</div>
           <div class="med-info" style="flex:1;min-width:0">
             <div class="med-nombre">${escapeHtml(m.nombre)} <span style="font-weight:400;color:var(--ink3)">${escapeHtml(m.dosis)}</span></div>
-            ${m.cantidadPorToma?`<div style="font-size:12px;color:var(--sage);font-weight:600;margin-top:1px">💊 ${escapeHtml(m.cantidadPorToma)} por toma</div>`:''}
+            ${m.cantidadPorToma?`<div style="font-size:12px;color:var(--sage);font-weight:600;margin-top:1px">💊 ${escapeHtml(formatCantidadPorToma(m.cantidadPorToma))} por toma</div>`:''}
             <div class="med-meta" style="margin-top:3px">${horariosHtml}</div>
             ${vencidas.length?`<div style="font-size:11px;color:var(--red);margin-top:2px;font-weight:600">⚠ Atrasada desde las ${vencidas[vencidas.length-1].horario}</div>`
               :prox?`<div style="font-size:11px;color:var(--sage);margin-top:2px;font-weight:600">⏰ Próxima: ${prox}</div>`:''}
@@ -2379,7 +2393,7 @@ function editarStock(medId){
   const totalComprado=(med.reposiciones||[]).reduce((s,r)=>s+(r.cantidad||0),0);
   const consumidos=Math.max(0,totalComprado-stockAct);
 
-  $('stock-med-nombre').textContent=med.nombre+' · '+med.dosis+(med.cantidadPorToma?' · '+med.cantidadPorToma:'');
+  $('stock-med-nombre').textContent=med.nombre+' · '+med.dosis+(med.cantidadPorToma?' · '+formatCantidadPorToma(med.cantidadPorToma):'');
   $('stock-valor').value=0;
   if($('stock-fecha')) $('stock-fecha').value=hoy();
   if($('stock-nota'))  $('stock-nota').value='';
@@ -5785,7 +5799,7 @@ function generarResumenClinico(am, bitMes, meds, presionProm, pctComio, eventos)
 
   txt+=`ADHERENCIA TERAPÉUTICA\n`;
   txt+=`Medicamentos activos: ${meds.length}\n`;
-  meds.forEach(m=>{ txt+=`  · ${m.nombre} ${m.dosis}${m.cantidadPorToma?' ('+m.cantidadPorToma+')':''} — ${m.freq}\n`; });
+  meds.forEach(m=>{ txt+=`  · ${m.nombre} ${m.dosis}${m.cantidadPorToma?' ('+formatCantidadPorToma(m.cantidadPorToma)+')':''} — ${m.freq}\n`; });
   txt+=`\n`;
 
   txt+=`SIGNOS VITALES (registros del período)\n`;
@@ -6423,7 +6437,7 @@ function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
       items.push({tipo:'urgente',
         badge:`Atrasada ${atrasoTxt}`,
         titulo:`${escapeHtml(v.med.nombre)} ${escapeHtml(v.med.dosis||'')}`,
-        sub:`${v.med.cantidadPorToma?escapeHtml(v.med.cantidadPorToma)+' · ':''}toma programada ${v.horario}`,
+        sub:`${v.med.cantidadPorToma?escapeHtml(formatCantidadPorToma(v.med.cantidadPorToma))+' por toma · ':''}hora programada ${v.horario}`,
         acciones:[
           {txt:'Confirmar toma', accion:`confMedDesdeInicio('${v.med.id}','${v.horario}')`},
           {txt:'Descartar', accion:`descartarMedDesdeInicio('${v.med.id}','${v.horario}')`},
@@ -6436,7 +6450,7 @@ function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
       items.push({tipo:'normal',
         badge:`Próxima · ${prox.horario}`,
         titulo:`${escapeHtml(prox.med.nombre)} ${escapeHtml(prox.med.dosis||'')}`,
-        sub:`${prox.med.cantidadPorToma?escapeHtml(prox.med.cantidadPorToma)+' · ':''}En ${horasFaltan>0?horasFaltan+'h ':''}${minFaltan}min`,
+        sub:`${prox.med.cantidadPorToma?escapeHtml(formatCantidadPorToma(prox.med.cantidadPorToma))+' por toma · ':''}en ${horasFaltan>0?horasFaltan+'h ':''}${minFaltan}min`,
         acciones:[{txt:'Ver en Salud', accion:`navTo('s-salud-hub')`}]});
     }
   }
