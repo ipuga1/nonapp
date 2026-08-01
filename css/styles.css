@@ -1867,7 +1867,7 @@ button,.btn,.tab,.sb-item,.qa{min-height:44px}
 /* ── Auth screens — scroll total en cualquier tamaño de pantalla ── */
 #s-splash.active, #s-login.active, #s-registro-tipo.active,
 #s-registro-admin.active, #s-ingresar-codigo.active,
-#s-registro-invitado.active, #s-bienvenida.active {
+#s-registro-invitado.active {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -1886,7 +1886,7 @@ button,.btn,.tab,.sb-item,.qa{min-height:44px}
 }
 /* Resto de auth: sí hacen scroll (formularios largos) */
 #s-login, #s-registro-tipo, #s-registro-admin,
-#s-ingresar-codigo, #s-registro-invitado, #s-bienvenida, #s-activacion,
+#s-ingresar-codigo, #s-registro-invitado, #s-activacion,
 #s-onb-am, #s-onb-salud {
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;

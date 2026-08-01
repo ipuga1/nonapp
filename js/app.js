@@ -314,7 +314,7 @@ function navTo(id){
   const sb=document.getElementById('sidebar');
   const sesionActiva=!!DB.getSesion();
   const esPantallaAuth=['s-splash','s-login','s-registro-tipo','s-registro-admin',
-    's-ingresar-codigo','s-registro-invitado','s-bienvenida'].includes(id);
+    's-ingresar-codigo','s-registro-invitado'].includes(id);
   // El sidebar en mobile NUNCA tiene display inline — lo controla el @media CSS
   // Solo ocultarlo explícitamente en pantallas de auth
   if(sb) sb.style.display=esPantallaAuth?'none':'';
@@ -439,7 +439,8 @@ function hacerLogin(){
       }
       // Mostrar feedback de éxito antes de navegar
       if($('login-ok')) $('login-ok').style.display='block';
-      setTimeout(()=>{ mostrarBienvenida(uData); }, 800);
+      renderSidebar();
+      setTimeout(()=>{ irAlHome(); }, 800);
     })
     .catch((err)=>{
       setLoading('login-spinner','login-btn-txt',false);
@@ -607,30 +608,14 @@ function registrarInvitado(){
       if(!usuarios.find(u=>u.id===uid)) { usuarios.push(userData); _cache['raiz_users']=usuarios; }
 
       DB.setSesion({userId:uid,nombre,email:userData.email,rol:_invActual.rol,cuidadoId:_invActual.cuidadoId});
-      mostrarBienvenida(userData);
+      renderSidebar();
+      irAlHome();
     })
     .catch((err)=>{
       setLoading('inv-spinner','inv-btn-txt',false);
       const msgs={'auth/email-already-in-use':'Este email ya tiene cuenta — inicia sesión normalmente'};
       toast(msgs[err.code]||'Error al registrarse','err');
     });
-}
-
-// Bienvenida post-login
-function mostrarBienvenida(u){
-  const c=DB.getCuidados().find(x=>x.id===u.cuidadoId);
-  $('bv-saludo').textContent='Hola, '+u.nombre.split(' ')[0]+' 👋';
-  $('bv-sub').textContent=c?.am?.nombre?`Cuidado de ${c.am.nombre} · ${c.am.edad} años`:'Configura el primer cuidado';
-  const b=$('bv-rol-badge'); const r=u.rol;
-  b.className='rol-badge-pill rb-'+r;
-  b.textContent=(ROL_EMOJI[r]||'👤')+' '+ROL_LABEL[r];
-  $('bv-rol-desc').textContent=ROL_DESC[r]||'';
-  if(c?.am?.nombre){ $('bv-am-nombre').textContent=c.am.nombre+' '+(c.am.apellido||''); $('bv-am-meta').textContent=(c.am.edad||'—')+' años · Cuidadora: '+(nombreCuidadoraPrincipal(c)||'Por configurar'); }
-  $('bv-ia-txt').textContent=r==='admin'?`Registra la bitácora de hoy para que la IA tenga su primer dato.`:`Recibirás actualizaciones del cuidado de ${c?.am?.nombre||'la persona cuidada'}.`;
-// El sidebar solo se muestra en desktop (≥768px via @media CSS)
-  // No modificar el inline style — el CSS lo controla
-  renderSidebar();
-  navTo('s-bienvenida');
 }
 
 function cerrarSesion(){
@@ -1303,7 +1288,8 @@ window._raizOnAuth = async (firebaseUser) => {
       toast('Completa el perfil de la persona cuidada para comenzar', 'ok');
       return;
     }
-    mostrarBienvenida(uData);
+    renderSidebar();
+    irAlHome();
   } catch(e) {
     console.warn('Error restaurando sesión:', e.message);
   }
