@@ -183,8 +183,7 @@ html,body{height:100%;margin:0;padding:0;font-family:-apple-system,BlinkMacSyste
 /* Hoy requiere atención */
 .atencion-list{display:flex;flex-direction:column;gap:8px;padding:0 16px 16px}
 @media(min-width:768px){.atencion-list{padding:0 24px 20px}}
-.atencion-card{display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:all .15s}
-.atencion-card:active{transform:scale(.99)}
+.atencion-card{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;transition:all .15s}
 .atencion-card.urgente{border-color:var(--red);background:linear-gradient(0deg,var(--red-lt),var(--white) 65%)}
 .atencion-card.aviso{border-color:#E8C88A;background:linear-gradient(0deg,var(--amber-lt),var(--white) 65%)}
 .atencion-stripe{width:4px;align-self:stretch;border-radius:4px;background:var(--line);flex-shrink:0}
@@ -196,8 +195,11 @@ html,body{height:100%;margin:0;padding:0;font-family:-apple-system,BlinkMacSyste
 .atencion-card.aviso .atencion-badge{background:var(--amber-lt);color:var(--amber-dk)}
 .atencion-titulo{font-size:14px;font-weight:700;color:var(--ink);margin:6px 0 1px}
 .atencion-sub{font-size:12px;color:var(--ink3)}
+.atencion-acciones{display:flex;gap:8px;flex:1 0 100%;justify-content:flex-end}
 .atencion-accion{flex-shrink:0;font-size:12px;font-weight:700;color:var(--sage-dk);background:var(--sage-lt);border:none;border-radius:var(--rs);padding:8px 12px;cursor:pointer;font-family:inherit;white-space:nowrap}
 .atencion-card.urgente .atencion-accion{background:var(--sage);color:#fff}
+.atencion-accion.secundaria{background:var(--surf);color:var(--ink3)}
+.atencion-card.urgente .atencion-accion.secundaria{background:rgba(255,255,255,.7);color:var(--red)}
 .atencion-empty{margin:0 16px 16px;padding:14px 16px;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--r);font-size:13px;color:var(--sage-dk);font-weight:600}
 @media(min-width:768px){.atencion-empty{margin:0 24px 20px}}
 
@@ -776,7 +778,16 @@ html,body{ height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
 .dose-chip.confirmada{ background:var(--sage); color:#fff; }
 .dose-chip.vencida{ background:var(--red-lt); color:var(--red); border-color:var(--red); }
 .dose-chip.vencida.confirmada{ background:var(--sage); color:#fff; border-color:transparent; }
+.dose-chip.descartada{ background:var(--surf); color:var(--ink3); text-decoration:line-through; }
 span.dose-chip{ cursor:default; }
+.dose-chip-x{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px; border-radius:50%;
+  background:var(--white); color:var(--red); border:1.5px solid var(--red-lt);
+  font-size:11px; font-weight:800; cursor:pointer; font-family:inherit;
+  margin:0 4px 4px -2px; padding:0; flex-shrink:0;
+}
+.dose-chip-x:hover{ background:var(--red-lt); }
 .med-del-btn{
   width:38px; height:38px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;

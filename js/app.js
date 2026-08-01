@@ -739,16 +739,18 @@ function guardarOnbAM(){
   if(!nombre){ toast('Escribe el nombre de la persona cuidada','err'); return; }
   const fnac=$('onb-fnac').value;
   const edad=calcularEdad(fnac);
-  let c=DB.getCuidado();
+  const s=DB.getSesion(); if(!s) return;
+  // Si venimos de "Agregar otro familiar cuidado", el cuidado se crea recién
+  // aquí (no antes) para no dejar un cuidado vacío si se abandona el formulario.
+  let c=_creandoCuidadoNuevo ? null : DB.getCuidado();
   if(!c){
     // No existe un cuidado local (p.ej. nunca llegó a guardarse en Firestore
-    // y se perdió al recargar la página) — crear uno vacío para no quedar
-    // pegado en este paso sin ningún aviso.
-    const s=DB.getSesion(); if(!s) return;
-    c={ id: s.cuidadoId||('c-'+s.userId+'-'+Date.now()), adminId: s.userId, creado: hoy(),
+    // y se perdió al recargar la página, o es un cuidado nuevo) — crear uno
+    // para no quedar pegado en este paso sin ningún aviso.
+    const cid=_creandoCuidadoNuevo ? ('c-'+Date.now()) : (s.cuidadoId||('c-'+s.userId+'-'+Date.now()));
+    c={ id: cid, adminId: s.userId, creado: hoy(),
       am:{nombre:'',edad:0,fechaNacimiento:'',rut:'',relacion:'',condiciones:[],alergias:[],medico:'',restricciones:[]},
       meds:[], bitacoras:[], confirmaciones:{}, informes:[] };
-    if(!s.cuidadoId) DB.setSesion({...s, cuidadoId:c.id});
   }
   c.am={...c.am,
     nombre,
@@ -758,6 +760,14 @@ function guardarOnbAM(){
     relacion: $('onb-relacion').value,
   };
   DB.saveCuidado(c);
+  if(_creandoCuidadoNuevo){
+    const u=DB.getUsuarios().find(x=>x.id===s.userId);
+    if(u){ u.cuidadoId=c.id; DB.setUsuarios(DB.getUsuarios().map(x=>x.id===s.userId?u:x)); }
+    DB.setSesion({...s, cuidadoId:c.id});
+    _creandoCuidadoNuevo=false;
+  } else if(!s.cuidadoId){
+    DB.setSesion({...s, cuidadoId:c.id});
+  }
   const ns=$('onb-nombre-salud'); if(ns) ns.textContent=nombre;
   // Inicializar la lista de cuidadoras al entrar al paso 2
   onbRenderCuidadoras();
@@ -1113,28 +1123,21 @@ function renderSidebar(){
 
 /* ════ SWITCHER MULTI-CUIDADO ════ */
 /* ════ MULTI-CUIDADO ════ */
+// No se crea ni persiste ningún cuidado aquí: solo se marca la intención y se
+// abre el formulario. El cuidado nuevo recién se guarda (local + Firestore)
+// cuando guardarOnbAM() procesa un envío válido — así, si el usuario abandona
+// el formulario (back, cerrar la pestaña, etc.) no queda un cuidado vacío
+// huérfano en la lista del admin.
+let _creandoCuidadoNuevo=false;
 function crearNuevoCuidado(){
   const s=DB.getSesion(); if(!s||s.rol!=='admin') return;
-  // Crear un nuevo cuidado vacío y asociarlo al admin
-  const cid='c-'+Date.now();
-  // Solo datos individuales del nuevo Cuidado
-  // Los datos compartidos (gastos, alimentación, hogar, equipo, agenda)
-  // ya existen en raiz_compartido_{adminId} y se comparten automáticamente
-  DB.saveCuidado({
-    id:cid, adminId:s.userId, creado:hoy(),
-    am:{nombre:'',edad:0,relacion:'',condiciones:[],alergias:[],medico:'',restricciones:[]},
-    meds:[], bitacoras:[], confirmaciones:{}, informes:[],
-  });
-  // Cambiar la sesión al nuevo cuidado
-  const u=DB.getUsuarios().find(x=>x.id===s.userId);
-  if(u){ u.cuidadoId=cid; DB.setUsuarios(DB.getUsuarios().map(x=>x.id===s.userId?u:x)); }
-  DB.setSesion({...s, cuidadoId:cid});
+  _creandoCuidadoNuevo=true;
   // Resetear lista de cuidadoras para el onboarding del nuevo
   _onbCuidadoras=[''];
   // Ir al onboarding del nuevo familiar
   const el=$('onb-am-saludo'); if(el) el.textContent=`Agregar familiar 👋`;
   navTo('s-onb-am');
-  toast('Nuevo cuidado — completa los datos','ok');
+  toast('Completa los datos del nuevo familiar','ok');
 }
 
 /* Cambiar cuidado activo y permanecer en home */
@@ -2207,21 +2210,26 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
       const noStockReal=stockReal===0;
       const icoClassR=noStockReal?'sin-stock':stockRealLow?'stock-low':'normal';
 
-      // Horarios del día: cada uno se confirma por separado (dosis puntual)
+      // Horarios del día: cada uno se confirma o descarta por separado (dosis puntual)
       const hors=m.horarios||[];
       const dosis=hors.length?dosisDeHoy(m,confs,hoyStr):[];
       const nowMins=new Date().getHours()*60+new Date().getMinutes();
-      const vencidas=dosis.filter(d=>!d.confirmada && _horaAMinutos(d.horario)<=nowMins);
+      const vencidas=dosis.filter(d=>!d.estado && _horaAMinutos(d.horario)<=nowMins);
       const prox=hors.length?proximaToma(hors):null;
 
       const horariosHtml=hors.length
         ? dosis.map(d=>{
-            const esVencida=!d.confirmada && _horaAMinutos(d.horario)<=nowMins;
-            const cls=`dose-chip${d.confirmada?' confirmada':''}${esVencida?' vencida':''}`;
-            const icono=d.confirmada?'✓ ':esVencida?'⚠ ':'';
-            return puedeEditar
+            const esVencida=!d.estado && _horaAMinutos(d.horario)<=nowMins;
+            const esDescartada=d.estado==='descartada';
+            const cls=`dose-chip${d.confirmada?' confirmada':''}${esDescartada?' descartada':''}${esVencida?' vencida':''}`;
+            const icono=d.confirmada?'✓ ':esDescartada?'✕ ':esVencida?'⚠ ':'';
+            const chip=puedeEditar
               ? `<button type="button" class="${cls}" onclick="confMed('${m.id}','${d.horario}')">${icono}${d.horario}</button>`
               : `<span class="${cls}">${icono}${d.horario}</span>`;
+            const btnDescartar=(puedeEditar && esVencida)
+              ? `<button type="button" class="dose-chip-x" title="Marcar como no tomada" onclick="descartarMed('${m.id}','${d.horario}')">✕</button>`
+              : '';
+            return chip+btnDescartar;
           }).join('')
         : `<span style="color:var(--ink3);font-size:12px">${m.freq||'—'}</span>`;
 
@@ -2285,11 +2293,11 @@ function confMed(medId, horario){
   if(!cuidado.confirmaciones) cuidado.confirmaciones={};
   const fechaHoy=hoy();
   const key=_claveDosis(medId, fechaHoy, horario);
-  const yaConfirmado=!!cuidado.confirmaciones[key];
+  const estadoActual=_estadoDosis(cuidado.confirmaciones, key);
 
   const med=cuidado.meds.find(m=>m.id===medId);
 
-  if(yaConfirmado){
+  if(estadoActual==='confirmada'){
     // Desconfirmar — devolver 1 unidad al stock
     delete cuidado.confirmaciones[key];
     if(med && med.stockActual!==undefined){
@@ -2299,8 +2307,9 @@ function confMed(medId, horario){
     DB.saveCuidado(cuidado);
     toast('Confirmación eliminada','ok');
   } else {
-    // Confirmar — descontar 1 unidad del stock
-    cuidado.confirmaciones[key]=true;
+    // Confirmar — descontar 1 unidad del stock. Si estaba descartada, no se
+    // había descontado stock antes, así que se descuenta ahora igual.
+    cuidado.confirmaciones[key]='confirmada';
     if(med && med.stockActual!==undefined){
       med.stockActual=Math.max(0,(med.stockActual||0)-1);
       med.stock=med.stockActual;
@@ -2316,10 +2325,45 @@ function confMed(medId, horario){
   renderSidebar();
 }
 
-// Confirmar una toma directo desde "Hoy requiere atención" en Inicio, sin
-// pasar por Salud, y refrescar la lista para que la tarjeta desaparezca.
+// Marcar una toma como explícitamente NO tomada (distinto de confirmarla):
+// deja de aparecer como vencida en "Hoy requiere atención" y en Salud, pero
+// no se descuenta stock ni se cuenta como adherencia cumplida.
+function descartarMed(medId, horario){
+  const cuidado=DB.getCuidado(); if(!cuidado) return;
+  if(!cuidado.confirmaciones) cuidado.confirmaciones={};
+  const fechaHoy=hoy();
+  const key=_claveDosis(medId, fechaHoy, horario);
+  const estadoActual=_estadoDosis(cuidado.confirmaciones, key);
+  const med=cuidado.meds.find(m=>m.id===medId);
+
+  if(estadoActual==='descartada'){
+    // Deshacer el descarte — vuelve a quedar pendiente
+    delete cuidado.confirmaciones[key];
+    toast('Se deshizo el descarte','ok');
+  } else {
+    if(estadoActual==='confirmada' && med && med.stockActual!==undefined){
+      // Venía confirmada: devolver el stock que se había descontado, ya que
+      // ahora se está marcando como no tomada.
+      med.stockActual=Math.min(med.stockInicial||9999, (med.stockActual||0)+1);
+      med.stock=med.stockActual;
+    }
+    cuidado.confirmaciones[key]='descartada';
+    toast('Toma marcada como no tomada','ok');
+  }
+  DB.saveCuidado(cuidado);
+  if(ST.salud.tabActivo) renderTab(ST.salud.tabActivo);
+  renderSidebar();
+}
+
+// Confirmar/descartar una toma directo desde "Hoy requiere atención" en
+// Inicio, sin pasar por Salud, y refrescar la lista para que la tarjeta
+// desaparezca o cambie de estado.
 function confMedDesdeInicio(medId, horario){
   confMed(medId, horario);
+  const s=DB.getSesion(); if(s) renderHome(s.rol);
+}
+function descartarMedDesdeInicio(medId, horario){
+  descartarMed(medId, horario);
   const s=DB.getSesion(); if(s) renderHome(s.rol);
 }
 
@@ -6312,24 +6356,38 @@ function _claveDosis(medId, fecha, horario){
   return horario ? `${medId}_${fecha}_${horario}` : `${medId}_${fecha}`;
 }
 
-// Todas las dosis de hoy de un medicamento, con su estado de confirmación.
+// Estado de una toma puntual: 'confirmada' (se tomó), 'descartada' (se marcó
+// explícitamente como no tomada) o null (pendiente, sin resolver todavía).
+// `true` se mantiene como equivalente legacy de 'confirmada' (formato previo
+// a agregar el descarte).
+function _estadoDosis(confs, clave){
+  const v=confs[clave];
+  if(v===true || v==='confirmada') return 'confirmada';
+  if(v==='descartada') return 'descartada';
+  return null;
+}
+
+// Todas las dosis de hoy de un medicamento, con su estado de resolución.
 function dosisDeHoy(med, confs, fecha){
   const hors = med.horarios?.length ? med.horarios : [null];
-  return hors.map(h => ({
-    horario: h,
-    clave: _claveDosis(med.id, fecha, h),
-    confirmada: !!confs[_claveDosis(med.id, fecha, h)],
-  }));
+  return hors.map(h => {
+    const clave=_claveDosis(med.id, fecha, h);
+    const estado=_estadoDosis(confs, clave);
+    return { horario: h, clave, estado, confirmada: estado==='confirmada' };
+  });
 }
 
-// ¿Le queda alguna dosis de hoy sin confirmar a este medicamento? Mismo uso
-// que antes para badges/puntos de aviso, ahora calculado dosis por dosis.
+// ¿Le queda alguna dosis de hoy sin resolver (ni confirmada ni descartada) a
+// este medicamento? Mismo uso que antes para badges/puntos de aviso, ahora
+// calculado dosis por dosis y sin contar las descartadas como pendientes.
 function medPendienteHoy(med, confs, fecha){
-  return dosisDeHoy(med, confs, fecha).some(d => !d.confirmada);
+  return dosisDeHoy(med, confs, fecha).some(d => !d.estado);
 }
 
-// Dosis de hoy que ya debieron tomarse y siguen sin confirmar, de la más
-// atrasada a la más reciente. Es la base de "Hoy requiere atención".
+// Dosis de hoy que ya debieron tomarse y siguen sin resolver (ni confirmadas
+// ni descartadas), de la más atrasada a la más reciente. Es la base de
+// "Hoy requiere atención" — una vez que se confirma o se descarta, deja de
+// aparecer aquí.
 function dosisVencidasHoy(meds, confs, fecha){
   const nowMins = new Date().getHours()*60 + new Date().getMinutes();
   const vencidas = [];
@@ -6337,12 +6395,30 @@ function dosisVencidasHoy(meds, confs, fecha){
     (m.horarios||[]).forEach(h => {
       const clave = _claveDosis(m.id, fecha, h);
       const tomaMin = _horaAMinutos(h);
-      if(!confs[clave] && tomaMin <= nowMins){
+      if(!_estadoDosis(confs, clave) && tomaMin <= nowMins){
         vencidas.push({ med:m, horario:h, clave, minutosAtraso: nowMins-tomaMin });
       }
     });
   });
   return vencidas.sort((a,b)=>b.minutosAtraso-a.minutosAtraso);
+}
+
+// La próxima toma pendiente (aún no vencida) más cercana entre todos los
+// medicamentos con horario, para mostrarla en "Hoy requiere atención" además
+// de las vencidas.
+function proximaDosisHoy(meds, confs, fecha){
+  const nowMins = new Date().getHours()*60 + new Date().getMinutes();
+  let mejor=null;
+  (meds||[]).forEach(m => {
+    (m.horarios||[]).forEach(h => {
+      const clave = _claveDosis(m.id, fecha, h);
+      const tomaMin = _horaAMinutos(h);
+      if(!_estadoDosis(confs, clave) && tomaMin > nowMins){
+        if(!mejor || tomaMin < mejor.tomaMin) mejor={ med:m, horario:h, clave, tomaMin };
+      }
+    });
+  });
+  return mejor;
 }
 
 // "Hoy requiere atención": mismos ítems para admin/cuidadora/familiar, pero
@@ -6362,9 +6438,21 @@ function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
         badge:`Atrasada ${atrasoTxt}`,
         titulo:`${escapeHtml(v.med.nombre)} ${escapeHtml(v.med.dosis||'')}`,
         sub:`${v.med.cantidadPorToma?escapeHtml(v.med.cantidadPorToma)+' · ':''}toma programada ${v.horario}`,
-        accionTxt:'Confirmar toma',
-        accion:`confMedDesdeInicio('${v.med.id}','${v.horario}')`});
+        acciones:[
+          {txt:'Confirmar toma', accion:`confMedDesdeInicio('${v.med.id}','${v.horario}')`},
+          {txt:'Descartar', accion:`descartarMedDesdeInicio('${v.med.id}','${v.horario}')`},
+        ]});
     });
+    const prox=proximaDosisHoy(meds, medsConf, hoy());
+    if(prox){
+      const horasFaltan=Math.floor((prox.tomaMin-(new Date().getHours()*60+new Date().getMinutes()))/60);
+      const minFaltan=(prox.tomaMin-(new Date().getHours()*60+new Date().getMinutes()))%60;
+      items.push({tipo:'normal',
+        badge:`Próxima · ${prox.horario}`,
+        titulo:`${escapeHtml(prox.med.nombre)} ${escapeHtml(prox.med.dosis||'')}`,
+        sub:`En ${horasFaltan>0?horasFaltan+'h ':''}${minFaltan}min`,
+        acciones:[{txt:'Ver en Salud', accion:`navTo('s-salud-hub')`}]});
+    }
   }
   if(['admin','familiar'].includes(rol)){
     const nowMinsHoy=new Date().getHours()*60+new Date().getMinutes();
@@ -6377,8 +6465,7 @@ function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
           badge:ev.hora?`Hoy · ${ev.hora}`:'Hoy',
           titulo:escapeHtml(ev.titulo)||'Evento',
           sub:escapeHtml(ev.lugar)||'',
-          accionTxt:'Ver agenda',
-          accion:`navTo('s-agenda')`});
+          acciones:[{txt:'Ver agenda', accion:`navTo('s-agenda')`}]});
       });
   }
   if(['admin','familiar','cuidadora'].includes(rol) && !bitaHoy){
@@ -6386,8 +6473,7 @@ function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
       badge:'Registro diario',
       titulo:'Bitácora de hoy pendiente',
       sub:'Alimentación, ánimo y novedades del turno',
-      accionTxt:'Registrar el día',
-      accion:`navTo('s-bita-new')`});
+      acciones:[{txt:'Registrar el día', accion:`navTo('s-bita-new')`}]});
   }
   if(rol==='admin'){
     const insumosBajos=(DB.getHogar().insumos||[]).filter(i=>i.stock<=i.stockMin);
@@ -6396,8 +6482,7 @@ function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
         badge:i.stock===0?'Sin stock':'Stock bajo',
         titulo:escapeHtml(i.nombre),
         sub:`Quedan ${i.stock} ${escapeHtml(i.unidad||'unidades')} · mínimo ${i.stockMin}`,
-        accionTxt:'Ver insumo',
-        accion:`navTo('s-hogar-hub')`});
+        acciones:[{txt:'Ver insumo', accion:`navTo('s-hogar-hub')`}]});
     });
   }
   return items;
@@ -6406,14 +6491,16 @@ function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
 function renderAtencionHoyHTML(items){
   return items.length
     ? `<div class="atencion-list">${items.map(it=>`
-        <div class="atencion-card${it.tipo!=='normal'?' '+it.tipo:''}" onclick="${it.accion}">
+        <div class="atencion-card${it.tipo!=='normal'?' '+it.tipo:''}">
           <div class="atencion-stripe"></div>
           <div class="atencion-body">
             <span class="atencion-badge">${it.badge}</span>
             <div class="atencion-titulo">${it.titulo}</div>
             ${it.sub?`<div class="atencion-sub">${it.sub}</div>`:''}
           </div>
-          <button type="button" class="atencion-accion" onclick="event.stopPropagation();${it.accion}">${it.accionTxt}</button>
+          <div class="atencion-acciones">
+            ${it.acciones.map((a,i)=>`<button type="button" class="atencion-accion${i>0?' secundaria':''}" onclick="${a.accion}">${a.txt}</button>`).join('')}
+          </div>
         </div>`).join('')}</div>`
     : `<div class="atencion-empty">✓ Nada urgente por ahora — todo al día.</div>`;
 }
