@@ -510,7 +510,7 @@
         <div class="vital-unit">°C</div>
       </div>
       <div id="temp-msg" style="padding:0 18px 6px;display:none"><span class="fwarn show" id="temp-warn-txt"></span></div>
-      <div class="vital-row" style="border:none">
+      <div class="vital-row">
         <div class="vital-ico">🫁</div>
         <div class="vital-lbl">Saturación O₂</div>
         <input class="vital-inp" id="v-sato" placeholder="96" type="number" inputmode="numeric"
@@ -518,6 +518,14 @@
         <div class="vital-unit">%</div>
       </div>
       <div id="sato-msg" style="padding:0 18px 6px;display:none"><span class="fwarn show" id="sato-warn-txt"></span></div>
+      <div class="vital-row" style="border:none">
+        <div class="vital-ico">💓</div>
+        <div class="vital-lbl">Frecuencia cardíaca</div>
+        <input class="vital-inp" id="v-fc" placeholder="72" type="number" inputmode="numeric"
+               oninput="validarFc(this)" onblur="validarFc(this)">
+        <div class="vital-unit">lpm</div>
+      </div>
+      <div id="fc-msg" style="padding:0 18px 6px;display:none"><span class="fwarn show" id="fc-warn-txt"></span></div>
     </div>
 
     <!-- Alimentación -->

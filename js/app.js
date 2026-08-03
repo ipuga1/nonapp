@@ -1346,7 +1346,7 @@ const ST = {
     bitacoraActual: null,
     bitaEditandoId: null,
     form: {
-      quien:'Cuidadora', presion:'', temp:'', sato:'',
+      quien:'Cuidadora', presion:'', temp:'', sato:'', fc:'',
       desayuno:'', almuerzo:'', cena:'',
       bano:false, hidra:false, activ:false, visita:false,
       animo:'',
@@ -1612,6 +1612,7 @@ function verDetalle(id){
         ['❤️ Presión arterial', escapeHtml(b.presion)||'—', b.presion?'b-ok':'b-muted'],
         ['🌡️ Temperatura',      b.temp?escapeHtml(b.temp)+'°C':'—', b.temp?'b-ok':'b-muted'],
         ['🫁 Saturación O₂',    b.sato?escapeHtml(b.sato)+'%':'—', b.sato?'b-ok':'b-muted'],
+        ['💓 Frecuencia cardíaca', b.fc?escapeHtml(b.fc)+' lpm':'—', b.fc?'b-ok':'b-muted'],
       ]
     },
     {
@@ -1715,13 +1716,13 @@ function initFormulario(){
   // "quien" siempre viene de la sesión autenticada, nunca es una selección manual.
   ST.bitacora.form=b ? {
     quien: b.quien||sesion.nombre,
-    presion: b.presion||'', temp: b.temp||'', sato: b.sato||'',
+    presion: b.presion||'', temp: b.temp||'', sato: b.sato||'', fc: b.fc||'',
     desayuno: b.desayuno||'', almuerzo: b.almuerzo||'', cena: b.cena||'',
     bano: !!b.bano, hidra: !!b.hidra, activ: !!b.activ, visita: !!b.visita,
     animo: b.animo||'Muy bien 😊', nota: b.nota||'',
   } : {
     quien: sesion.nombre,
-    presion:'', temp:'', sato:'',
+    presion:'', temp:'', sato:'', fc:'',
     desayuno:'Todo', almuerzo:'Todo', cena:'',
     bano:false, hidra:false, activ:false, visita:false,
     animo:'Muy bien 😊', nota:'',
@@ -1739,9 +1740,10 @@ function initFormulario(){
   if($('v-presion')) $('v-presion').value=f.presion;
   if($('v-temp'))    $('v-temp').value=f.temp;
   if($('v-sato'))    $('v-sato').value=f.sato;
+  if($('v-fc'))      $('v-fc').value=f.fc;
   if($('nota-libre')) $('nota-libre').value=f.nota;
-  ['v-presion','v-temp','v-sato'].forEach(id=>$(id)?.classList.remove('warn','ok'));
-  ['presion-msg','temp-msg','sato-msg'].forEach(id=>{ const el=$(id); if(el) el.style.display='none'; });
+  ['v-presion','v-temp','v-sato','v-fc'].forEach(id=>$(id)?.classList.remove('warn','ok'));
+  ['presion-msg','temp-msg','sato-msg','fc-msg'].forEach(id=>{ const el=$(id); if(el) el.style.display='none'; });
 
   // Checkboxes
   ['bano','hidra','activ','visita'].forEach(k=>{
@@ -1842,6 +1844,21 @@ function validarSato(inp){
   ST.bitacora.form.sato=inp.value;
 }
 
+function validarFc(inp){
+  const v=parseInt(inp.value);
+  if(!inp.value){ inp.classList.remove('warn','ok'); $('fc-msg').style.display='none'; return; }
+  const ok=v>=40 && v<=180;
+  inp.classList.toggle('warn',!ok);
+  inp.classList.toggle('ok',ok);
+  const msg=$('fc-warn-txt');
+  if(msg){
+    if(v<50) msg.textContent='⚠ Frecuencia baja (bradicardia) — evaluar';
+    else msg.textContent='⚠ Rango esperado: 40–180 lpm';
+  }
+  $('fc-msg').style.display=!ok?'block':'none';
+  ST.bitacora.form.fc=inp.value;
+}
+
 /* ════ GUARDAR BITÁCORA ════ */
 function guardarBitacora(){
   const sesion=DB.getSesion(); if(!sesion) return;
@@ -1856,6 +1873,7 @@ function guardarBitacora(){
   const presion=$('v-presion').value.trim();
   const temp=$('v-temp').value.trim();
   const sato=$('v-sato').value.trim();
+  const fc=$('v-fc').value.trim();
   const nota=$('nota-libre').value.trim();
 
   // Animación de carga
@@ -1875,6 +1893,7 @@ function guardarBitacora(){
       presion,
       temp,
       sato,
+      fc,
       desayuno: ST.bitacora.form.desayuno,
       almuerzo: ST.bitacora.form.almuerzo,
       cena:     ST.bitacora.form.cena,
@@ -1934,6 +1953,12 @@ function generarResumenIA(b, nombre){
     if(s<92) vitales.push(`saturación baja de ${b.sato}%`);
     else vitales.push(`saturación ${b.sato}%`);
   }
+  if(b.fc){
+    const f=parseInt(b.fc);
+    if(f<50) vitales.push(`frecuencia cardíaca baja de ${b.fc} lpm`);
+    else if(f>100) vitales.push(`frecuencia cardíaca elevada de ${b.fc} lpm`);
+    else vitales.push(`frecuencia cardíaca ${b.fc} lpm`);
+  }
 
   // Alimentación
   const alimentacion=[];
@@ -1973,6 +1998,7 @@ function generarResumenIA(b, nombre){
   const alertas=[];
   if(b.temp && parseFloat(b.temp)>=38) alertas.push('⚠ Temperatura elevada — consultar con el médico.');
   if(b.sato && parseInt(b.sato)<92)    alertas.push('⚠ Saturación baja — evaluar urgencia.');
+  if(b.fc && (parseInt(b.fc)<50 || parseInt(b.fc)>100)) alertas.push('⚠ Frecuencia cardíaca fuera de rango — evaluar.');
   if(b.almuerzo==='Nada' && b.desayuno==='Nada') alertas.push('⚠ No comió durante el día — monitorear.');
 
   if(alertas.length) resumen+=' '+alertas.join(' ');
@@ -1998,6 +2024,7 @@ function mostrarResumenIA(b){
     {ico:'❤️',bg:'var(--red-lt)',lbl:'Presión arterial',val:escapeHtml(b.presion)||'—',cls:b.presion?'b-ok':'b-muted'},
     {ico:'🌡️',bg:'var(--amber-lt)',lbl:'Temperatura',val:b.temp?escapeHtml(b.temp)+'°C':'—',cls:b.temp?'b-ok':'b-muted'},
     {ico:'🫁',bg:'var(--blue-lt)',lbl:'Saturación O₂',val:b.sato?escapeHtml(b.sato)+'%':'—',cls:b.sato?'b-ok':'b-muted'},
+    {ico:'💓',bg:'var(--red-lt)',lbl:'Frecuencia cardíaca',val:b.fc?escapeHtml(b.fc)+' lpm':'—',cls:b.fc?'b-ok':'b-muted'},
     {ico:'🍽️',bg:'var(--sage-lt)',lbl:'Almuerzo',val:escapeHtml(b.almuerzo)||'—',cls:b.almuerzo==='Todo'?'b-ok':b.almuerzo==='Nada'?'b-err':'b-warn'},
     {ico:'🚽',bg:'var(--surf)',lbl:'Baño',val:b.bano?'Sí ✓':'No',cls:b.bano?'b-ok':'b-muted'},
     {ico:'😊',bg:'var(--sage-lt)',lbl:'Ánimo',val:escapeHtml(b.animo)||'—',cls:'b-ok'},
@@ -5814,6 +5841,8 @@ function generarResumenClinico(am, bitMes, meds, presionProm, pctComio, eventos)
   if(temps.length) txt+=`Temperatura: ${temps.join(', ')}\n`;
   const satos=bitMes.filter(b=>b.sato).map(b=>b.sato+'%');
   if(satos.length) txt+=`SpO₂: ${satos.join(', ')}\n`;
+  const fcs=bitMes.filter(b=>b.fc).map(b=>b.fc+' lpm');
+  if(fcs.length) txt+=`Frecuencia cardíaca: ${fcs.join(', ')}\n`;
   txt+=`\n`;
 
   txt+=`ESTADO NUTRICIONAL\n`;
