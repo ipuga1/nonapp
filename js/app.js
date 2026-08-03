@@ -292,15 +292,6 @@ function hoy(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth
 function fechaHoy(){ return new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}); }
 function fmt(n){ return '$'+Number(n||0).toLocaleString('es-CL'); }
 
-// Altura real de viewport visible (evita que la barra del navegador mobile
-// tape el tabbar cuando 100vh/100dvh no se actualiza de forma confiable)
-function _fixVh(){
-  document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
-}
-_fixVh();
-window.addEventListener('resize', _fixVh);
-window.addEventListener('orientationchange', _fixVh);
-window.visualViewport?.addEventListener('resize', _fixVh);
 
 /* ── NAVEGACIÓN CENTRAL ── */
 // Pantallas que requieren sesión activa
