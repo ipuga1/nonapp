@@ -59,10 +59,14 @@ async function _fsDelete(path) {
 // Cargar todos los datos del hogar en el caché (llamado tras login)
 // Devuelve true si la carga fue exitosa, false si falló (sin lanzar excepción)
 async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
-  try {
-    const fb = window._fb;
-    if (!fb) return false;
+  const fb = window._fb;
+  if (!fb) return false;
+  // Cada carga en su propio try/catch: si las reglas de Firestore niegan una
+  // (p.ej. la de usuarios para un rol invitado) no debe impedir que las otras
+  // dos —que sí tienen permiso— terminen de cargar.
+  let ok = true;
 
+  try {
     // Cargar usuarios del hogar
     const usersSnap = await fb.getDocs(
       fb.query(fb.collection(fb.db, 'usuarios'),
@@ -76,7 +80,12 @@ async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
       usuarios.push(propioSnap.data());
     }
     _cache['raiz_users'] = usuarios;
+  } catch(e) {
+    console.warn('Error cargando usuarios:', e.message);
+    ok = false;
+  }
 
+  try {
     // Cargar cuidados del hogar
     const cuidadosSnap = await fb.getDocs(
       fb.query(fb.collection(fb.db, 'cuidados'),
@@ -85,19 +94,24 @@ async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
     const cuidados = [];
     cuidadosSnap.forEach(d => cuidados.push(d.data()));
     _cache['raiz_cuidados'] = cuidados;
+  } catch(e) {
+    console.warn('Error cargando cuidados:', e.message);
+    ok = false;
+  }
 
+  try {
     // Cargar datos compartidos del hogar
     const compSnap = await fb.getDoc(fb.doc(fb.db, 'compartido', adminId));
     if (compSnap.exists()) {
       _cache['raiz_compartido_' + adminId] = compSnap.data();
     }
-
-    console.log('✓ Datos cargados desde Firestore');
-    return true;
   } catch(e) {
-    console.warn('Error cargando datos:', e.message);
-    return false;
+    console.warn('Error cargando compartido:', e.message);
+    ok = false;
   }
+
+  if(ok) console.log('✓ Datos cargados desde Firestore');
+  return ok;
 }
 
 const DB = {
