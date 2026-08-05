@@ -281,6 +281,23 @@ const DB = {
   },
 };
 
+/* ── Firebase Storage — subida de documentos/boletas ──────────
+   Reemplaza el guardado de dataURL directo en Firestore. El campo que
+   se persiste sigue siendo una URL (antes data:, ahora https:), así
+   que las vistas que hacen <img src>/<a href> no necesitan cambios. */
+async function _subirArchivo(path, dataUrl){
+  const fb=window._fb;
+  const sref=fb.ref(fb.storage, path);
+  await fb.uploadString(sref, dataUrl, 'data_url');
+  return await fb.getDownloadURL(sref);
+}
+async function _eliminarArchivoStorage(url){
+  const fb=window._fb;
+  if(!url || !url.startsWith('http')) return; // dataURL legado o sin archivo: nada que borrar en Storage
+  try{ await fb.deleteObject(fb.ref(fb.storage, url)); }
+  catch(e){ console.warn('No se pudo eliminar archivo de Storage:', e.message); }
+}
+
 /* ── ROL MAPS ── */
 const ROL_COLOR={admin:'#4A7C6F',familiar:'#3A6EA8',observador:'#6B5EA8',cuidadora:'#C47A2B'};
 const ROL_LABEL={admin:'Administrador',familiar:'Familiar activo',observador:'Observador',cuidadora:'Cuidadora'};
@@ -3240,17 +3257,16 @@ function abrirSheetDoc(){
 }
 
 // Carga de archivo del documento médico (foto o PDF).
-// Sin Firebase Storage: las fotos se comprimen y se guardan como dataURL igual
-// que la boleta de Gastos. Un PDF no se puede comprimir, así que se limita a
-// 700KB para no arriesgar que el documento completo del cuidado supere el
-// límite de tamaño de Firestore (~1MB).
+// La foto se comprime localmente antes de subirla (menos datos móviles);
+// el PDF se sube tal cual a Firebase Storage. guardarDocumento() hace la
+// subida real y guarda la URL de descarga en archivoUrl.
 let _docArchivoDataUrl=null, _docArchivoTipo=null, _docArchivoNombre=null;
 
 function previewArchivoDoc(input){
   const file=input.files[0]; if(!file) return;
   const esPdf=file.type==='application/pdf';
-  if(esPdf && file.size > 700*1024){
-    toast('El PDF supera 700KB — usa uno más liviano o sube una foto','err');
+  if(esPdf && file.size > 10*1024*1024){
+    toast('El PDF supera 10MB','err');
     input.value=''; return;
   }
   if(!esPdf && file.size > 10*1024*1024){
@@ -3308,23 +3324,37 @@ function limpiarArchivoDoc(){
   $('doc-archivo-area').style.borderColor='var(--line)';
 }
 
-function guardarDocumento(){
+async function guardarDocumento(){
   if(!tienePermiso('salud','docs')){ toast('No tienes permiso para esto','err'); return; }
   const nombre=$('doc-nombre').value.trim();
   if(!nombre){ toast('Escribe un nombre para el documento','err'); return; }
   if(_bloqueadoPorDobleClick('documento')) return;
   const c=DB.getCuidado(); if(!c) return;
+
+  const docId='doc-'+Date.now();
+  const tipo=$('doc-tipo').value, medico=$('doc-medico').value.trim();
+  const fecha=$('doc-fecha').value||hoy(), notas=$('doc-notas').value.trim();
+  const archivoTipo=_docArchivoTipo, archivoNombre=_docArchivoNombre;
+
+  const btn=$('btn-guardar-doc'); const textoOriginal=btn.textContent;
+  let archivoUrl=_docArchivoDataUrl||null;
+  if(archivoUrl && archivoUrl.startsWith('data:')){
+    btn.disabled=true; btn.textContent='Subiendo archivo...';
+    try{
+      archivoUrl=await _subirArchivo(`cuidados/${c.id}/documentos/${docId}`, archivoUrl);
+    }catch(e){
+      console.error('Error subiendo documento:', e);
+      toast('No se pudo subir el archivo. Intenta de nuevo.','err');
+      btn.disabled=false; btn.textContent=textoOriginal;
+      return;
+    }
+    btn.disabled=false; btn.textContent=textoOriginal;
+  }
+
   if(!Array.isArray(c.documentos)) c.documentos=[];
   c.documentos.push({
-    id:'doc-'+Date.now(),
-    tipo:$('doc-tipo').value,
-    nombre,
-    medico:$('doc-medico').value.trim(),
-    fecha:$('doc-fecha').value||hoy(),
-    notas:$('doc-notas').value.trim(),
-    archivoUrl:_docArchivoDataUrl||null,
-    archivoTipo:_docArchivoTipo||null,
-    archivoNombre:_docArchivoNombre||null,
+    id:docId, tipo, nombre, medico, fecha, notas,
+    archivoUrl, archivoTipo, archivoNombre,
     creadoEl:hoy(),
   });
   DB.saveCuidado(c);
@@ -3337,8 +3367,10 @@ function eliminarDoc(id){
   if(!tienePermiso('salud','docs')){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Eliminar este documento?','Se eliminará del historial.',()=>{
     const c=DB.getCuidado(); if(!c) return;
+    const doc=(c.documentos||[]).find(d=>d.id===id);
     c.documentos=(c.documentos||[]).filter(d=>d.id!==id);
     DB.saveCuidado(c);
+    if(doc?.archivoUrl) _eliminarArchivoStorage(doc.archivoUrl);
     toast('Documento eliminado');
     renderTab('docs');
   });
@@ -5790,7 +5822,7 @@ function editarGasto(id){
   $('ov-gasto').classList.add('open');
 }
 
-function guardarGasto(){
+async function guardarGasto(){
   if(!tienePermiso('gastos','registrar')){ toast('No tienes permiso para esto','err'); return; }
   const monto=parseInt($('g-monto').value);
   if(!monto||monto<=0){ toast('Ingresa un monto válido','err'); return; }
@@ -5800,21 +5832,36 @@ function guardarGasto(){
   const c=DB.getCuidado(); if(!c) return;
   const comp=DB.getCompartido();
   if(!Array.isArray(comp.gastos)) comp.gastos=[];
-  const data={
-    cat:_catActual, desc, monto,
-    fecha:$('g-fecha').value||hoy(),
-    boleta: _boletaDataUrl||null,
-    boletaTipo: _boletaTipo||null,
-    boletaNombre: _boletaNombre||null,
-    aprobacion:$('g-aprobacion').value,
-    emoji:CATS[_catActual]?.ico||'📦',
-  };
-  if(ST.gastos.gastoEditandoId){
-    const idx=comp.gastos.findIndex(g=>g.id===ST.gastos.gastoEditandoId);
+
+  const editId=ST.gastos.gastoEditandoId;
+  const gastoId=editId||('g-'+Date.now());
+  const cat=_catActual, fecha=$('g-fecha').value||hoy(), aprobacion=$('g-aprobacion').value;
+  const boletaTipo=_boletaTipo, boletaNombre=_boletaNombre;
+  const urlAnterior=editId ? (comp.gastos.find(g=>g.id===editId)?.boleta||null) : null;
+
+  const btn=$('btn-guardar-gasto'); const textoOriginal=btn.textContent;
+  let boleta=_boletaDataUrl||null;
+  if(boleta && boleta.startsWith('data:')){
+    btn.disabled=true; btn.textContent='Subiendo archivo...';
+    try{
+      boleta=await _subirArchivo(`cuidados/${c.id}/gastos/${gastoId}`, boleta);
+    }catch(e){
+      console.error('Error subiendo boleta:', e);
+      toast('No se pudo subir el archivo. Intenta de nuevo.','err');
+      btn.disabled=false; btn.textContent=textoOriginal;
+      return;
+    }
+    btn.disabled=false; btn.textContent=textoOriginal;
+  }
+  if(urlAnterior && urlAnterior!==boleta) _eliminarArchivoStorage(urlAnterior);
+
+  const data={ cat, desc, monto, fecha, boleta, boletaTipo, boletaNombre, aprobacion, emoji:CATS[cat]?.ico||'📦' };
+  if(editId){
+    const idx=comp.gastos.findIndex(g=>g.id===editId);
     if(idx>=0) comp.gastos[idx]={...comp.gastos[idx],...data};
     toast('✓ Gasto actualizado','ok');
   } else {
-    comp.gastos.push({id:'g-'+Date.now(),...data});
+    comp.gastos.push({id:gastoId,...data});
     toast('✓ Gasto registrado','ok');
   }
   DB.saveCompartido(comp);
@@ -5826,8 +5873,11 @@ function eliminarGasto(id){
   if(DB.getSesion()?.rol!=='admin'){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Eliminar este gasto?','Se eliminará del registro permanentemente.',()=>{
     const compE=DB.getCompartido();
+    const g=(compE.gastos||[]).find(x=>x.id===id);
     compE.gastos=(compE.gastos||[]).filter(g=>g.id!==id);
-    DB.saveCompartido(compE); toast('Gasto eliminado'); renderTabGastos('registro');
+    DB.saveCompartido(compE);
+    if(g?.boleta) _eliminarArchivoStorage(g.boleta);
+    toast('Gasto eliminado'); renderTabGastos('registro');
   });
 }
 
@@ -6846,9 +6896,9 @@ function renderAtencionHoyHTML(items){
 }
 
 /* ── Módulo Gastos — boleta fotográfica o PDF ── */
-// Sin Firebase Storage: igual que los documentos médicos, las fotos se
-// comprimen y se guardan como dataURL; un PDF no se puede comprimir, así que
-// se limita a 700KB para no arriesgar el límite de tamaño de Firestore.
+// La foto se comprime localmente antes de subirla; el PDF se sube tal cual
+// a Firebase Storage. guardarGasto() hace la subida real y guarda la URL
+// de descarga en el campo boleta.
 let _boletaDataUrl = null;
 let _boletaTipo = null; // 'imagen' | 'pdf'
 let _boletaNombre = null;
@@ -6857,7 +6907,7 @@ function previewBoleta(input){
   const file = input.files[0];
   if(!file) return;
   const esPdf = file.type === 'application/pdf';
-  if(esPdf && file.size > 700*1024){ toast('El PDF supera 700KB — usa uno más liviano o sube una foto','err'); input.value=''; return; }
+  if(esPdf && file.size > 10*1024*1024){ toast('El PDF supera 10MB','err'); input.value=''; return; }
   if(!esPdf && file.size > 10*1024*1024){ toast('La imagen supera 10MB','err'); input.value=''; return; }
   const reader = new FileReader();
   reader.onload = (e) => {

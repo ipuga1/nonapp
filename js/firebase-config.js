@@ -7,6 +7,9 @@
       getFirestore, doc, getDoc, setDoc, collection,
       getDocs, query, where, onSnapshot, deleteDoc
     } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import {
+      getStorage, ref, uploadString, getDownloadURL, deleteObject
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-storage.js";
 
     // ── Configuración Firebase ──────────────────────────────
     const firebaseConfig = {
@@ -21,11 +24,13 @@
     const firebaseApp = initializeApp(firebaseConfig);
     const auth = getAuth(firebaseApp);
     const db = getFirestore(firebaseApp);
+    const storage = getStorage(firebaseApp);
 
     // ── Exponer globalmente para el código de la app ─────────
     window._fb = { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword,
                    signOut, onAuthStateChanged, doc, getDoc, setDoc, collection,
-                   getDocs, query, where, onSnapshot, deleteDoc };
+                   getDocs, query, where, onSnapshot, deleteDoc,
+                   storage, ref, uploadString, getDownloadURL, deleteObject };
 
     // ── Observar estado de autenticación ─────────────────────
     onAuthStateChanged(auth, async (user) => {
