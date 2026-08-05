@@ -110,6 +110,19 @@ async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
     ok = false;
   }
 
+  try {
+    // Cargar permisos por rol del hogar (si el admin nunca los configuró,
+    // el documento no existe todavía — no es un error, se usan los valores
+    // por defecto de PERMISOS_DEFAULT)
+    const ajustesSnap = await fb.getDoc(fb.doc(fb.db, 'ajustes', adminId));
+    if (ajustesSnap.exists()) {
+      _cache['raiz_ajustes_' + adminId] = ajustesSnap.data();
+    }
+  } catch(e) {
+    console.warn('Error cargando ajustes:', e.message);
+    ok = false;
+  }
+
   if(ok) console.log('✓ Datos cargados desde Firestore');
   return ok;
 }
@@ -199,6 +212,21 @@ const DB = {
     };
   },
 
+  /* Permisos por rol — uno por hogar/admin, en su propia colección
+     (ajustes/{adminId}) para que solo el admin pueda escribirlos aunque
+     cualquier miembro del hogar necesite leerlos. */
+  _keyAj(){ const aid=this._adminId(); return aid?('raiz_ajustes_'+aid):null; },
+  getAjustes(){
+    const k=this._keyAj(); if(!k) return null;
+    return this._get(k);
+  },
+  saveAjustes(data){
+    const k=this._keyAj(); if(!k) return;
+    this._set(k,data);
+    const aid=this._adminId();
+    if(aid) _fsSet('ajustes/'+aid, data);
+  },
+
   /* Alias de conveniencia para M5 — Alimentación */
   getAlim(){
     const comp=this.getCompartido();
@@ -263,6 +291,227 @@ const ROL_DESC={
   observador:'Ves el estado general y el resumen diario. Sin acceso a gastos ni historial completo.',
   cuidadora:'Puedes registrar la bitácora del turno y confirmar los medicamentos diarios.',
 };
+
+/* ── PERMISOS POR ROL (Perfil → Permisos por rol) ──
+   Metadata de módulos/acciones para la pantalla de permisos, compartida
+   entre los 3 roles configurables — admin nunca se restringe. Las acciones
+   marcadas adminOnly no son configurables: siguen gateadas por
+   s.rol==='admin' directo donde ya estaban, igual que antes de esta pantalla. */
+const MODULOS_PERMISOS = [
+  {key:'bitacora', ico:'📋', bg:'var(--sage-lt)', label:'Bitácora', actions:[
+    {key:'crear', label:'Registrar nuevo día'},
+    {key:'editar', label:'Editar un registro existente'},
+    {key:'eliminar', label:'Eliminar un registro'},
+  ]},
+  {key:'salud', ico:'💊', bg:'var(--red-lt)', label:'Salud', actions:[
+    {key:'confirmar', label:'Confirmar o descartar tomas'},
+    {key:'agregar', label:'Agregar medicamento manualmente'},
+    {key:'editarmed', label:'Editar o eliminar un medicamento, gestionar stock', adminOnly:true},
+    {key:'ocr', label:'Cargar receta con IA'},
+    {key:'ficha', label:'Editar ficha clínica', adminOnly:true},
+    {key:'docs', label:'Subir o eliminar documentos'},
+  ]},
+  {key:'alim', ico:'🍽️', bg:'var(--amber-lt)', label:'Alimentación', actions:[
+    {key:'porciones', label:'Registrar porciones del día'},
+    {key:'plan', label:'Editar plan semanal'},
+    {key:'restr', label:'Gestionar restricciones'},
+    {key:'compras', label:'Gestionar lista de compras'},
+  ]},
+  {key:'agenda', ico:'📅', bg:'var(--blue-lt)', label:'Agenda', actions:[
+    {key:'gestionar', label:'Crear, editar o eliminar eventos'},
+  ]},
+  {key:'gastos', ico:'🧾', bg:'var(--amber-lt)', label:'Gastos', actions:[
+    {key:'registrar', label:'Registrar un gasto'},
+    {key:'presupuesto', label:'Editar presupuesto', adminOnly:true},
+    {key:'aprobar', label:'Aprobar o rechazar gastos'},
+  ]},
+  {key:'hogar', ico:'🏠', bg:'var(--sage-lt)', label:'Hogar e insumos', actions:[
+    {key:'stock', label:'Ajustar stock'},
+    {key:'insumos', label:'Agregar insumos'},
+    {key:'editarinsumos', label:'Editar o eliminar un insumo', adminOnly:true},
+    {key:'proveedores', label:'Agregar o eliminar proveedores', adminOnly:true},
+  ]},
+  {key:'informe', ico:'📊', bg:'var(--blue-lt)', label:'Informe mensual', actions:[
+    {key:'generar', label:'Generar informe'},
+    {key:'eliminar', label:'Eliminar informe'},
+  ]},
+];
+
+// Valores iniciales por rol — reflejan exactamente el comportamiento real de
+// la app antes de que existiera esta pantalla. El admin los puede modificar
+// desde Perfil → Permisos por rol; hasta que lo haga (o si el hogar nunca
+// guardó ajustes propios) se usan estos.
+const PERMISOS_DEFAULT = {
+  familiar: {
+    bitacora:{on:true, crear:true, editar:false, eliminar:true},
+    salud:{on:false, confirmar:false, agregar:false, ocr:false, docs:false},
+    alim:{on:true, porciones:true, plan:true, restr:true, compras:true},
+    agenda:{on:true, gestionar:true},
+    gastos:{on:true, registrar:true, aprobar:true},
+    hogar:{on:false, stock:false, insumos:false},
+    informe:{on:true, generar:true, eliminar:true},
+  },
+  cuidadora: {
+    bitacora:{on:true, crear:true, editar:true, eliminar:false},
+    salud:{on:true, confirmar:true, agregar:true, ocr:true, docs:true},
+    alim:{on:true, porciones:true, plan:true, restr:false, compras:true},
+    agenda:{on:false, gestionar:false},
+    gastos:{on:false, registrar:false, aprobar:false},
+    hogar:{on:false, stock:false, insumos:false},
+    informe:{on:false, generar:false, eliminar:false},
+  },
+  observador: {
+    bitacora:{on:true, crear:false, editar:false, eliminar:false},
+    salud:{on:false, confirmar:false, agregar:false, ocr:false, docs:false},
+    alim:{on:false, porciones:false, plan:false, restr:false, compras:false},
+    agenda:{on:false, gestionar:false},
+    gastos:{on:false, registrar:false, aprobar:false},
+    hogar:{on:false, stock:false, insumos:false},
+    informe:{on:true, generar:false, eliminar:false},
+  },
+};
+
+// Permisos vigentes del rol dado: lo que el admin guardó en ajustes/{adminId},
+// o si nunca lo configuró, PERMISOS_DEFAULT.
+function _permisosDeRol(rol){
+  const ajustes=DB.getAjustes();
+  return (ajustes && ajustes[rol]) ? ajustes[rol] : PERMISOS_DEFAULT[rol];
+}
+
+// ¿El rol de la sesión activa tiene acceso al módulo (y, si se indica, a la
+// acción específica dentro de él)? admin siempre true — no es configurable.
+// Si el módulo está apagado, ninguna acción suya se permite aunque su valor
+// individual sea true (el módulo apagado manda por sobre las acciones).
+function tienePermiso(modulo, accion){
+  const s=DB.getSesion(); if(!s) return false;
+  if(s.rol==='admin') return true;
+  const p=_permisosDeRol(s.rol); if(!p) return false;
+  const mod=p[modulo]; if(!mod || !mod.on) return false;
+  if(!accion) return true;
+  return !!mod[accion];
+}
+
+/* ── PANTALLA: Permisos por rol (Perfil → Permisos por rol) ── */
+const ROLES_PERMISOS=[
+  {id:'familiar', emoji:'👨‍👩‍👧', label:'Familiar'},
+  {id:'cuidadora', emoji:'👩‍⚕️', label:'Cuidadora'},
+  {id:'observador', emoji:'👁️', label:'Observador'},
+];
+
+function _cargarPermisosParaEditar(){
+  const ajustes=DB.getAjustes();
+  const datos={};
+  ROLES_PERMISOS.forEach(r=>{
+    const base=(ajustes && ajustes[r.id]) ? ajustes[r.id] : PERMISOS_DEFAULT[r.id];
+    datos[r.id]=JSON.parse(JSON.stringify(base));
+  });
+  ST.permisos.datos=datos;
+}
+
+function renderPermisos(){
+  const s=DB.getSesion(); if(!s||s.rol!=='admin'){ navTo('s-perfil'); return; }
+  if(!ST.permisos.datos) _cargarPermisosParaEditar();
+  _renderRolSelectorPermisos();
+  _renderNotaPermisos();
+  _renderModulosPermisos();
+}
+
+function _renderRolSelectorPermisos(){
+  const el=$('perm-rolsel'); if(!el) return;
+  el.innerHTML=ROLES_PERMISOS.map(r=>`
+    <div class="rolpill ${r.id===ST.permisos.rolActual?'on':''}" onclick="seleccionarRolPermisos('${r.id}')">
+      <div class="remoji">${r.emoji}</div>
+      <div>${r.label}</div>
+    </div>`).join('');
+}
+
+function seleccionarRolPermisos(rol){
+  ST.permisos.rolActual=rol;
+  ST.permisos.moduloAbierto=null;
+  _renderRolSelectorPermisos();
+  _renderNotaPermisos();
+  _renderModulosPermisos();
+}
+
+function _renderNotaPermisos(){
+  const el=$('perm-rolnota'); if(!el) return;
+  const datos=ST.permisos.datos[ST.permisos.rolActual];
+  const activos=MODULOS_PERMISOS.filter(m=>datos[m.key]?.on).map(m=>m.label);
+  const texto=activos.length ? `Tiene acceso a: ${activos.join(', ')}.` : 'No tiene acceso a ningún módulo por ahora.';
+  el.innerHTML=`✦ <div>${texto}</div>`;
+}
+
+function _renderModulosPermisos(){
+  const el=$('perm-modlist'); if(!el) return;
+  const datos=ST.permisos.datos[ST.permisos.rolActual];
+  el.innerHTML=MODULOS_PERMISOS.map(mod=>{
+    const modDatos=datos[mod.key]||{on:false};
+    const isOpen=ST.permisos.moduloAbierto===mod.key;
+    const configurables=mod.actions.filter(a=>!a.adminOnly);
+    const activas=configurables.filter(a=>modDatos[a.key]).length;
+    return `
+    <div class="modcard ${modDatos.on?'':'off'}">
+      <div class="modhead">
+        <div class="modico" style="background:${mod.bg}">${mod.ico}</div>
+        <div class="modtxt" onclick="toggleAbrirModuloPermiso('${mod.key}')">
+          <div class="modlbl">${mod.label}</div>
+          <div class="modcount">${modDatos.on ? (configurables.length?`${activas} de ${configurables.length} acciones habilitadas`:'Acceso habilitado') : 'Sin acceso a este módulo'}</div>
+        </div>
+        <button class="chevbtn ${isOpen?'open':''}" onclick="toggleAbrirModuloPermiso('${mod.key}')">▾</button>
+        <button class="sw ${modDatos.on?'on':''}" onclick="toggleModuloPermiso('${mod.key}')"></button>
+      </div>
+      <div class="modbody ${(isOpen&&modDatos.on)?'':'hidden'}">
+        ${mod.actions.map(a=>`
+          <div class="actrow ${a.adminOnly?'locked':''}">
+            <div class="actlbl">${a.label}</div>
+            ${a.adminOnly?`<span class="lockedtag">Solo Admin</span>`:`<button class="sw sm ${modDatos[a.key]?'on':''}" onclick="toggleAccionPermiso('${mod.key}','${a.key}')"></button>`}
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleAbrirModuloPermiso(key){
+  ST.permisos.moduloAbierto=(ST.permisos.moduloAbierto===key)?null:key;
+  _renderModulosPermisos();
+}
+
+function toggleModuloPermiso(key){
+  const datos=ST.permisos.datos[ST.permisos.rolActual];
+  if(!datos[key]) datos[key]={on:false};
+  datos[key].on=!datos[key].on;
+  if(!datos[key].on) ST.permisos.moduloAbierto=null;
+  _renderModulosPermisos();
+  _renderNotaPermisos();
+}
+
+function toggleAccionPermiso(modKey,accKey){
+  const datos=ST.permisos.datos[ST.permisos.rolActual];
+  const mod=MODULOS_PERMISOS.find(m=>m.key===modKey);
+  const accion=mod?.actions.find(a=>a.key===accKey);
+  if(!accion || accion.adminOnly) return;
+  datos[modKey][accKey]=!datos[modKey][accKey];
+  _renderModulosPermisos();
+}
+
+function restablecerPermisosRol(){
+  const ajustes=DB.getAjustes();
+  const rol=ST.permisos.rolActual;
+  const base=(ajustes && ajustes[rol]) ? ajustes[rol] : PERMISOS_DEFAULT[rol];
+  ST.permisos.datos[rol]=JSON.parse(JSON.stringify(base));
+  ST.permisos.moduloAbierto=null;
+  _renderModulosPermisos();
+  _renderNotaPermisos();
+  toast('↺ Se restableció a los valores guardados','ok');
+}
+
+function guardarPermisos(){
+  DB.saveAjustes(ST.permisos.datos);
+  toast('✓ Permisos actualizados para '+(ROL_LABEL[ST.permisos.rolActual]||ST.permisos.rolActual),'ok');
+  // Por si el rol de la sesión activa coincide con el que se acaba de editar
+  // (ej. probando con otra cuenta en otra pestaña), refrescar nav/tabbar.
+  renderSidebar();
+}
 
 /* ── HASH ── */
 
@@ -392,6 +641,7 @@ function navTo(id){
   }
   if(id==='s-informe-hub')  setTimeout(renderHub,0);
   if(id==='s-agenda')       setTimeout(renderAgenda,0);
+  if(id==='s-permisos')     setTimeout(renderPermisos,0);
   if(['s-home-admin','s-home-familiar','s-home-observador','s-home-cuidadora'].includes(id)){
     const rol=id.replace('s-home-','');
     renderHome(rol==='admin'?'admin':rol==='familiar'?'familiar':rol==='observador'?'observador':'cuidadora');
@@ -644,6 +894,7 @@ function cerrarSesion(){
     DB.clearSesion();
     // Limpiar caché en memoria
     Object.keys(_cache).forEach(k=>{ if(k!=='raiz_sesion') delete _cache[k]; });
+    ST.permisos.datos=null;
     const sb=document.getElementById('sidebar');
     if(sb) sb.style.display='none';
     navTo('s-splash');
@@ -957,7 +1208,7 @@ function renderHome(rol){
     // registrar y stock bajo. El stock de insumos es del hogar completo, sin
     // separar por persona cuidada (decisión explícita, por ahora).
     adminHtml+=`<div class="slbl">Hoy requiere atención</div>`;
-    adminHtml+=renderAtencionHoyHTML(atencionHoyItems('admin', c, meds, medsConf, bitaHoy));
+    adminHtml+=renderAtencionHoyHTML(atencionHoyItems(c, meds, medsConf, bitaHoy));
 
     // Acciones rápidas del Cuidado activo
     adminHtml+=`
@@ -989,7 +1240,7 @@ function renderHome(rol){
     $('home-fam-body').innerHTML=hero+sem({p:bitaHoy?.presion,a:bitaHoy?.almuerzo,n:bitaHoy?.animo})+
       (bitaHoy?.resumen?`<div style="margin:0 16px 12px;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--r);padding:14px"><div style="font-size:11px;font-weight:700;color:var(--sage);margin-bottom:6px">✦ Resumen IA del día</div><div style="font-size:14px;color:var(--ink);line-height:1.7">${escapeHtml(bitaHoy.resumen)}</div></div>`:'')+`
       <div class="slbl">Hoy requiere atención</div>
-      ${renderAtencionHoyHTML(atencionHoyItems('familiar', c, meds, medsConf, bitaHoy))}
+      ${renderAtencionHoyHTML(atencionHoyItems(c, meds, medsConf, bitaHoy))}
       <div class="slbl">Próximos eventos</div>
       <div style="margin:0 16px 14px;background:var(--white);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer" onclick="navTo('s-agenda')">${evHtml}<div style="padding:10px 16px;font-size:12px;color:var(--sage);font-weight:600;text-align:center">Ver agenda completa →</div></div>
       <div class="slbl">Acciones rápidas</div>
@@ -1025,38 +1276,40 @@ function renderHome(rol){
     renderSidebar();
     const alim=DB.getAlim();
     const registroDiario=(alim.diario||{})[hoy()];
-    const checks={
-      bita:!!bitaHoy,
-      meds:meds.length>0&&medsHoy.length===0,
-      alim:!!(registroDiario?.desayuno||registroDiario?.almuerzo||registroDiario?.cena),
-    };
-    const done=Object.values(checks).filter(Boolean).length;
-    const total=Object.keys(checks).length;
+    // Cada fila del checklist solo aparece si el admin le dejó ese permiso a
+    // cuidadora — si apaga Salud, por ejemplo, "confirmar medicamentos" deja
+    // de listarse como tarea de su turno (ya no puede hacerlo).
+    const filasChecklist=[];
+    if(tienePermiso('bitacora','crear')) filasChecklist.push({
+      hecho:!!bitaHoy, onclick:"navTo('s-bita-new')", lbl:'Registrar bitácora del turno',
+      tag:bitaHoy?'Hecho':'Pendiente',
+    });
+    if(tienePermiso('salud','confirmar')) filasChecklist.push({
+      hecho:meds.length>0&&medsHoy.length===0, onclick:"navTo('s-salud-hub')", lbl:'Confirmar medicamentos del día',
+      tag:(meds.length>0&&medsHoy.length===0)?'Hecho':medsHoy.length>0?medsHoy.length+' pendientes':'Sin meds',
+    });
+    if(tienePermiso('alim','porciones')) filasChecklist.push({
+      hecho:!!(registroDiario?.desayuno||registroDiario?.almuerzo||registroDiario?.cena), onclick:"navTo('s-alim-hub')", lbl:'Registrar alimentación del día',
+      tag:(registroDiario?.desayuno||registroDiario?.almuerzo||registroDiario?.cena)?'Hecho':'Pendiente',
+    });
+    const done=filasChecklist.filter(f=>f.hecho).length;
+    const total=filasChecklist.length;
     $('home-cui-body').innerHTML=hero+`
       <div class="slbl">Hoy requiere atención</div>
-      ${renderAtencionHoyHTML(atencionHoyItems('cuidadora', c, meds, medsConf, bitaHoy))}
+      ${renderAtencionHoyHTML(atencionHoyItems(c, meds, medsConf, bitaHoy))}
       <div class="slbl">Tu turno de hoy</div>
       <div style="margin:0 16px 14px;background:var(--white);border:1px solid var(--line);border-radius:var(--r);overflow:hidden">
         <div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between">
           <div style="font-size:13px;font-weight:700;color:var(--ink)">Progreso del turno</div>
           <div style="font-size:13px;font-weight:800;color:var(--sage)">${done}/${total} completado</div>
         </div>
-        <div style="height:5px;background:var(--line)"><div style="height:100%;background:var(--sage);width:${done*50}%;transition:width .5s"></div></div>
-        <div class="chk-item" onclick="navTo('s-bita-new')">
-          <div class="chkbox${checks.bita?' on':''}">${checks.bita?'✓':''}</div>
-          <div class="chk-lbl${checks.bita?' done':''}">Registrar bitácora del turno</div>
-          <div class="chk-tag">${checks.bita?'Hecho':'Pendiente'}</div>
-        </div>
-        <div class="chk-item" onclick="navTo('s-salud-hub')">
-          <div class="chkbox${checks.meds?' on':''}">${checks.meds?'✓':''}</div>
-          <div class="chk-lbl${checks.meds?' done':''}">Confirmar medicamentos del día</div>
-          <div class="chk-tag">${checks.meds?'Hecho':medsHoy.length>0?medsHoy.length+' pendientes':'Sin meds'}</div>
-        </div>
-        <div class="chk-item" onclick="navTo('s-alim-hub')" style="border:none">
-          <div class="chkbox${checks.alim?' on':''}">${checks.alim?'✓':''}</div>
-          <div class="chk-lbl${checks.alim?' done':''}">Registrar alimentación del día</div>
-          <div class="chk-tag">${checks.alim?'Hecho':'Pendiente'}</div>
-        </div>
+        <div style="height:5px;background:var(--line)"><div style="height:100%;background:var(--sage);width:${total?Math.round(done/total*100):0}%;transition:width .5s"></div></div>
+        ${filasChecklist.map((f,i)=>`
+        <div class="chk-item" onclick="${f.onclick}" style="${i===filasChecklist.length-1?'border:none':''}">
+          <div class="chkbox${f.hecho?' on':''}">${f.hecho?'✓':''}</div>
+          <div class="chk-lbl${f.hecho?' done':''}">${f.lbl}</div>
+          <div class="chk-tag">${f.tag}</div>
+        </div>`).join('')}
       </div>
       <div class="ia" style="margin:0 16px 80px"><div class="ia-ico">✦</div><div>Registra la bitácora y confirma los medicamentos para completar tu turno.</div></div>`;
   }
@@ -1081,11 +1334,15 @@ function _navItemsRol(s,c){
       {ico:'📊',lbl:'Informe mensual',screen:'s-informe-hub'},
       {ico:'⚙️',lbl:'Perfil y ajustes',screen:'s-perfil'},
     ],
-    familiar:[{ico:'🏠',lbl:'Inicio',screen:'s-home-familiar'},{ico:'📋',lbl:'Registrar',screen:'s-bita-new'},{ico:'📋',lbl:'Historial',screen:'s-bita-list'},{ico:'📅',lbl:'Agenda',screen:'s-agenda'},{ico:'🍽️',lbl:'Alimentación',screen:'s-alim-hub'},{ico:'🧾',lbl:'Gastos',screen:'s-gastos'},{ico:'📊',lbl:'Informe',screen:'s-informe-hub'},{ico:'⚙️',lbl:'Perfil',screen:'s-perfil'}],
-    observador:[{ico:'🏠',lbl:'Inicio',screen:'s-home-observador'},{ico:'📋',lbl:'Historial',screen:'s-bita-list'},{ico:'📊',lbl:'Informe',screen:'s-informe-hub'},{ico:'⚙️',lbl:'Perfil',screen:'s-perfil'}],
-    cuidadora:[{ico:'🏠',lbl:'Inicio',screen:'s-home-cuidadora'},{ico:'📋',lbl:'Registrar turno',screen:'s-bita-new'},{ico:'💊',lbl:'Salud',screen:'s-salud-hub',badge:medsHoy.length||0},{ico:'🍽️',lbl:'Alimentación',screen:'s-alim-hub'},{ico:'⚙️',lbl:'Perfil',screen:'s-perfil'}],
+    familiar:[{ico:'🏠',lbl:'Inicio',screen:'s-home-familiar'},{ico:'📋',lbl:'Registrar',screen:'s-bita-new',mod:'bitacora'},{ico:'📋',lbl:'Historial',screen:'s-bita-list',mod:'bitacora'},{ico:'📅',lbl:'Agenda',screen:'s-agenda',mod:'agenda'},{ico:'🍽️',lbl:'Alimentación',screen:'s-alim-hub',mod:'alim'},{ico:'🧾',lbl:'Gastos',screen:'s-gastos',mod:'gastos'},{ico:'🏠',lbl:'Hogar e insumos',screen:'s-hogar-hub',mod:'hogar'},{ico:'📊',lbl:'Informe',screen:'s-informe-hub',mod:'informe'},{ico:'⚙️',lbl:'Perfil',screen:'s-perfil'}],
+    observador:[{ico:'🏠',lbl:'Inicio',screen:'s-home-observador'},{ico:'📋',lbl:'Historial',screen:'s-bita-list',mod:'bitacora'},{ico:'🏠',lbl:'Hogar e insumos',screen:'s-hogar-hub',mod:'hogar'},{ico:'📊',lbl:'Informe',screen:'s-informe-hub',mod:'informe'},{ico:'⚙️',lbl:'Perfil',screen:'s-perfil'}],
+    cuidadora:[{ico:'🏠',lbl:'Inicio',screen:'s-home-cuidadora'},{ico:'📋',lbl:'Registrar turno',screen:'s-bita-new',mod:'bitacora'},{ico:'💊',lbl:'Salud',screen:'s-salud-hub',badge:medsHoy.length||0,mod:'salud'},{ico:'🍽️',lbl:'Alimentación',screen:'s-alim-hub',mod:'alim'},{ico:'🏠',lbl:'Hogar e insumos',screen:'s-hogar-hub',mod:'hogar'},{ico:'⚙️',lbl:'Perfil',screen:'s-perfil'}],
   };
-  return navMap[s.rol]||navMap.familiar;
+  const items=navMap[s.rol]||navMap.familiar;
+  // admin siempre ve todo; los demás roles solo ven los módulos a los que
+  // el admin les dio acceso desde Perfil → Permisos por rol.
+  if(s.rol==='admin') return items;
+  return items.filter(it=>!it.mod || tienePermiso(it.mod));
 }
 
 // Sheet mobile "Más" — lista completa de módulos según el rol (equivalente al sidebar de escritorio)
@@ -1123,6 +1380,12 @@ function renderSidebar(){
   // Marcar activo
   const sc=document.querySelector('.screen.active');
   if(sc) document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('on',i.dataset.screen===sc.id));
+
+  // La tabbar inferior es HTML fijo por rol (no sale de _navItemsRol), así
+  // que hay que ocultar sus tabs directamente según el permiso del módulo.
+  document.querySelectorAll('.tabbar .tab[data-mod]').forEach(tab=>{
+    tab.style.display = (s.rol==='admin' || tienePermiso(tab.dataset.mod)) ? '' : 'none';
+  });
 }
 
 /* ════ SWITCHER MULTI-CUIDADO ════ */
@@ -1339,6 +1602,12 @@ window._raizOnAuth = async (firebaseUser) => {
    Un solo objeto ST para los tres módulos
    ════════════════════════════════════════════ */
 const ST = {
+  // Permisos por rol (Perfil → Permisos por rol)
+  permisos: {
+    rolActual: 'familiar',
+    moduloAbierto: null,
+    datos: null, // copia de trabajo mientras el admin edita, antes de guardar
+  },
   // M3 Bitácora
   bitacora: {
     bitaCuidadoId: null,
@@ -1483,7 +1752,8 @@ function renderLista(){
   const sesion=DB.getSesion(); if(!sesion) return;
   const _cid=DB.getSesion()?.cuidadoId;
   const cuidado=DB.getCuidadoById(_cid)||DB.getCuidado(); if(!cuidado) return;
-  const puedeEscribir=['admin','familiar','cuidadora'].includes(sesion.rol);
+  const puedeEscribir=tienePermiso('bitacora','crear');
+  const puedeEliminarCard=tienePermiso('bitacora','eliminar');
   const esObservador=sesion.rol==='observador';
   const am=cuidado.am||{};
 
@@ -1562,7 +1832,7 @@ function renderLista(){
             <div>
               <div class="bita-hora">${b.hora||'—'} · ${escapeHtml(b.quien)||'—'}</div>
             </div>
-            ${puedeEscribir
+            ${puedeEliminarCard
               ? `<button class="bita-del" onclick="event.stopPropagation();eliminarBitacora('${b.id}')">Eliminar</button>`
               : ''}
           </div>
@@ -1596,8 +1866,8 @@ function verDetalle(id){
   if($('detalle-sub-d')) $('detalle-sub-d').textContent=sub;
 
   // Acciones en header
-  const puedeEliminar=['admin','familiar'].includes(sesion.rol);
-  const puedeEditar=['admin','cuidadora'].includes(sesion.rol);
+  const puedeEliminar=tienePermiso('bitacora','eliminar');
+  const puedeEditar=tienePermiso('bitacora','editar');
   if($('detalle-acciones-hdr')){
     $('detalle-acciones-hdr').innerHTML=
       (puedeEditar?`<button style="font-size:11px;color:var(--sage);background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:inherit;margin-right:6px" onclick="editarBitacora('${b.id}')">Editar</button>`:'')+
@@ -1681,6 +1951,7 @@ function verDetalle(id){
 
 /* ════ ELIMINAR BITÁCORA ════ */
 function eliminarBitacora(id){
+  if(!tienePermiso('bitacora','eliminar')){ toast('No tienes permiso para eliminar','err'); return; }
   confirmar(
     '¿Eliminar este registro?',
     'El registro se eliminará permanentemente del historial.',
@@ -1775,7 +2046,7 @@ function initFormulario(){
 // Abre el formulario en modo edición, precargado con un registro existente
 function editarBitacora(id){
   const sesion=DB.getSesion(); if(!sesion) return;
-  if(!['admin','cuidadora'].includes(sesion.rol)){ toast('No tienes permiso para editar','err'); return; }
+  if(!tienePermiso('bitacora','editar')){ toast('No tienes permiso para editar','err'); return; }
   ST.bitacora.bitaEditandoId=id;
   navTo('s-bita-new');
 }
@@ -1865,8 +2136,8 @@ function guardarBitacora(){
   const cuidado=DB.getCuidado(); if(!cuidado) return;
   const editId=ST.bitacora.bitaEditandoId;
   const puedeEscribir = editId
-    ? ['admin','cuidadora'].includes(sesion.rol)
-    : ['admin','familiar','cuidadora'].includes(sesion.rol);
+    ? tienePermiso('bitacora','editar')
+    : tienePermiso('bitacora','crear');
   if(!puedeEscribir){ toast(editId?'No tienes permiso para editar':'No tienes permiso para registrar','err'); return; }
 
   // Leer valores actuales del formulario
@@ -2119,27 +2390,26 @@ function setTab(tab, btnEl){
 
 function fabAction(){
   const sesion=DB.getSesion(); if(!sesion) return;
-  const puedeEditar=['admin','cuidadora'].includes(sesion.rol);
-  if(!puedeEditar) return;
-  if(ST.salud.tabActivo==='meds')    abrirSheetMed();
-  if(ST.salud.tabActivo==='docs')    abrirSheetDoc();
-  if(ST.salud.tabActivo==='ficha' && sesion.rol==='admin')   navTo('s-ficha-editar');
+  if(ST.salud.tabActivo==='meds' && tienePermiso('salud','agregar'))   abrirSheetMed();
+  if(ST.salud.tabActivo==='docs' && tienePermiso('salud','docs'))      abrirSheetDoc();
+  if(ST.salud.tabActivo==='ficha' && sesion.rol==='admin')             navTo('s-ficha-editar');
 }
 
 function renderTab(tab){
   const sesion=DB.getSesion(); if(!sesion) return;
   const cuidado=DB.getCuidado(); if(!cuidado) return;
   const am=cuidado.am||{};
-  const puedeEditar=['admin','cuidadora'].includes(sesion.rol);
   const esAdmin=sesion.rol==='admin';
+  const puedeAgregarMed=tienePermiso('salud','agregar');
+  const puedeDocs=tienePermiso('salud','docs');
   const fab=$('salud-fab');
   const edadDisplay=calcularEdad(am.fechaNacimiento)||am.edad||'—'; const sub=`${am.nombre||'la persona cuidada'} · ${edadDisplay} años`;
   if($('salud-sub')) $('salud-sub').textContent=sub;
   if($('salud-sub-d')) $('salud-sub-d').textContent=sub;
 
   if(tab==='meds'){
-    if(fab) fab.style.display=puedeEditar?'flex':'none';
-    renderMeds(cuidado, puedeEditar, esAdmin);
+    if(fab) fab.style.display=puedeAgregarMed?'flex':'none';
+    renderMeds(cuidado, esAdmin);
     // Sin botones en el header — los botones de agregar van dentro del contenido
     if($('salud-hdr-action')) $('salud-hdr-action').innerHTML='';
     if($('salud-hdr-action-d')) $('salud-hdr-action-d').innerHTML='';
@@ -2152,10 +2422,10 @@ function renderTab(tab){
       ? `<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="navTo('s-ficha-editar')">Editar ficha</button>` : '';
 
   } else if(tab==='docs'){
-    if(fab) fab.style.display=puedeEditar?'flex':'none';
-    renderDocs(cuidado, puedeEditar);
-    if($('salud-hdr-action')) $('salud-hdr-action').innerHTML=puedeEditar?`<button class="hdr-action" onclick="abrirSheetDoc()">+ Agregar</button>`:'';
-    if($('salud-hdr-action-d')) $('salud-hdr-action-d').innerHTML=puedeEditar
+    if(fab) fab.style.display=puedeDocs?'flex':'none';
+    renderDocs(cuidado, puedeDocs);
+    if($('salud-hdr-action')) $('salud-hdr-action').innerHTML=puedeDocs?`<button class="hdr-action" onclick="abrirSheetDoc()">+ Agregar</button>`:'';
+    if($('salud-hdr-action-d')) $('salud-hdr-action-d').innerHTML=puedeDocs
       ? `<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="abrirSheetDoc()">+ Agregar documento</button>` : '';
 
   } else if(tab==='historial'){
@@ -2167,7 +2437,10 @@ function renderTab(tab){
 }
 
 /* ════ TAB MEDICAMENTOS ════ */
-function renderMeds(cuidado, puedeEditar, esAdmin){
+function renderMeds(cuidado, esAdmin){
+  const puedeConfirmar=tienePermiso('salud','confirmar');
+  const puedeAgregar=tienePermiso('salud','agregar');
+  const puedeOcr=tienePermiso('salud','ocr');
   const content=$('salud-content');
   const meds=cuidado.meds||[];
   const confs=cuidado.confirmaciones||{};
@@ -2255,10 +2528,10 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
             const esDescartada=d.estado==='descartada';
             const cls=`dose-chip${d.confirmada?' confirmada':''}${esDescartada?' descartada':''}${esVencida?' vencida':''}`;
             const icono=d.confirmada?'✓ ':esDescartada?'✕ ':esVencida?'⚠ ':'';
-            const chip=puedeEditar
+            const chip=puedeConfirmar
               ? `<button type="button" class="${cls}" onclick="confMed('${m.id}','${d.horario}')">${icono}${d.horario}</button>`
               : `<span class="${cls}">${icono}${d.horario}</span>`;
-            const btnDescartar=(puedeEditar && esVencida)
+            const btnDescartar=(puedeConfirmar && esVencida)
               ? `<button type="button" class="dose-chip-x" title="Marcar como no tomada" onclick="descartarMed('${m.id}','${d.horario}')">✕</button>`
               : '';
             return chip+btnDescartar;
@@ -2285,7 +2558,7 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
             </div>
           </div>
           <div class="med-actions">
-            ${!hors.length&&puedeEditar?`<button class="med-chk-btn${confLegacy?' confirmado':''}" onclick="confMed('${m.id}',null)">${confLegacy?'✓':''}</button>`:''}
+            ${!hors.length&&puedeConfirmar?`<button class="med-chk-btn${confLegacy?' confirmado':''}" onclick="confMed('${m.id}',null)">${confLegacy?'✓':''}</button>`:''}
             ${esAdmin?`<button class="med-del-btn" onclick="editarMed('${m.id}')" title="Editar">✏️</button>
                        <button class="med-del-btn" onclick="editarStock('${m.id}')" title="Gestionar stock">📦</button>
                        <button class="med-del-btn" onclick="eliminarMed('${m.id}')" title="Eliminar">🗑</button>`:''}
@@ -2296,20 +2569,20 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
   });
 
   if(!meds.length){
-    html=`<div class="empty"><div class="empty-ico">💊</div><div class="empty-title">Sin medicamentos</div><div class="empty-txt">${puedeEditar?'Agrega medicamentos manualmente o carga una foto de receta.':'El administrador aún no ha cargado los medicamentos.'}</div></div>`;
+    html=`<div class="empty"><div class="empty-ico">💊</div><div class="empty-title">Sin medicamentos</div><div class="empty-txt">${(puedeAgregar||puedeOcr)?'Agrega medicamentos manualmente o carga una foto de receta.':'El administrador aún no ha cargado los medicamentos.'}</div></div>`;
   }
 
-  if(puedeEditar){
+  if(puedeAgregar||puedeOcr){
     html+=`
       <div style="display:flex;gap:10px;padding:14px 18px 0">
-        <button onclick="navTo('s-ocr-receta')"
+        ${puedeOcr?`<button onclick="navTo('s-ocr-receta')"
           style="flex:1;padding:12px;background:var(--surf);color:var(--sage);border:1.5px solid var(--sage-md);border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
           📷 Cargar receta IA
-        </button>
-        <button onclick="abrirSheetMed()"
+        </button>`:''}
+        ${puedeAgregar?`<button onclick="abrirSheetMed()"
           style="flex:1;padding:12px;background:var(--sage);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
           ＋ Agregar manual
-        </button>
+        </button>`:''}
       </div>`;
   }
   html+=`<div style="height:80px"></div>`;
@@ -2321,6 +2594,7 @@ function renderMeds(cuidado, puedeEditar, esAdmin){
 // medicamentos sin horarios calculados (frecuencia "Solo si necesita"), que
 // siguen con una sola confirmación por día.
 function confMed(medId, horario){
+  if(!tienePermiso('salud','confirmar')){ toast('No tienes permiso para esto','err'); return; }
   const cuidado=DB.getCuidado(); if(!cuidado) return;
   if(!cuidado.confirmaciones) cuidado.confirmaciones={};
   const fechaHoy=hoy();
@@ -2361,6 +2635,7 @@ function confMed(medId, horario){
 // deja de aparecer como vencida en "Hoy requiere atención" y en Salud, pero
 // no se descuenta stock ni se cuenta como adherencia cumplida.
 function descartarMed(medId, horario){
+  if(!tienePermiso('salud','confirmar')){ toast('No tienes permiso para esto','err'); return; }
   const cuidado=DB.getCuidado(); if(!cuidado) return;
   if(!cuidado.confirmaciones) cuidado.confirmaciones={};
   const fechaHoy=hoy();
@@ -2450,6 +2725,7 @@ function editarStock(medId){
 
 /* ── M8: Ajustar stock de insumo del hogar ── */
 function ajustarStockInsumo(id, delta){
+  if(!tienePermiso('hogar','stock')){ toast('No tienes permiso para esto','err'); return; }
   const comp=DB.getCompartido();
   const ins=(comp.hogar?.insumos||[]).find(i=>i.id===id);
   if(!ins) return;
@@ -2541,6 +2817,11 @@ function editarMed(medId){
 }
 
 function guardarMedManual(){
+  const esEdicion=!!ST.salud.medEditando;
+  const sesion=DB.getSesion();
+  if(!(esEdicion ? sesion?.rol==='admin' : tienePermiso('salud','agregar'))){
+    toast('No tienes permiso para esto','err'); return;
+  }
   const nombre=$('am-nombre').value.trim();
   if(!nombre){
     toast('Ingresa el nombre del medicamento','err');
@@ -2723,6 +3004,7 @@ function toggleOcrMed(i){
 }
 
 function agregarMedsOCR(){
+  if(!tienePermiso('salud','ocr')){ toast('No tienes permiso para esto','err'); return; }
   const seleccionados=ST.salud.ocrMeds.filter(m=>m.seleccionado);
   if(!seleccionados.length){ toast('Selecciona al menos un medicamento','err'); return; }
   const c=DB.getCuidado(); if(!c) return;
@@ -2947,8 +3229,7 @@ function setDocFiltro(filtro, btn){
   document.querySelectorAll('.dfpill').forEach(p=>p.classList.remove('on'));
   if(btn) btn.classList.add('on');
   const c=DB.getCuidado();
-  const sesion=DB.getSesion();
-  renderDocs(c,['admin','cuidadora'].includes(sesion?.rol));
+  renderDocs(c, tienePermiso('salud','docs'));
 }
 
 function abrirSheetDoc(){
@@ -3028,6 +3309,7 @@ function limpiarArchivoDoc(){
 }
 
 function guardarDocumento(){
+  if(!tienePermiso('salud','docs')){ toast('No tienes permiso para esto','err'); return; }
   const nombre=$('doc-nombre').value.trim();
   if(!nombre){ toast('Escribe un nombre para el documento','err'); return; }
   if(_bloqueadoPorDobleClick('documento')) return;
@@ -3052,6 +3334,7 @@ function guardarDocumento(){
 }
 
 function eliminarDoc(id){
+  if(!tienePermiso('salud','docs')){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Eliminar este documento?','Se eliminará del historial.',()=>{
     const c=DB.getCuidado(); if(!c) return;
     c.documentos=(c.documentos||[]).filter(d=>d.id!==id);
@@ -3186,18 +3469,18 @@ function setTabAlim(tab,btn){
 
 function fabActionAlim(){
   const s=DB.getSesion(); if(!s) return;
-  const puede=['admin','familiar','cuidadora'].includes(s.rol);
-  if(!puede) return;
-  if(ST.alimentacion.tab==='plan')         abrirSeleccionarDia();
-  if(ST.alimentacion.tab==='restricciones') abrirSheetRestriccion();
-  if(ST.alimentacion.tab==='compras')       abrirSheetCompra();
+  if(ST.alimentacion.tab==='plan' && tienePermiso('alim','plan'))                 abrirSeleccionarDia();
+  if(ST.alimentacion.tab==='restricciones' && tienePermiso('alim','restr'))       abrirSheetRestriccion();
+  if(ST.alimentacion.tab==='compras' && tienePermiso('alim','compras'))           abrirSheetCompra();
 }
 
 function renderTabAlim(tab){
   const s=DB.getSesion(); if(!s) return;
   const c=DB.getCuidado(); if(!c) return;
-  const puede=['admin','familiar','cuidadora'].includes(s.rol);
-  const esAdmin=['admin','familiar'].includes(s.rol);
+  const puedePlan=tienePermiso('alim','plan');
+  const puedeRestr=tienePermiso('alim','restr');
+  const puedePorciones=tienePermiso('alim','porciones');
+  const puedeCompras=tienePermiso('alim','compras');
   const fab=$('alim-fab');
   const alim=DB.getAlim();
   const am=c.am||{};
@@ -3212,33 +3495,33 @@ function renderTabAlim(tab){
   };
 
   if(tab==='plan'){
-    if(fab) fab.style.display=puede?'flex':'none';
+    if(fab) fab.style.display=puedePlan?'flex':'none';
     setAcciones(
-      puede?`<button class="hdr-action" onclick="abrirSeleccionarDia()">+ Agregar</button>`:'',
-      puede?`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="abrirSeleccionarDia()">+ Agregar comida</button>`:''
+      puedePlan?`<button class="hdr-action" onclick="abrirSeleccionarDia()">+ Agregar</button>`:'',
+      puedePlan?`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="abrirSeleccionarDia()">+ Agregar comida</button>`:''
     );
-    renderPlanSemanal(alim, puede, c);
+    renderPlanSemanal(alim, puedePlan, c);
 
   } else if(tab==='restricciones'){
-    if(fab) fab.style.display=esAdmin?'flex':'none';
+    if(fab) fab.style.display=puedeRestr?'flex':'none';
     setAcciones(
-      esAdmin?`<button class="hdr-action" onclick="abrirSheetRestriccion()">+ Agregar</button>`:'',
-      esAdmin?`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="abrirSheetRestriccion()">+ Nueva restricción</button>`:''
+      puedeRestr?`<button class="hdr-action" onclick="abrirSheetRestriccion()">+ Agregar</button>`:'',
+      puedeRestr?`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="abrirSheetRestriccion()">+ Nueva restricción</button>`:''
     );
-    renderRestricciones(alim, am, esAdmin);
+    renderRestricciones(alim, am, puedeRestr);
 
   } else if(tab==='diario'){
     if(fab) fab.style.display='none';
     setAcciones('','');
-    renderDiario(c, puede);
+    renderDiario(c, puedePorciones);
 
   } else if(tab==='compras'){
-    if(fab) fab.style.display=puede?'flex':'none';
+    if(fab) fab.style.display=puedeCompras?'flex':'none';
     setAcciones(
-      puede?`<button class="hdr-action" onclick="abrirSheetCompra()">+ Agregar</button>`:'',
-      puede?`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="abrirSheetCompra()">+ Agregar</button>`:''
+      puedeCompras?`<button class="hdr-action" onclick="abrirSheetCompra()">+ Agregar</button>`:'',
+      puedeCompras?`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="abrirSheetCompra()">+ Agregar</button>`:''
     );
-    renderCompras(alim, puede);
+    renderCompras(alim, puedeCompras);
   }
 }
 
@@ -3357,6 +3640,7 @@ function abrirAddComida(dia){
 }
 
 function guardarComida(){
+  if(!tienePermiso('alim','plan')){ toast('No tienes permiso para esto','err'); return; }
   const desc=$('comida-desc').value.trim();
   if(!desc){ toast('Escribe una descripción de la comida','err'); return; }
   if(_bloqueadoPorDobleClick('comida')) return;
@@ -3378,6 +3662,7 @@ function guardarComida(){
 }
 
 function eliminarComida(dia,id){
+  if(!tienePermiso('alim','plan')){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Eliminar esta comida?','Se eliminará del plan semanal.',()=>{
     const alim=DB.getAlim(); if(!alim) return;
     if(Array.isArray(alim.plan[dia])) alim.plan[dia]=alim.plan[dia].filter(c=>c.id!==id);
@@ -3468,6 +3753,7 @@ function abrirSheetRestriccion(){
 }
 
 function guardarRestriccion(){
+  if(!tienePermiso('alim','restr')){ toast('No tienes permiso para esto','err'); return; }
   const desc=$('rest-desc').value.trim();
   if(!desc){ toast('Describe el alimento o ingrediente','err'); return; }
   if(_bloqueadoPorDobleClick('restriccion')) return;
@@ -3485,6 +3771,7 @@ function guardarRestriccion(){
 }
 
 function eliminarRestriccion(id){
+  if(!tienePermiso('alim','restr')){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Eliminar esta restricción?','Se eliminará de la lista de restricciones alimentarias.',()=>{
     const alim=DB.getAlim(); if(!alim) return;
     alim.restricciones=alim.restricciones.filter(r=>r.id!==id);
@@ -3644,6 +3931,7 @@ function togVaso(i){
 }
 
 function guardarRegistroDiario(){
+  if(!tienePermiso('alim','porciones')){ toast('No tienes permiso para esto','err'); return; }
   const c=DB.getCuidado(); if(!c) return;
   if(!Array.isArray(c.bitacoras)) c.bitacoras=[];
 
@@ -3778,6 +4066,7 @@ function abrirSheetCompra(){
 }
 
 function guardarCompra(){
+  if(!tienePermiso('alim','compras')){ toast('No tienes permiso para esto','err'); return; }
   const nombre=$('compra-nombre').value.trim();
   if(!nombre){ toast('Escribe el nombre del producto','err'); return; }
   if(_bloqueadoPorDobleClick('compra')) return;
@@ -3797,6 +4086,7 @@ function guardarCompra(){
 }
 
 function toggleCompra(id){
+  if(!tienePermiso('alim','compras')){ toast('No tienes permiso para esto','err'); return; }
   const alim=DB.getAlim(); if(!alim) return;
   const item=alim.compras.find(c=>c.id===id); if(!item) return;
   item.completada=!item.completada;
@@ -3806,6 +4096,7 @@ function toggleCompra(id){
 }
 
 function eliminarCompra(id){
+  if(!tienePermiso('alim','compras')){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Eliminar este ítem?','Se eliminará de la lista de compras.',()=>{
     const alim=DB.getAlim(); if(!alim) return;
     alim.compras=alim.compras.filter(c=>c.id!==id);
@@ -3816,6 +4107,7 @@ function eliminarCompra(id){
 }
 
 function limpiarCompletadas(){
+  if(!tienePermiso('alim','compras')){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Limpiar ítems completados?','Se eliminarán todos los ítems marcados como comprados.',()=>{
     const alim=DB.getAlim(); if(!alim) return;
     alim.compras=alim.compras.filter(c=>!c.completada);
@@ -4383,7 +4675,7 @@ function diasHasta(dateStr){
 function renderAgenda(){
   const s=DB.getSesion(); if(!s) return;
   const c=DB.getCuidado(); if(!c) return;
-  const puedeEditar=['admin','familiar','cuidadora'].includes(s.rol);
+  const puedeEditar=tienePermiso('agenda','gestionar');
   const am=c.am||{};
 
   // Por defecto, seleccionar el día de hoy si no hay ninguno elegido aún
@@ -4475,13 +4767,13 @@ function cambiarMes(delta){
   if(ST.agenda.mesActual<0){ ST.agenda.mesActual=11; ST.agenda.anioActual--; }
   if(ST.agenda.mesActual>11){ ST.agenda.mesActual=0; ST.agenda.anioActual++; }
   renderCalendarioAgenda();
-  renderDiaSeleccionado(['admin','cuidadora'].includes(DB.getSesion()?.rol));
+  renderDiaSeleccionado(tienePermiso('agenda','gestionar'));
 }
 
 function selDia(dateStr){
   ST.agenda.diaSeleccionado=dateStr;
   renderCalendarioAgenda();
-  renderDiaSeleccionado(['admin','cuidadora'].includes(DB.getSesion()?.rol));
+  renderDiaSeleccionado(tienePermiso('agenda','gestionar'));
 }
 
 /* ── EVENTOS DEL DÍA SELECCIONADO ── */
@@ -4682,6 +4974,7 @@ function actualizarEstilosTipo(){
 }
 
 function guardarEvento(){
+  if(!tienePermiso('agenda','gestionar')){ toast('No tienes permiso para esto','err'); return; }
   const titulo=$('ev-titulo').value.trim();
   if(!titulo){ toast('Escribe un título para el evento','err'); return; }
   const fecha=$('ev-fecha').value;
@@ -4724,19 +5017,20 @@ function guardarEvento(){
   const [a,m]=fecha.split('-').map(Number);
   ST.agenda.anioActual=a; ST.agenda.mesActual=m-1; ST.agenda.diaSeleccionado=fecha;
   renderCalendarioAgenda();
-  renderDiaSeleccionado(['admin','cuidadora'].includes(DB.getSesion()?.rol));
+  renderDiaSeleccionado(tienePermiso('agenda','gestionar'));
   renderAlertas();
 }
 
 function eliminarEventoActual(){
   if(!ST.agenda.eventoEditandoId) return;
+  if(!tienePermiso('agenda','gestionar')){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Eliminar este evento?','Se eliminará del calendario permanentemente.',()=>{
     const eventos=DB.getEventos().filter(e=>e.id!==ST.agenda.eventoEditandoId);
     DB.saveEventos(eventos);
     cerrarSheet('ov-evento');
     toast('Evento eliminado');
     renderCalendarioAgenda();
-    renderDiaSeleccionado(['admin','cuidadora'].includes(DB.getSesion()?.rol));
+    renderDiaSeleccionado(tienePermiso('agenda','gestionar'));
     renderAlertas();
   });
 }
@@ -4805,7 +5099,8 @@ function setTabHogar(tab,btn){
 function renderTabHogar(tab){
   const s=DB.getSesion(); if(!s) return;
   const c=DB.getCuidado(); if(!c) return;
-  const puedeEditar=['admin','familiar','cuidadora'].includes(s.rol);
+  const puedeInsumos=tienePermiso('hogar','insumos');
+  const puedeStock=tienePermiso('hogar','stock');
   const esAdmin=s.rol==='admin';
   const fab=$('hogar-fab');
   const am=c.am||{};
@@ -4817,10 +5112,10 @@ function renderTabHogar(tab){
   const deskBtn=(label,fn)=>`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="${fn}">${label}</button>`;
 
   if(tab==='insumos'){
-    if(fab) fab.style.display=puedeEditar?'flex':'none';
-    if($('hogar-hdr-action')) $('hogar-hdr-action').innerHTML=puedeEditar?`<button class="hdr-action" onclick="abrirSheetInsumo()">+ Agregar</button>`:'';
-    if($('hogar-hdr-action-d')) $('hogar-hdr-action-d').innerHTML=puedeEditar?deskBtn('+ Agregar insumo','abrirSheetInsumo()'):'';
-    renderInsumos(hogar, puedeEditar, esAdmin);
+    if(fab) fab.style.display=puedeInsumos?'flex':'none';
+    if($('hogar-hdr-action')) $('hogar-hdr-action').innerHTML=puedeInsumos?`<button class="hdr-action" onclick="abrirSheetInsumo()">+ Agregar</button>`:'';
+    if($('hogar-hdr-action-d')) $('hogar-hdr-action-d').innerHTML=puedeInsumos?deskBtn('+ Agregar insumo','abrirSheetInsumo()'):'';
+    renderInsumos(hogar, puedeStock, esAdmin, puedeInsumos);
   } else {
     if(fab) fab.style.display=esAdmin?'flex':'none';
     if($('hogar-hdr-action')) $('hogar-hdr-action').innerHTML=esAdmin?`<button class="hdr-action" onclick="abrirSheetProveedor()">+ Agregar</button>`:'';
@@ -4830,7 +5125,7 @@ function renderTabHogar(tab){
 }
 
 /* ════ TAB INSUMOS ════ */
-function renderInsumos(hogar, puedeEditar, esAdmin){
+function renderInsumos(hogar, puedeEditar, esAdmin, puedeAgregarInsumo=puedeEditar){
   const content=$('hogar-content');
   const insumos=hogar.insumos||[];
   const filtro=ST.hogar.filtroInsumo;
@@ -4855,7 +5150,7 @@ function renderInsumos(hogar, puedeEditar, esAdmin){
   // Lista de insumos
   const filtrados=filtro==='todos'?insumos:insumos.filter(i=>i.cat===filtro);
   if(!filtrados.length){
-    html+=`<div class="empty"><div class="empty-ico">📦</div><div class="empty-title">Sin insumos${filtro!=='todos'?' en esta categoría':''}</div><div class="empty-txt">${puedeEditar?'Agrega los insumos del cuidado para mantener el stock actualizado.':'El administrador aún no ha registrado insumos.'}</div></div>`;
+    html+=`<div class="empty"><div class="empty-ico">📦</div><div class="empty-title">Sin insumos${filtro!=='todos'?' en esta categoría':''}</div><div class="empty-txt">${puedeAgregarInsumo?'Agrega los insumos del cuidado para mantener el stock actualizado.':'El administrador aún no ha registrado insumos.'}</div></div>`;
   } else {
     html+=`<div style="background:var(--white)">`;
     filtrados.forEach((ins,i)=>{
@@ -4896,7 +5191,7 @@ function setFiltroInsumo(cat,btn){
   document.querySelectorAll('.filtros-bar .fpill').forEach(p=>p.classList.remove('on'));
   btn.classList.add('on');
   const hogar=DB.getHogar();
-  renderInsumos(hogar,['admin','familiar','cuidadora'].includes(DB.getSesion()?.rol),DB.getSesion()?.rol==='admin');
+  renderInsumos(hogar, tienePermiso('hogar','stock'), DB.getSesion()?.rol==='admin', tienePermiso('hogar','insumos'));
 }
 
 
@@ -4945,6 +5240,10 @@ function editarInsumo(id){
 }
 
 function guardarInsumo(){
+  const esEdicion=!!ST.hogar.editInsumoId;
+  if(!(esEdicion ? DB.getSesion()?.rol==='admin' : tienePermiso('hogar','insumos'))){
+    toast('No tienes permiso para esto','err'); return;
+  }
   const nombre=$('ins-nombre').value.trim();
   if(!nombre){ toast('Escribe el nombre del insumo','err'); return; }
   if(_bloqueadoPorDobleClick('insumo')) return;
@@ -4974,6 +5273,7 @@ function guardarInsumo(){
 
 function eliminarInsumoActual(){
   if(!ST.hogar.editInsumoId) return;
+  if(DB.getSesion()?.rol!=='admin'){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Eliminar este insumo?','Se eliminará del registro de stock.',()=>{
     const hogar=DB.getHogar(); if(!hogar) return;
     hogar.insumos=hogar.insumos.filter(i=>i.id!==ST.hogar.editInsumoId);
@@ -5168,9 +5468,9 @@ function renderTabGastos(tab){
   const s=DB.getSesion(); if(!s) return;
   const c=DB.getCuidado(); if(!c) return;
   const comp=DB.getCompartido();
-  const puedeRegistrar=['admin','familiar','cuidadora'].includes(s.rol);
+  const puedeRegistrar=tienePermiso('gastos','registrar');
+  const puedeAprobar=tienePermiso('gastos','aprobar');
   const esAdmin=s.rol==='admin';
-  const esFamiliar=s.rol==='familiar';
   const fab=$('gastos-fab');
   const gastos=comp.gastos||[];
   const am=c.am||{};
@@ -5197,7 +5497,7 @@ function renderTabGastos(tab){
     if(fab) fab.style.display='none';
     if($('gastos-hdr-action')) $('gastos-hdr-action').innerHTML='';
     if($('gastos-hdr-action-d')) $('gastos-hdr-action-d').innerHTML='';
-    renderRendicion(gastos, presupuesto, esFamiliar, esAdmin);
+    renderRendicion(gastos, presupuesto, puedeAprobar);
   }
 }
 
@@ -5359,7 +5659,7 @@ function renderPresupuesto(gastos, presupuesto, esAdmin){
 }
 
 /* ════ TAB RENDICIÓN ════ */
-function renderRendicion(gastos, presupuesto, esFamiliar, esAdmin){
+function renderRendicion(gastos, presupuesto, puedeAprobar){
   const content=$('gastos-content');
   const gastosMes=gastos.filter(g=>g.fecha?.startsWith(ST.gastos.mesVista));
   const total=gastosMes.reduce((s,g)=>s+g.monto,0);
@@ -5410,7 +5710,7 @@ function renderRendicion(gastos, presupuesto, esFamiliar, esAdmin){
             <div class="ac-monto">${fmt(g.monto)}</div>
           </div>
           <div style="font-size:11px;color:var(--ink3);padding:6px 14px;border-bottom:1px solid var(--line)">${conf.label}${g.nota?' · '+escapeHtml(g.nota):''} · ${g.fecha||'—'}</div>
-          ${esFamiliar||esAdmin?`
+          ${puedeAprobar?`
           <div class="ac-btns">
             <button class="ac-btn ac-aprobar" onclick="aprobarGasto('${g.id}',true)">✓ Aprobar</button>
             <button class="ac-btn ac-rechazar" onclick="aprobarGasto('${g.id}',false)">✗ Rechazar</button>
@@ -5491,6 +5791,7 @@ function editarGasto(id){
 }
 
 function guardarGasto(){
+  if(!tienePermiso('gastos','registrar')){ toast('No tienes permiso para esto','err'); return; }
   const monto=parseInt($('g-monto').value);
   if(!monto||monto<=0){ toast('Ingresa un monto válido','err'); return; }
   const desc=$('g-desc').value.trim();
@@ -5522,6 +5823,7 @@ function guardarGasto(){
 }
 
 function eliminarGasto(id){
+  if(DB.getSesion()?.rol!=='admin'){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Eliminar este gasto?','Se eliminará del registro permanentemente.',()=>{
     const compE=DB.getCompartido();
     compE.gastos=(compE.gastos||[]).filter(g=>g.id!==id);
@@ -5537,6 +5839,7 @@ function eliminarGastoActual(){
 
 /* ════ APROBACIÓN ════ */
 function aprobarGasto(id,aprueba){
+  if(!tienePermiso('gastos','aprobar')){ toast('No tienes permiso para esto','err'); return; }
   const comp=DB.getCompartido();
   const g=(comp.gastos||[]).find(x=>x.id===id); if(!g) return;
   g.aprobacion=aprueba?'aprobado':'rechazado';
@@ -5620,7 +5923,8 @@ function renderHub(){
   const c=DB.getCuidado(); if(!c) return;
   const am=c.am||{};
   const informes=(c.informes||[]).sort((a,b)=>b.mes.localeCompare(a.mes));
-  const puedeGenerar=['admin','familiar'].includes(s.rol);
+  const puedeGenerar=tienePermiso('informe','generar');
+  const puedeEliminarInf=tienePermiso('informe','eliminar');
   const mesHoy=mesActual();
   const informeEstesMes=informes.find(i=>i.mes===mesHoy);
 
@@ -5663,7 +5967,7 @@ function renderHub(){
           </div>
           <div class="ic-right">
             <span class="badge b-info">Ver →</span>
-            ${puedeGenerar?`<button class="ic-del" onclick="event.stopPropagation();eliminarInforme('${inf.id}')">Eliminar</button>`:''}
+            ${puedeEliminarInf?`<button class="ic-del" onclick="event.stopPropagation();eliminarInforme('${inf.id}')">Eliminar</button>`:''}
           </div>
         </div>`;
     });
@@ -5685,6 +5989,7 @@ function renderHub(){
 
 /* ════ GENERACIÓN DEL INFORME ════ */
 function iniciarGeneracion(){
+  if(!tienePermiso('informe','generar')){ toast('No tienes permiso para esto','err'); return; }
   ST.informe.mesGenerando=mesActual();
   navTo('s-generando');
 
@@ -6043,6 +6348,7 @@ function marcarInformeEnviado(id){
 }
 
 function eliminarInforme(id){
+  if(!tienePermiso('informe','eliminar')){ toast('No tienes permiso para esto','err'); return; }
   confirmar('¿Eliminar este informe?','Se eliminará del historial permanentemente.',()=>{
     const c=DB.getCuidado(); if(!c) return;
     c.informes=(c.informes||[]).filter(i=>i.id!==id);
@@ -6463,9 +6769,9 @@ function proximaDosisHoy(meds, confs, fecha){
 // ni abre una puerta trasera a un módulo fuera del menú del rol. Insumos es
 // exclusivo de admin (único rol con "Hogar e insumos" en su nav) y observador
 // no tiene ningún permiso de escritura real, así que no genera ítems.
-function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
+function atencionHoyItems(cuidado, meds, medsConf, bitaHoy){
   const items=[];
-  if(['admin','cuidadora'].includes(rol)){
+  if(tienePermiso('salud','confirmar')){
     dosisVencidasHoy(meds, medsConf, hoy()).forEach(v=>{
       const atrasoTxt=v.minutosAtraso<60?`${v.minutosAtraso} min`:`${Math.floor(v.minutosAtraso/60)}h ${v.minutosAtraso%60}min`;
       items.push({tipo:'urgente',
@@ -6488,7 +6794,7 @@ function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
         acciones:[{txt:'Ver en Salud', accion:`navTo('s-salud-hub')`}]});
     }
   }
-  if(['admin','familiar'].includes(rol)){
+  if(tienePermiso('agenda')){
     const nowMinsHoy=new Date().getHours()*60+new Date().getMinutes();
     DB.getEventos()
       .filter(ev=>ev.fecha===hoy() && (!ev.cuidadoId || ev.cuidadoId===cuidado.id))
@@ -6502,14 +6808,14 @@ function atencionHoyItems(rol, cuidado, meds, medsConf, bitaHoy){
           acciones:[{txt:'Ver agenda', accion:`navTo('s-agenda')`}]});
       });
   }
-  if(['admin','familiar','cuidadora'].includes(rol) && !bitaHoy){
+  if(tienePermiso('bitacora','crear') && !bitaHoy){
     items.push({tipo:'normal',
       badge:'Registro diario',
       titulo:'Bitácora de hoy pendiente',
       sub:'Alimentación, ánimo y novedades del turno',
       acciones:[{txt:'Registrar el día', accion:`navTo('s-bita-new')`}]});
   }
-  if(rol==='admin'){
+  if(tienePermiso('hogar')){
     const insumosBajos=(DB.getHogar().insumos||[]).filter(i=>i.stock<=i.stockMin);
     insumosBajos.forEach(i=>{
       items.push({tipo:i.stock===0?'urgente':'aviso',
@@ -6660,23 +6966,21 @@ async function recargarDesdeFB(){
 
 function fabActionEquip(){
   const s=DB.getSesion(); if(!s) return;
-  if(!['admin','cuidadora'].includes(s.rol)) return;
+  if(s.rol!=='admin') return;
   // Abrir sheet según el tab activo en Equipo
   if(ST.equipo.tabEquip==='cuidadoras') abrirSheetCuidadora();
   else if(ST.equipo.tabEquip==='especialistas') abrirSheetEspecialista();
 }
 function fabActionHogar(){
   const s=DB.getSesion(); if(!s) return;
-  // El permiso debe coincidir con el que muestra/oculta el FAB en renderTabHogar:
-  // insumos = admin/familiar/cuidadora, proveedores = solo admin
+  // El permiso debe coincidir con el que muestra/oculta el FAB en renderTabHogar
   if(ST.hogar.tabHogar==='insumos'){
-    if(['admin','familiar','cuidadora'].includes(s.rol)) abrirSheetInsumo();
+    if(tienePermiso('hogar','insumos')) abrirSheetInsumo();
   } else if(ST.hogar.tabHogar==='proveedores'){
     if(s.rol==='admin') abrirSheetProveedor();
   }
 }
 function fabActionGastos(){
-  const s=DB.getSesion(); if(!s) return;
-  if(!['admin','familiar','cuidadora'].includes(s.rol)) return;
+  if(!tienePermiso('gastos','registrar')) return;
   abrirSheetGasto();
 }
