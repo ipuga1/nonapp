@@ -758,7 +758,7 @@ html,body{ height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
 .med-info{ flex:1; min-width:0; }
 .med-nombre{ font-size:14px; font-weight:700; color:var(--ink); margin-bottom:2px; }
 .med-meta{ font-size:12px; color:var(--ink3); }
-.med-actions{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.med-actions{ display:flex; align-items:center; gap:10px; flex-shrink:0; position:relative; }
 .med-chk-btn{
   width:44px; height:44px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
@@ -790,15 +790,15 @@ span.dose-chip{ cursor:default; }
 .dose-chip-x:hover{ background:var(--red-lt); }
 /* Menú de acciones del medicamento (Editar/Stock/Eliminar) */
 .kebab-btn{
-  width:34px; height:34px; border-radius:50%; min-height:0; min-width:0;
+  width:38px; height:38px; border-radius:50%; min-height:0; min-width:0;
   display:flex; align-items:center; justify-content:center;
-  font-size:16px; font-weight:800; letter-spacing:1px;
+  font-size:17px; font-weight:800; letter-spacing:1px;
   border:none; cursor:pointer; flex-shrink:0;
   background:var(--surf); color:var(--ink3); transition:background .15s;
 }
 .kebab-btn:hover, .kebab-btn.open{ background:var(--line); }
 .kebab-menu{
-  position:absolute; top:38px; right:0; z-index:20;
+  position:absolute; top:42px; right:0; z-index:60;
   background:var(--white); border:1px solid var(--line); border-radius:12px;
   box-shadow:0 10px 28px rgba(0,0,0,.16); min-width:190px;
   overflow:hidden; display:none;

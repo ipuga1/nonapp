@@ -1565,6 +1565,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     document.querySelectorAll('.overlay.open').forEach(ov=>ov.classList.remove('open'));
     cerrarConfirm();
+    _cerrarMedKebabs();
   }
 });
 // Contener el foco (Tab/Shift+Tab) dentro del sheet abierto para que no escape al fondo
@@ -2479,6 +2480,21 @@ function renderTab(tab){
   }
 }
 
+/* ════ Menú de acciones del medicamento (Editar/Stock/Eliminar) ════ */
+function _cerrarMedKebabs(){
+  document.querySelectorAll('.kebab-menu.open').forEach(m=>m.classList.remove('open'));
+  document.querySelectorAll('.kebab-btn.open').forEach(b=>b.classList.remove('open'));
+}
+function toggleMedKebab(btn){
+  const menu=btn.nextElementSibling;
+  const yaAbierto=menu.classList.contains('open');
+  _cerrarMedKebabs();
+  if(!yaAbierto){ menu.classList.add('open'); btn.classList.add('open'); }
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.med-actions')) _cerrarMedKebabs();
+});
+
 /* ════ TAB MEDICAMENTOS ════ */
 function renderMeds(cuidado, esAdmin){
   const puedeConfirmar=tienePermiso('salud','confirmar');
@@ -2602,9 +2618,12 @@ function renderMeds(cuidado, esAdmin){
           </div>
           <div class="med-actions">
             ${!hors.length&&puedeConfirmar?`<button class="med-chk-btn${confLegacy?' confirmado':''}" onclick="confMed('${m.id}',null)">${confLegacy?'✓':''}</button>`:''}
-            ${esAdmin?`<button class="med-del-btn" onclick="editarMed('${m.id}')" title="Editar">✏️</button>
-                       <button class="med-del-btn" onclick="editarStock('${m.id}')" title="Gestionar stock">📦</button>
-                       <button class="med-del-btn" onclick="eliminarMed('${m.id}')" title="Eliminar">🗑</button>`:''}
+            ${esAdmin?`<button class="kebab-btn" onclick="toggleMedKebab(this)">⋮</button>
+                       <div class="kebab-menu">
+                         <div class="kmi" onclick="_cerrarMedKebabs();editarMed('${m.id}')"><span class="kmi-ico">✏️</span>Editar medicamento</div>
+                         <div class="kmi" onclick="_cerrarMedKebabs();editarStock('${m.id}')"><span class="kmi-ico">📦</span>Gestionar stock</div>
+                         <div class="kmi danger" onclick="_cerrarMedKebabs();eliminarMed('${m.id}')"><span class="kmi-ico">🗑</span>Eliminar</div>
+                       </div>`:''}
           </div>
         </div>`;
     });
