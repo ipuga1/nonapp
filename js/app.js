@@ -302,6 +302,26 @@ async function _eliminarArchivoStorage(url){
 const ROL_COLOR={admin:'#4A7C6F',familiar:'#3A6EA8',observador:'#6B5EA8',cuidadora:'#C47A2B'};
 const ROL_LABEL={admin:'Administrador',familiar:'Familiar activo',observador:'Observador',cuidadora:'Cuidadora'};
 const ROL_EMOJI={admin:'👩‍💼',familiar:'👨‍👩‍👧',observador:'👁',cuidadora:'👩‍⚕️'};
+
+// Cuentas reales del hogar activo (admin + familiares + cuidadoras + observadores
+// invitados) — no confundir con el roster de "Equipo" (cuidadoras/especialistas de
+// contacto, que puede no tener cuenta en la app). Usado para trazabilidad de gastos.
+function _personasHogar(){
+  const s=DB.getSesion(); if(!s) return [];
+  return DB.getUsuarios().filter(u=>u.cuidadoId===s.cuidadoId);
+}
+function _propietarioCuenta(){
+  const c=DB.getCuidado();
+  return _personasHogar().find(u=>u.id===c?.adminId) || _personasHogar().find(u=>u.rol==='admin') || null;
+}
+// Etiqueta chica "quién" para una fila de gasto. null si la persona ya no tiene cuenta en el hogar.
+function _tagPersonaGasto(asignadoA){
+  if(!asignadoA) return '';
+  const u=_personasHogar().find(p=>p.id===asignadoA);
+  const nombre=u?(u.nombre||'').split(' ')[0]:'Ex integrante';
+  const color=u?(ROL_COLOR[u.rol]||'var(--sage)'):'var(--ink3)';
+  return `<span class="gasto-por"><span class="mini-av" style="background:${color}">${escapeHtml(u?initials(u.nombre):'?')}</span>${escapeHtml(nombre)}</span>`;
+}
 const ROL_DESC={
   admin:'Tienes acceso completo para gestionar el cuidado, invitar personas y configurar todo.',
   familiar:'Puedes ver la bitácora, los gastos y el estado de salud. No puedes registrar ni editar.',
@@ -571,6 +591,12 @@ function initials(n){ if(!n)return'?'; return n.split(' ').map(x=>x[0]).join('')
 function hoy(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fechaHoy(){ return new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}); }
 function fmt(n){ return '$'+Number(n||0).toLocaleString('es-CL'); }
+function _soloDigitos(str){ return String(str||'').replace(/\D/g,''); }
+// Aplica separador de miles mientras el usuario escribe en un campo de monto (type=text, inputmode=numeric).
+function formatearMontoInput(input){
+  const digitos=_soloDigitos(input.value);
+  input.value=digitos?Number(digitos).toLocaleString('es-CL'):'';
+}
 
 
 /* ── NAVEGACIÓN CENTRAL ── */
@@ -1477,7 +1503,7 @@ function renderPerfil(){
       $('pf-am-relacion').value=c.am?.relacion||'Mamá';
       $('pf-cuidadora').value=c.cuidadora||'';
       $('pf-medico').value=c.am?.medico||'';
-      const pfComp=DB.getCompartido(); $('pf-presupuesto').value=pfComp.presupuesto||150000;
+      const pfComp=DB.getCompartido(); $('pf-presupuesto').value=Number(pfComp.presupuesto||150000).toLocaleString('es-CL');
 
       // Renderizar lista de todos los cuidados del admin
       const todosLosCuidados=DB.getCuidados().filter(x=>x.adminId===s.userId);
@@ -1522,7 +1548,7 @@ function guardarPerfil(){
       medico: $('pf-medico').value.trim(),
     };
     c.cuidadora=$('pf-cuidadora').value.trim();
-    const gpComp=DB.getCompartido(); gpComp.presupuesto=parseInt($('pf-presupuesto').value)||150000; DB.saveCompartido(gpComp);
+    const gpComp=DB.getCompartido(); gpComp.presupuesto=parseInt(_soloDigitos($('pf-presupuesto').value))||150000; DB.saveCompartido(gpComp);
     DB.saveCuidado(c);
     $('sb-sw-name').textContent=`${c.am.nombre} · ${edad} años`;
   }
@@ -5612,7 +5638,7 @@ function renderRegistro(gastos, presupuesto, puedeRegistrar, esAdmin){
           <div class="gasto-ico" style="background:${conf.bg}">${conf.ico}</div>
           <div style="flex:1;min-width:0">
             <div class="gasto-desc">${escapeHtml(g.desc)||'Sin descripción'}</div>
-            <div class="gasto-meta">${conf.label}${g.boleta?` · <a href="${g.boleta}" download="${escapeHtml(g.boletaNombre||'boleta')}" onclick="event.stopPropagation()" style="color:inherit;text-decoration:underline">${g.boletaTipo==='pdf'?'📄 PDF':'📎 Boleta'}</a>`:''}</div>
+            <div class="gasto-meta">${conf.label}${g.asignadoA?` · ${_tagPersonaGasto(g.asignadoA)}`:''}${g.boleta?` · <a href="${g.boleta}" download="${escapeHtml(g.boletaNombre||'boleta')}" onclick="event.stopPropagation()" style="color:inherit;text-decoration:underline">${g.boletaTipo==='pdf'?'📄 PDF':'📎 Boleta'}</a>`:''}</div>
             ${aprobBadge?`<div style="margin-top:4px">${aprobBadge}</div>`:''}
           </div>
           <div class="gasto-monto">${fmt(g.monto)}</div>
@@ -5676,9 +5702,10 @@ function renderPresupuesto(gastos, presupuesto, esAdmin){
         ${esAdmin?`
           <div style="display:flex;align-items:center;gap:4px">
             <span style="font-size:13px;color:var(--ink3)">$</span>
-            <input type="number" inputmode="numeric" placeholder="0"
-              value="${budgetCat||''}"
+            <input type="text" inputmode="numeric" placeholder="0"
+              value="${budgetCat?Number(budgetCat).toLocaleString('es-CL'):''}"
               class="pr-input"
+              oninput="formatearMontoInput(this)"
               onchange="guardarPresupuestoCat('${cat}',this.value)"
               style="width:90px">
           </div>`:`<div style="font-size:13px;font-weight:700;color:var(--ink)">${budgetCat?fmt(budgetCat):'—'}</div>`}
@@ -5702,8 +5729,18 @@ function renderRendicion(gastos, presupuesto, puedeAprobar){
   const porCat={};
   gastosMes.forEach(g=>{ if(!porCat[g.cat]) porCat[g.cat]=0; porCat[g.cat]+=g.monto; });
 
+  // Resumen por persona (trazabilidad para saldar cuentas a fin de mes)
+  const personas=_personasHogar();
+  const porPersona={};
+  gastosMes.forEach(g=>{ const id=g.asignadoA||'_sin'; if(!porPersona[id]) porPersona[id]=0; porPersona[id]+=g.monto; });
+  const filasPersona=Object.entries(porPersona).sort((a,b)=>b[1]-a[1]).map(([id,monto])=>{
+    const u=id==='_sin'?null:personas.find(p=>p.id===id);
+    return { nombre:u?u.nombre:'Sin asignar', rol:u?ROL_LABEL[u.rol]:null, color:u?(ROL_COLOR[u.rol]||'var(--sage)'):'var(--ink3)', ini:u?initials(u.nombre):'—', monto };
+  });
+
   const resumenTexto=`Rendición de gastos · ${mesLabel(ST.gastos.mesVista)}\n\nTotal gastado: ${fmt(total)} de ${fmt(presupuesto)} presupuestados.\n\nPor categoría:\n`+
     Object.entries(porCat).map(([c,m])=>`· ${CATS[c]?.label||c}: ${fmt(m)}`).join('\n')+
+    `\n\nPor persona:\n`+filasPersona.map(f=>`· ${f.nombre}: ${fmt(f.monto)}`).join('\n')+
     `\n\nTotal: ${fmt(total)} · ${Math.round(total/presupuesto*100)}% del presupuesto.`;
 
   let html=`
@@ -5722,6 +5759,24 @@ function renderRendicion(gastos, presupuesto, puedeAprobar){
         <span style="font-size:12px;color:${total<=presupuesto?'var(--sage)':'var(--red)'};font-weight:600">${total<=presupuesto?'✓ Dentro del presupuesto':'⚠ Sobre el presupuesto'}</span>
       </div>
     </div>
+
+    ${filasPersona.length?`
+    <div class="rendicion-box" style="border-color:var(--sage-md);background:var(--white)">
+      <div class="rb-titulo">👥 Gastado por persona</div>
+      ${filasPersona.map(f=>{
+        const pct=total>0?Math.round(f.monto/total*100):0;
+        return `
+        <div class="rp-fila">
+          <div class="perav" style="background:${f.color};width:30px;height:30px;font-size:12px">${escapeHtml(f.ini)}</div>
+          <div class="rp-info">
+            <div class="rp-nombre">${escapeHtml(f.nombre)}${f.rol?` <span class="rp-rol">· ${f.rol}</span>`:''}</div>
+            <div class="rp-track"><div class="rp-fill" style="width:${pct}%;background:${f.color}"></div></div>
+          </div>
+          <div class="rp-pct">${pct}%</div>
+          <div class="rp-monto">${fmt(f.monto)}</div>
+        </div>`;
+      }).join('')}
+    </div>`:''}
 
     <!-- Botones de compartir -->
     <div style="display:flex;gap:10px;padding:0 16px 14px">
@@ -5758,7 +5813,7 @@ function renderRendicion(gastos, presupuesto, puedeAprobar){
       const conf=CATS[g.cat]||CATS.otro;
       html+=`<div class="gasto-row" style="cursor:default">
         <div class="gasto-ico" style="background:${conf.bg}">${conf.ico}</div>
-        <div style="flex:1"><div class="gasto-desc">${escapeHtml(g.desc)}</div><div class="gasto-meta">${conf.label} · ${g.fecha||'—'}</div></div>
+        <div style="flex:1"><div class="gasto-desc">${escapeHtml(g.desc)}</div><div class="gasto-meta">${conf.label} · ${g.fecha||'—'}${g.asignadoA?` · ${_tagPersonaGasto(g.asignadoA)}`:''}</div></div>
         <div class="gasto-monto">${fmt(g.monto)}</div>
         <span class="badge b-ok">✓</span>
       </div>`;
@@ -5778,6 +5833,19 @@ function renderRendicion(gastos, presupuesto, puedeAprobar){
 
 /* ════ SHEET GASTO ════ */
 let _catActual='medicamentos';
+let _personaGastoId=null;
+function _renderPersSelectorGasto(){
+  const personas=_personasHogar();
+  $('g-persel').innerHTML=personas.map(u=>`
+    <div class="perpill${u.id===_personaGastoId?' on':''}" data-uid="${u.id}" onclick="seleccionarPersonaGasto(this)">
+      <div class="perav" style="background:${ROL_COLOR[u.rol]||'var(--sage)'}">${escapeHtml(initials(u.nombre))}</div>
+      <div class="pernom">${escapeHtml((u.nombre||'').split(' ')[0])}</div>
+    </div>`).join('');
+}
+function seleccionarPersonaGasto(btn){
+  _personaGastoId=btn.dataset.uid;
+  document.querySelectorAll('#g-persel .perpill').forEach(p=>p.classList.toggle('on',p===btn));
+}
 function selCat(btn){
   _catActual=btn.dataset.cat;
   document.querySelectorAll('#cat-grid-gasto .cat-btn').forEach(b=>{
@@ -5799,6 +5867,8 @@ function abrirSheetGasto(){
   _catActual='medicamentos';
   document.querySelectorAll('#cat-grid-gasto .cat-btn').forEach((b,i)=>{ b.classList.toggle('on',i===0); b.style.borderColor=''; b.style.background=''; });
   selCat(document.querySelector('#cat-grid-gasto .cat-btn'));
+  _personaGastoId=_propietarioCuenta()?.id||DB.getSesion()?.userId||null;
+  _renderPersSelectorGasto();
   $('btn-del-gasto').style.display='none';
   $('ov-gasto').classList.add('open');
   setTimeout(()=>$('g-monto').focus(),300);
@@ -5809,7 +5879,7 @@ function editarGasto(id){
   const g=(comp.gastos||[]).find(x=>x.id===id); if(!g) return;
   ST.gastos.gastoEditandoId=id;
   $('sh-gasto-titulo').textContent='Editar gasto';
-  $('g-monto').value=g.monto||0;
+  $('g-monto').value=Number(g.monto||0).toLocaleString('es-CL');
   $('g-desc').value=g.desc||'';
   $('g-fecha').value=g.fecha||hoy();
   $('g-aprobacion').value=g.aprobacion||'no';
@@ -5818,13 +5888,15 @@ function editarGasto(id){
   document.querySelectorAll('#cat-grid-gasto .cat-btn').forEach(b=>{ b.classList.remove('on'); b.style.borderColor=''; b.style.background=''; });
   const catBtn=document.querySelector(`#cat-grid-gasto [data-cat="${_catActual}"]`)||document.querySelector('#cat-grid-gasto .cat-btn');
   if(catBtn) selCat(catBtn);
+  _personaGastoId=g.asignadoA||_propietarioCuenta()?.id||null;
+  _renderPersSelectorGasto();
   $('btn-del-gasto').style.display='block';
   $('ov-gasto').classList.add('open');
 }
 
 async function guardarGasto(){
   if(!tienePermiso('gastos','registrar')){ toast('No tienes permiso para esto','err'); return; }
-  const monto=parseInt($('g-monto').value);
+  const monto=parseInt(_soloDigitos($('g-monto').value));
   if(!monto||monto<=0){ toast('Ingresa un monto válido','err'); return; }
   const desc=$('g-desc').value.trim();
   if(!desc){ toast('Escribe una descripción','err'); return; }
@@ -5837,6 +5909,7 @@ async function guardarGasto(){
   const gastoId=editId||('g-'+Date.now());
   const cat=_catActual, fecha=$('g-fecha').value||hoy(), aprobacion=$('g-aprobacion').value;
   const boletaTipo=_boletaTipo, boletaNombre=_boletaNombre;
+  const asignadoA=_personaGastoId||_propietarioCuenta()?.id||null;
   const urlAnterior=editId ? (comp.gastos.find(g=>g.id===editId)?.boleta||null) : null;
 
   const btn=$('btn-guardar-gasto'); const textoOriginal=btn.textContent;
@@ -5844,7 +5917,11 @@ async function guardarGasto(){
   if(boleta && boleta.startsWith('data:')){
     btn.disabled=true; btn.textContent='Subiendo archivo...';
     try{
-      boleta=await _subirArchivo(`cuidados/${c.id}/gastos/${gastoId}`, boleta);
+      // Ruta única por intento de subida (no solo por gastoId): al editar, gastoId
+      // repite el id del gasto existente, y subir a la misma ruta sobrescribiría el
+      // archivo anterior con un nuevo token de descarga, haciendo que la limpieza de
+      // abajo borre por error el archivo recién subido en vez del viejo.
+      boleta=await _subirArchivo(`cuidados/${c.id}/gastos/${gastoId}-${Date.now()}`, boleta);
     }catch(e){
       console.error('Error subiendo boleta:', e);
       toast('No se pudo subir el archivo. Intenta de nuevo.','err');
@@ -5855,7 +5932,7 @@ async function guardarGasto(){
   }
   if(urlAnterior && urlAnterior!==boleta) _eliminarArchivoStorage(urlAnterior);
 
-  const data={ cat, desc, monto, fecha, boleta, boletaTipo, boletaNombre, aprobacion, emoji:CATS[cat]?.ico||'📦' };
+  const data={ cat, desc, monto, fecha, boleta, boletaTipo, boletaNombre, aprobacion, asignadoA, emoji:CATS[cat]?.ico||'📦' };
   if(editId){
     const idx=comp.gastos.findIndex(g=>g.id===editId);
     if(idx>=0) comp.gastos[idx]={...comp.gastos[idx],...data};
@@ -5900,12 +5977,12 @@ function aprobarGasto(id,aprueba){
 
 /* ════ PRESUPUESTO ════ */
 function abrirEditarPresupuesto(){
-  $('pres-total').value=DB.getCuidado()?.presupuesto||150000;
+  $('pres-total').value=Number(DB.getCuidado()?.presupuesto||150000).toLocaleString('es-CL');
   $('ov-presupuesto').classList.add('open');
   setTimeout(()=>$('pres-total').focus(),300);
 }
 function guardarPresupuesto(){
-  const v=parseInt($('pres-total').value);
+  const v=parseInt(_soloDigitos($('pres-total').value));
   if(!v||v<=0){ toast('Ingresa un monto válido','err'); return; }
   const comp=DB.getCompartido();
   comp.presupuesto=v;
@@ -5917,7 +5994,7 @@ function guardarPresupuesto(){
 function guardarPresupuestoCat(cat,val){
   const comp=DB.getCompartido();
   if(!comp.presupuestoCats) comp.presupuestoCats={};
-  comp.presupuestoCats[cat]=parseInt(val)||0;
+  comp.presupuestoCats[cat]=parseInt(_soloDigitos(val))||0;
   DB.saveCompartido(comp);
 }
 
