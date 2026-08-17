@@ -763,6 +763,51 @@ function hacerLogin(){
     });
 }
 
+// Recuperar contraseña
+function abrirRecuperarPass(){
+  hideErr('recuperar-email-err');
+  $('recuperar-msg').style.display='none';
+  $('recuperar-email').value=$('login-email').value.trim();
+  $('ov-recuperar-pass').classList.add('open');
+}
+function _mostrarMsgRecuperar(texto, ok){
+  const m=$('recuperar-msg');
+  m.style.display='block';
+  m.style.background=ok?'var(--sage-lt)':'var(--red-lt)';
+  m.style.border='1px solid '+(ok?'var(--sage-md)':'var(--red)');
+  m.style.color=ok?'var(--sage)':'var(--red)';
+  m.textContent=texto;
+}
+function enviarRecuperarPass(){
+  const email=$('recuperar-email').value.trim().toLowerCase();
+  hideErr('recuperar-email-err');
+  $('recuperar-msg').style.display='none';
+  if(!email||!email.includes('@')){ showErr('recuperar-email-err','Email inválido'); return; }
+  setLoading('recuperar-spinner','recuperar-btn-txt',true);
+
+  const fb=window._fb;
+  if(!fb){
+    setLoading('recuperar-spinner','recuperar-btn-txt',false);
+    toast('Conectando... intenta de nuevo en un momento','ok');
+    return;
+  }
+
+  // Mensaje genérico también si el email no existe: evita revelar qué
+  // cuentas están registradas (misma respuesta exista o no la cuenta).
+  const msgGenerico='Si el email está registrado, te enviamos un link para crear una nueva contraseña. Revisa también spam.';
+  fb.sendPasswordResetEmail(fb.auth, email)
+    .then(()=>{
+      setLoading('recuperar-spinner','recuperar-btn-txt',false);
+      _mostrarMsgRecuperar('✓ '+msgGenerico, true);
+    })
+    .catch((err)=>{
+      setLoading('recuperar-spinner','recuperar-btn-txt',false);
+      if(err.code==='auth/user-not-found'){ _mostrarMsgRecuperar('✓ '+msgGenerico, true); return; }
+      const msgs={'auth/invalid-email':'Email inválido','auth/too-many-requests':'Demasiados intentos. Espera unos minutos.'};
+      _mostrarMsgRecuperar(msgs[err.code]||'No se pudo enviar el link. Intenta de nuevo.', false);
+    });
+}
+
 
 // Registro admin
 function validarPass(){ const v=$('reg-pass').value; v&&v.length<6?showErr('reg-pass-err','Mínimo 6 caracteres'):hideErr('reg-pass-err'); }

@@ -75,6 +75,9 @@
       <div class="field">
         <div class="flbl">Contraseña</div>
         <input class="fin" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+        <div style="text-align:right;margin-top:7px">
+          <span style="font-size:12.5px;color:var(--sage);font-weight:600;cursor:pointer" onclick="abrirRecuperarPass()" tabindex="0" role="button" onkeydown="if(event.key==='Enter')abrirRecuperarPass()">¿Olvidaste tu contraseña?</span>
+        </div>
       </div>
       <div id="login-general-err" style="display:none;background:var(--red-lt);border:1px solid var(--red);border-radius:var(--rs);padding:12px 14px;font-size:13px;color:var(--red);font-weight:500;line-height:1.4;text-align:center"></div>
       <div id="login-ok" style="display:none;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--rs);padding:12px 14px;font-size:13px;color:var(--sage);font-weight:600;text-align:center">✓ Sesión iniciada correctamente</div>
@@ -1962,6 +1965,28 @@
     </div>
     <div style="padding:0 18px 16px;display:none" id="inv-btns-listo">
       <button onclick="cerrarSheet('ov-invitacion');renderInvitaciones();" style="width:100%;padding:13px;background:var(--sage);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✓ Listo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recuperar contraseña -->
+<div class="overlay" id="ov-recuperar-pass" onclick="if(event.target===this)cerrarSheet('ov-recuperar-pass')">
+  <div class="sheet">
+    <div class="sh-hdr">
+      <div class="sh-title">Recuperar contraseña</div>
+      <button class="sh-close" onclick="cerrarSheet('ov-recuperar-pass')">✕</button>
+    </div>
+    <div style="padding:0 18px 18px">
+      <div style="font-size:13.5px;color:var(--ink3);margin-bottom:16px;line-height:1.5">Ingresa tu email y te enviaremos un link para crear una nueva contraseña.</div>
+      <div class="field" style="margin:0">
+        <div class="flbl">Email</div>
+        <input class="fin" id="recuperar-email" type="email" placeholder="tu@email.com" inputmode="email" autocomplete="email">
+        <div class="ferr" id="recuperar-email-err">Email inválido</div>
+      </div>
+      <div id="recuperar-msg" style="display:none;margin-top:12px;border-radius:var(--rs);padding:12px 14px;font-size:13px;font-weight:500;line-height:1.4;text-align:center"></div>
+    </div>
+    <div style="padding:0 18px 18px">
+      <button class="btn btn-p" id="recuperar-btn" onclick="enviarRecuperarPass()"><div class="spinner" id="recuperar-spinner"></div><span id="recuperar-btn-txt">Enviar link de recuperación</span></button>
     </div>
   </div>
 </div>
