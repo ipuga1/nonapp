@@ -36,5 +36,7 @@
     onAuthStateChanged(auth, async (user) => {
       if (user && window._raizOnAuth) {
         await window._raizOnAuth(user);
+      } else if (!user && window._raizOnNoAuth) {
+        window._raizOnNoAuth();
       }
     });

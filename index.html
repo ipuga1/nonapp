@@ -118,6 +118,8 @@ footer{border-top:1px solid var(--line);padding:44px 0}
 </head>
 <body>
 
+<!-- Los valores accion=login|registro deben coincidir con la función
+     irSegunAccionSinSesion() en app/js/app.js — mantener ambos en sync. -->
 <nav class="nav">
   <div class="nav-in">
     <div class="brand">🌿 Raíz</div>
@@ -126,8 +128,8 @@ footer{border-top:1px solid var(--line);padding:44px 0}
       <a href="#confianza">Por qué Raíz</a>
     </div>
     <div class="nav-cta">
-      <a class="btn-ghost" href="/app/">Iniciar sesión</a>
-      <a class="btn-p" href="/app/">Crear cuenta</a>
+      <a class="btn-ghost" href="/app/?accion=login">Iniciar sesión</a>
+      <a class="btn-p" href="/app/?accion=registro">Crear cuenta</a>
     </div>
   </div>
 </nav>
@@ -137,7 +139,7 @@ footer{border-top:1px solid var(--line);padding:44px 0}
     <h1>Cuidar a tu familia, <span>sin perder nada de vista.</span></h1>
     <p class="hero-sub">Medicamentos, bitácora, gastos y quién hace qué — coordinado entre toda la familia, en tiempo real.</p>
     <div class="hero-ctas">
-      <a class="btn-p lg" href="/app/">Crear cuenta</a>
+      <a class="btn-p lg" href="/app/?accion=registro">Crear cuenta</a>
       <a class="btn-ghost-pill" href="#tour">Saber más</a>
     </div>
   </div>
@@ -269,7 +271,7 @@ footer{border-top:1px solid var(--line);padding:44px 0}
   <div class="wrap">
     <h2>¿Lista para organizar el cuidado de tu familia?</h2>
     <p>Coordina el cuidado de tu familia sin malos ratos ni discusiones. Acceso rápido y fácil, información segura y transparente para todos.</p>
-    <a class="btn-p lg" href="/app/">Crear cuenta</a>
+    <a class="btn-p lg" href="/app/?accion=registro">Crear cuenta</a>
   </div>
 </section>
 

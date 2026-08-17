@@ -1621,6 +1621,25 @@ window._raizOnAuth = async (firebaseUser) => {
   }
 };
 
+// Sin sesión: si se llegó desde el landing con ?accion=login|registro (valores
+// definidos también en los <a href="/app/?accion=..."> de index.html — mantener
+// ambos en sync), saltar directo al formulario en vez de mostrar el splash.
+function irSegunAccionSinSesion(){
+  const accion=new URLSearchParams(location.search).get('accion');
+  if(accion==='login') navTo('s-login');
+  else if(accion==='registro') navTo('s-registro-tipo');
+  else navTo('s-splash');
+}
+
+// Firebase confirma que NO hay sesión activa. Si localStorage tenía una sesión
+// vieja/inválida (ej. expiró o se revocó), init() ya mostró el splash de forma
+// optimista esperando esta confirmación — sin esto el usuario se queda pegado
+// ahí para siempre. Limpiamos y aplicamos el mismo ruteo que si nunca hubiera
+// habido sesión, para que ?accion=login/registro también funcione en ese caso.
+window._raizOnNoAuth = () => {
+  if(DB.getSesion()){ DB.clearSesion(); irSegunAccionSinSesion(); }
+};
+
 (function init(){
   // Ocultar sidebar hasta que haya sesión autenticada
   const sb=document.getElementById('sidebar');
@@ -1632,9 +1651,10 @@ window._raizOnAuth = async (firebaseUser) => {
   if(s && s.userId){
     // Mostrar splash brevemente mientras se verifica con Firebase
     navTo('s-splash');
-    // Firebase _raizOnAuth se encargará de ir al home una vez que verifique
+    // Firebase _raizOnAuth se encargará de ir al home una vez que verifique;
+    // si en cambio confirma que NO hay sesión, _raizOnNoAuth() toma el control.
   } else {
-    navTo('s-splash');
+    irSegunAccionSinSesion();
   }
   // Exponer API pública
   window.RAIZ={DB,navTo,irAlHome,renderHome,renderSidebar,ROL_COLOR,ROL_LABEL,initials,hoy,fmt};
@@ -6620,7 +6640,7 @@ function copiarCodigoInv(){
   if(!_invCodigoActual) return;
   const c = DB.getCuidado();
   const nombre = c?.am?.nombre || 'la persona cuidada';
-  const texto = `Te invito a usar Raíz para coordinar el cuidado de ${nombre}.\n\nCódigo de acceso: ${_invCodigoActual}\n\nDescarga la app en raiz.app e ingresa este código para unirte.`;
+  const texto = `Te invito a usar Raíz para coordinar el cuidado de ${nombre}.\n\nCódigo de acceso: ${_invCodigoActual}\n\nDescarga la app en raizcare.cl e ingresa este código para unirte.`;
   navigator.clipboard.writeText(texto).then(() => toast('✓ Código copiado','ok'));
 }
 
@@ -6630,7 +6650,7 @@ function compartirCodigoInv(){
   const c = DB.getCuidado();
   const nombre = c?.am?.nombre || 'la persona cuidada';
   const texto = encodeURIComponent(
-    `Te invito a usar Raíz para coordinar el cuidado de ${nombre}.\n\nCódigo de acceso: *${_invCodigoActual}*\n\nDescarga la app en raiz.app e ingresa este código.`
+    `Te invito a usar Raíz para coordinar el cuidado de ${nombre}.\n\nCódigo de acceso: *${_invCodigoActual}*\n\nDescarga la app en raizcare.cl e ingresa este código.`
   );
   window.open(`https://wa.me/?text=${texto}`, '_blank');
 }
@@ -6790,7 +6810,7 @@ function reenviarInvitacion(codigo){
   const c = DB.getCuidado();
   const nombreAM = c?.am?.nombre || 'la persona cuidada';
   const texto = encodeURIComponent(
-    `Hola ${nombre}, te invito a usar Raíz para coordinar el cuidado de ${nombreAM}.\n\nTu código de acceso es: *${codigo}*\n\nDescarga la app en raiz.app e ingresa este código.`
+    `Hola ${nombre}, te invito a usar Raíz para coordinar el cuidado de ${nombreAM}.\n\nTu código de acceso es: *${codigo}*\n\nDescarga la app en raizcare.cl e ingresa este código.`
   );
   window.open(`https://wa.me/?text=${texto}`, '_blank');
 }
