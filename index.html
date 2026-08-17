@@ -1,1984 +1,289 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#2E5C52">
-<title>Raíz · Cuidado familiar</title>
-<link rel="stylesheet" href="css/styles.css">
-<script type="module" src="js/firebase-config.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raíz — Producto en acción</title>
+<style>
+:root{
+  --forest:#1F3B33; --sage-deep:#2E5C52; --sage:#4A7C6F; --sage-lt:#E8F0EE; --sage-md:#C2D8D2;
+  --amber:#C47A2B; --amber-lt:#FAF0E2; --amber-dk:#8A5A1E;
+  --ink:#1A1F1E; --ink2:#3D4442; --ink3:#6B7370;
+  --line:#E4E8E7; --surf:#F7F9F8; --white:#FFFFFF; --cream:#FFFFFF;
+  --r:16px; --rs:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--cream);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
+h1,h2,h3{text-wrap:balance;font-weight:900;letter-spacing:-.02em}
+.wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+button{font-family:inherit;cursor:pointer;border:none}
+.btn-ghost,.btn-p,.btn-ghost-pill{text-decoration:none;display:inline-block}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1140px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:8px;font-size:19px;font-weight:900;color:var(--sage-deep)}
+.nav-links{display:flex;gap:26px;font-size:14.5px;font-weight:600;color:var(--ink2)}
+.nav-links a{text-decoration:none}
+@media(max-width:840px){.nav-links{display:none}}
+.nav-cta{display:flex;gap:12px;align-items:center}
+.btn-ghost{background:none;font-size:14.5px;font-weight:700;color:var(--ink2)}
+.btn-p{background:var(--forest);color:#fff;padding:12px 22px;border-radius:99px;font-size:14.5px;font-weight:800}
+.btn-p:hover{background:var(--sage-deep)}
+.btn-p.lg{padding:16px 30px;font-size:16px}
+.btn-ghost-pill{background:var(--sage-lt);color:var(--sage-deep);padding:12px 22px;border-radius:99px;font-size:14.5px;font-weight:800}
+.btn-ghost-pill:hover{background:var(--sage-md)}
+
+/* Hero */
+.hero{padding:92px 0 0;text-align:center}
+.hero .kicker{display:inline-block;background:var(--sage-lt);color:var(--sage-deep);font-size:13px;font-weight:800;padding:7px 16px;border-radius:99px;margin-bottom:24px}
+.hero h1{font-size:clamp(36px,5.6vw,64px);line-height:1.05;max-width:900px;margin:0 auto 20px}
+.hero h1 span{color:var(--sage-deep)}
+.hero-sub{font-size:18px;color:var(--ink2);max-width:560px;margin:0 auto 34px;font-weight:400}
+.hero-ctas{display:flex;gap:14px;justify-content:center;margin-bottom:56px;flex-wrap:wrap}
+
+/* Big phone showcase */
+.showcase{display:flex;justify-content:center;padding-bottom:0}
+.phone{width:320px;height:640px;background:var(--white);border-radius:36px;border:10px solid var(--forest);box-shadow:0 50px 100px -30px rgba(31,59,51,.35);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:110px;height:22px;background:var(--forest);border-radius:0 0 14px 14px;z-index:5}
+.ph-screen{padding-top:28px;font-size:11px;flex:1;display:flex;flex-direction:column;min-height:0}
+.ph-hdr{padding:8px 18px 12px;display:flex;justify-content:space-between;align-items:center}
+.ph-hi{font-size:16px;font-weight:900}
+.ph-date{font-size:10.5px;color:var(--ink3)}
+.ph-ava{width:30px;height:30px;border-radius:50%;background:var(--sage-deep);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.ph-card{margin:0 16px 12px;background:var(--sage-deep);border-radius:14px;padding:16px 18px;color:#fff}
+.ph-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.ph-name{font-size:14px;font-weight:800}
+.ph-rel{font-size:10px;color:rgba(255,255,255,.7)}
+.ph-badge{background:rgba(255,255,255,.2);font-size:9px;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap;flex-shrink:0;line-height:1.3}
+.ph-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.ph-stat{background:rgba(255,255,255,.14);border-radius:9px;padding:7px 3px;text-align:center}
+.ph-stat-lbl{font-size:7.5px;color:rgba(255,255,255,.7);margin-top:2px}
+.ph-stat-val{font-size:9.5px;font-weight:800}
+.ph-lbl{font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;padding:10px 16px 6px}
+.ph-atencion{display:flex;gap:10px;align-items:flex-start;margin:0 16px 8px;padding:10px 12px;background:var(--surf);border:1px solid var(--line);border-radius:11px}
+.ph-aticon{width:26px;height:26px;border-radius:8px;background:var(--amber-lt);color:var(--amber-dk);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.ph-aticon.cal{background:var(--sage-lt);color:var(--sage-deep)}
+.ph-attitle{font-size:10.5px;font-weight:800;color:var(--ink)}
+.ph-atsub{font-size:9px;color:var(--ink3);margin-top:1px}
+.ph-bita{margin:0 16px 8px;padding:12px 13px;background:var(--surf);border:1px solid var(--line);border-radius:11px}
+.ph-bita-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ph-bita-who{font-size:10px;font-weight:800;color:var(--ink)}
+.ph-bita-time{font-size:8.5px;color:var(--ink3)}
+.ph-bita-note{font-size:9.5px;color:var(--ink2);line-height:1.5;font-style:italic}
+.ph-tabbar{display:flex;justify-content:space-around;align-items:center;border-top:1px solid var(--line);padding:9px 6px 12px;margin-top:auto}
+.ph-tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:7.5px;font-weight:600;color:var(--ink3)}
+.ph-tab div{font-size:15px}
+.ph-tab.on{color:var(--sage-deep)}
+
+/* Product tour strip */
+.tour{padding:100px 0 90px}
+.tour-head{text-align:center;max-width:640px;margin:0 auto 56px}
+.tour-head .kicker{display:inline-block;background:var(--amber-lt);color:var(--amber-dk);font-size:12.5px;font-weight:800;padding:6px 15px;border-radius:99px;margin-bottom:16px}
+.tour-head h2{font-size:clamp(28px,3.4vw,40px)}
+.tour-head p{font-size:16.5px;color:var(--ink2);margin-top:14px;font-weight:400}
+
+.tour-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:980px){.tour-strip{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.tour-strip{grid-template-columns:1fr}}
+.tour-card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:14px}
+.tc-mini{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:10px}
+.tc-mini .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.tc-mini .chip{background:var(--sage-deep);color:#fff;font-size:8.5px;font-weight:700;padding:2px 8px;border-radius:10px}
+.tc-mini .chip.warn{background:var(--amber);color:#fff}
+.tour-card h3{font-size:16px;font-weight:800}
+.tour-card p{font-size:13.5px;color:var(--ink2);line-height:1.55;font-weight:400}
+
+/* Nota humana */
+.note-sec{background:var(--surf);padding:80px 0}
+.note{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:20px;padding:40px 44px;max-width:820px;margin:0 auto}
+@media(max-width:680px){.note{grid-template-columns:1fr;text-align:center;padding:36px 28px}}
+.note-mark{width:64px;height:64px;border-radius:50%;background:var(--amber-lt);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+@media(max-width:680px){.note-mark{margin:0 auto}}
+.note blockquote{font-size:18px;font-weight:600;line-height:1.6;color:var(--ink);margin-bottom:10px}
+.note cite{font-style:normal;font-size:13.5px;color:var(--ink3);font-weight:600}
+
+/* CTA */
+.cta{padding:100px 0;text-align:center}
+.cta h2{font-size:clamp(28px,3.6vw,42px);margin-bottom:16px}
+.cta p{font-size:17px;color:var(--ink2);margin-bottom:32px;font-weight:400}
+
+footer{border-top:1px solid var(--line);padding:44px 0}
+.foot-in{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+.foot-brand{display:flex;gap:8px;font-weight:900;font-size:16px;color:var(--sage-deep)}
+.foot-links{display:flex;gap:22px;font-size:13.5px;color:var(--ink3)}
+.foot-links a{text-decoration:none;color:inherit}
+</style>
 </head>
 <body>
-<div class="app">
 
-<!-- ════ SIDEBAR DESKTOP ════ -->
-<nav class="sidebar" id="sidebar">
-  <div class="sb-logo"><div class="sb-logo-ico">🌿</div><div class="sb-logo-name">Raíz</div></div>
-  <div class="sb-switcher" onclick="abrirSwitcher()" id="sb-switcher" style="display:none">
-    <div class="sb-sw-label">Cuidado activo</div>
-    <div class="sb-sw-am">
-      <div class="sb-sw-ava" id="sb-sw-ava">M</div>
-      <div class="sb-sw-name" id="sb-sw-name">Marta · 74 años</div>
-      <div style="font-size:12px;color:var(--sage)">⌄</div>
+<nav class="nav">
+  <div class="nav-in">
+    <div class="brand">🌿 Raíz</div>
+    <div class="nav-links">
+      <a href="#tour">La app</a>
+      <a href="#confianza">Por qué Raíz</a>
     </div>
-  </div>
-  <div class="sb-nav" id="sb-nav"></div>
-  <div class="sb-foot">
-    <div class="sb-user" onclick="navTo('s-perfil')">
-      <div class="sb-user-ava" id="sb-ava" style="background:var(--sage)">V</div>
-      <div><div class="sb-user-name" id="sb-user-name">—</div><div class="sb-user-rol" id="sb-user-rol">—</div></div>
+    <div class="nav-cta">
+      <a class="btn-ghost" href="/app/">Iniciar sesión</a>
+      <a class="btn-p" href="/app/">Crear cuenta</a>
     </div>
-    <button class="sb-logout" onclick="cerrarSesion()">← Cerrar sesión</button>
   </div>
 </nav>
 
-<!-- ════ MAIN ════ -->
-<div class="main">
-
-<!-- ══════════════════════════════════════════
-     MÓDULO 1 — AUTH
-     ══════════════════════════════════════════ -->
-
-<!-- Splash -->
-<div class="screen active" id="s-splash">
-  <!-- Layout fijo: zona verde ocupa lo disponible, botones siempre visibles abajo -->
-  <div class="auth-splash" style="flex:1;min-height:0;">
-    <div class="splash-logo">🌿</div>
-    <div class="splash-name">Raíz</div>
-    <div class="splash-tag">El sistema operativo del cuidado<br>de personas mayores</div>
-    <div class="splash-pill"><span>✦</span> El cuidado organizado, en un solo lugar</div>
-  </div>
-  <div style="flex-shrink:0;padding:20px 20px 0;display:flex;flex-direction:column;gap:12px;background:var(--white);">
-    <button class="btn btn-p" onclick="navTo('s-login')">Iniciar sesión</button>
-    <button class="btn btn-s" onclick="navTo('s-registro-tipo')">Crear cuenta nueva</button>
-  </div>
-  <div style="flex-shrink:0;padding:12px 22px max(24px,env(safe-area-inset-bottom));text-align:center;background:var(--white);">
-    <div style="font-size:13px;color:var(--ink3)">¿Te invitaron? <button style="background:none;border:none;padding:0;font:inherit;color:var(--sage);font-weight:600;cursor:pointer" onclick="navTo('s-ingresar-codigo')">Usar código de invitación →</button></div>
-  </div>
-</div>
-
-<!-- Login -->
-<div class="screen" id="s-login">
-  <div class="auth-hdr">
-    <button class="back-btn" onclick="navTo('s-splash')">‹ Volver</button>
-    <div class="auth-title">Bienvenido/a de vuelta</div>
-    <div class="auth-sub">Ingresa con tu email y contraseña</div>
-  </div>
-  <div class="scroll">
-    <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px">
-      <div class="field">
-        <div class="flbl">Email</div>
-        <input class="fin" id="login-email" type="email" placeholder="tu@email.com" inputmode="email" autocomplete="email">
-        <div class="ferr" id="login-email-err">Email inválido</div>
-      </div>
-      <div class="field">
-        <div class="flbl">Contraseña</div>
-        <input class="fin" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <div id="login-general-err" style="display:none;background:var(--red-lt);border:1px solid var(--red);border-radius:var(--rs);padding:12px 14px;font-size:13px;color:var(--red);font-weight:500;line-height:1.4;text-align:center"></div>
-      <div id="login-ok" style="display:none;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--rs);padding:12px 14px;font-size:13px;color:var(--sage);font-weight:600;text-align:center">✓ Sesión iniciada correctamente</div>
-    </div>
-    <div style="padding:0 22px 8px;display:flex;flex-direction:column;gap:10px;">
-      <button class="btn btn-p" onclick="hacerLogin()"><div class="spinner" id="login-spinner"></div><span id="login-btn-txt">Iniciar sesión</span></button>
-      <div style="text-align:center;font-size:13px;color:var(--ink3);padding:6px 0;">¿Primera vez? <span style="color:var(--sage);font-weight:600;cursor:pointer" onclick="navTo('s-registro-tipo')">Crear cuenta</span></div>
-    </div>
-    <div style="height:max(20px,env(safe-area-inset-bottom))"></div>
-  </div>
-</div>
-
-<!-- Tipo de registro -->
-<div class="screen" id="s-registro-tipo">
-  <div class="auth-hdr">
-    <button class="back-btn" onclick="navTo('s-splash')">‹ Volver</button>
-    <div class="auth-title">¿Cómo quieres entrar?</div>
-    <div class="auth-sub">El rol se define al registrarse y no puede cambiarse sin autorización.</div>
-  </div>
-  <div class="scroll" style="padding:16px 22px">
-    <div class="rol-card sel" id="tipo-admin" onclick="selTipoRegistro('admin')">
-      <div class="rol-ico">👩‍💼</div>
-      <div style="flex:1"><div class="rol-name">Soy el administrador del cuidado</div><div class="rol-desc">Gestiono el día a día. Quiero crear una cuenta nueva para la persona que cuido.</div></div>
-      <div class="rol-chk on" id="tipo-chk-admin">✓</div>
-    </div>
-    <div class="rol-card" id="tipo-invitado" onclick="selTipoRegistro('invitado')">
-      <div class="rol-ico">👨‍👩‍👧</div>
-      <div style="flex:1"><div class="rol-name">Me invitaron a un cuidado</div><div class="rol-desc">Soy familiar o cuidadora. Tengo un código de invitación.</div><div class="rol-lock">🔒 Requiere código del administrador</div></div>
-      <div class="rol-chk" id="tipo-chk-invitado"></div>
-    </div>
-    <div class="ia" style="margin-top:8px"><div class="ia-ico">✦</div><div>El rol lo define quien invita, no quien se registra. Esto protege la privacidad y evita conflictos familiares.</div></div>
-  </div>
-  <div class="btns"><button class="btn btn-p" onclick="continuarRegistro()">Continuar →</button></div>
-</div>
-
-<!-- Registro admin -->
-<div class="screen" id="s-registro-admin">
-  <div class="auth-hdr">
-    <button class="back-btn" onclick="navTo('s-registro-tipo')">‹ Volver</button>
-    <div class="auth-title">Crear cuenta de administrador</div>
-    <div class="auth-sub">Podrás invitar a familiares y cuidadoras después.</div>
-  </div>
-  <div class="scroll" style="padding:16px 22px">
-    <div class="field"><div class="flbl">Tu nombre completo</div><input class="fin" id="reg-nombre" placeholder="Ej: Valentina Rodríguez" autocomplete="name"><div class="ferr" id="reg-nombre-err">Ingresa tu nombre</div></div>
-    <div class="field"><div class="flbl">Email</div><input class="fin" id="reg-email" type="email" placeholder="tu@email.com" inputmode="email" autocomplete="email"><div class="ferr" id="reg-email-err">Email inválido</div></div>
-    <div class="field"><div class="flbl">Contraseña</div><input class="fin" id="reg-pass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" oninput="validarPass()"><div class="ferr" id="reg-pass-err">Mínimo 6 caracteres</div></div>
-    <div class="field"><div class="flbl">Confirmar contraseña</div><input class="fin" id="reg-pass2" type="password" placeholder="Repite la contraseña" autocomplete="new-password" oninput="validarPass2()"><div class="ferr" id="reg-pass2-err">Las contraseñas no coinciden</div></div>
-  </div>
-  <div class="btns"><button class="btn btn-p" onclick="registrarAdmin()"><div class="spinner" id="reg-spinner"></div><span id="reg-btn-txt">Crear mi cuenta</span></button></div>
-</div>
-
-<!-- Ingresar código -->
-<div class="screen" id="s-ingresar-codigo">
-  <div class="auth-hdr">
-    <button class="back-btn" onclick="navTo('s-registro-tipo')">‹ Volver</button>
-    <div class="auth-title">Código de invitación</div>
-    <div class="auth-sub">El administrador te envió un código de 6 dígitos.</div>
-  </div>
-  <div class="scroll" style="padding:20px 22px">
-    <div style="text-align:center;padding:10px 0">
-      <div style="font-size:13px;color:var(--ink3);margin-bottom:14px">Código de invitación</div>
-      <div class="code-wrap" id="code-wrap" onclick="$('code-real').focus()">
-        <div class="code-digit" id="cd0">-</div><div class="code-digit" id="cd1">-</div><div class="code-digit" id="cd2">-</div>
-        <div class="code-digit" id="cd3">-</div><div class="code-digit" id="cd4">-</div><div class="code-digit" id="cd5">-</div>
-      </div>
-      <input class="code-input-real" id="code-real" type="text" inputmode="numeric" maxlength="6" oninput="actualizarCodigo(this.value)">
-    </div>
-    <div class="ferr" id="code-err" style="text-align:center;font-size:13px;padding:8px;background:var(--red-lt);border-radius:var(--rs)"></div>
-    <div id="code-preview" style="display:none;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--r);padding:14px;margin-top:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--sage);margin-bottom:6px">✦ Invitación encontrada</div>
-      <div style="font-size:14px;font-weight:700;color:var(--ink)" id="preview-am">Cuidado de Marta</div>
-      <div style="font-size:13px;color:var(--ink3);margin-top:3px">Tu rol: <span id="preview-rol" style="font-weight:700;color:var(--sage)"></span></div>
-    </div>
-    <div class="ia" style="margin-top:14px"><div class="ia-ico">✦</div><div>Si no tienes código, pídele al administrador que te invite desde el panel de gestión.</div></div>
-  </div>
-  <div class="btns"><button class="btn btn-p" id="codigo-btn" onclick="validarCodigo()" disabled style="opacity:.5"><div class="spinner" id="codigo-spinner"></div><span id="codigo-btn-txt">Verificar código</span></button></div>
-</div>
-
-<!-- Registro invitado -->
-<div class="screen" id="s-registro-invitado">
-  <div class="auth-hdr">
-    <button class="back-btn" onclick="navTo('s-ingresar-codigo')">‹ Volver</button>
-    <div class="auth-title">Crear tu cuenta</div>
-    <div class="auth-sub" id="inv-reg-sub">Completa tus datos para acceder.</div>
-  </div>
-  <div class="scroll" style="padding:16px 22px">
-    <div style="background:var(--surf);border:1px solid var(--line);border-radius:var(--rs);padding:12px 14px;margin-bottom:14px">
-      <div style="font-size:11px;color:var(--ink3);margin-bottom:5px">Tu rol en este cuidado</div>
-      <div id="inv-rol-badge" class="rol-badge-pill rb-familiar">👨 Familiar activo</div>
-      <div style="font-size:11px;color:var(--ink3);margin-top:5px">Asignado por el administrador — no puede cambiarse.</div>
-    </div>
-    <div class="field"><div class="flbl">Tu nombre completo</div><input class="fin" id="inv-nombre" placeholder="Tu nombre" autocomplete="name"><div class="ferr" id="inv-nombre-err">Ingresa tu nombre</div></div>
-    <div class="field"><div class="flbl">Email</div><input class="fin" id="inv-email" type="email" placeholder="tu@email.com" inputmode="email"><div class="ferr" id="inv-email-err">Email inválido</div></div>
-    <div class="field"><div class="flbl">Contraseña</div><input class="fin" id="inv-pass" type="password" placeholder="Mínimo 6 caracteres"><div class="ferr" id="inv-pass-err">Mínimo 6 caracteres</div></div>
-    <div class="field"><div class="flbl">Confirmar contraseña</div><input class="fin" id="inv-pass2" type="password" placeholder="Repite la contraseña"><div class="ferr" id="inv-pass2-err">Las contraseñas no coinciden</div></div>
-  </div>
-  <div class="btns"><button class="btn btn-p" onclick="registrarInvitado()"><div class="spinner" id="inv-spinner"></div><span id="inv-btn-txt">Crear mi cuenta y entrar</span></button></div>
-</div>
-
-
-<!-- ══════════════════════════════════════════
-     MÓDULO 2 — SHELL + HOME
-     ══════════════════════════════════════════ -->
-
-<!-- Onboarding AM -->
-<div class="screen" id="s-onb-am">
-  <div class="onb-hero">
-    <div class="oh-logo">🌿</div>
-    <div class="oh-title" id="onb-am-saludo">Hola 👋</div>
-    <div class="oh-sub">Cuéntanos sobre la persona que cuidas.</div>
-  </div>
-  <div class="scroll" style="padding:0 20px">
-    <div style="height:16px"></div>
-    <div class="prog"><div class="prog-track"><div class="prog-fill" style="width:33%"></div></div><div class="prog-meta"><span>Paso 1 de 3</span><span>Perfil de la persona cuidada</span></div></div>
-    <div style="height:16px"></div>
-    <div class="field"><div class="flbl">Nombre persona cuidada</div><input class="fin" id="onb-nombre" placeholder="Ej: Marta"></div>
-    <div class="g2">
-      <div class="field"><div class="flbl">Fecha de nacimiento</div><input class="fin" id="onb-fnac" type="date" placeholder="DD/MM/AAAA"></div>
-      <div class="field"><div class="flbl">Relación</div><select class="fin" id="onb-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro familiar</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
-    </div>
-    <div class="field"><div class="flbl">RUT</div><input class="fin" id="onb-rut" placeholder="Ej: 12.345.678-9" oninput="formatearRut(this)"><div class="fhint">Con puntos y guión</div></div>
-    <div class="field"><div class="flbl">Tu mayor preocupación</div>
-      <div class="chips" style="margin-top:6px">
-        <div class="chip on" onclick="this.classList.toggle('on')">Medicamentos</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Alimentación</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Coordinación</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Gastos</div>
-      </div>
-    </div>
-    <div class="ia"><div class="ia-ico">✦</div><div>Puedes agregar más personas cuidadas después desde el panel principal. Cada una tiene su propia bitácora, medicamentos y gastos.</div></div>
-  </div>
-  <div class="btns"><button class="btn btn-p" onclick="guardarOnbAM()">Continuar →</button></div>
-</div>
-
-<!-- Onboarding salud -->
-<div class="screen" id="s-onb-salud">
-  <div class="onb-hero">
-    <div class="oh-logo">🏥</div>
-    <div class="oh-title">Salud de <span id="onb-nombre-salud">la persona cuidada</span></div>
-    <div class="oh-sub">Condiciones y equipo médico.</div>
-  </div>
-  <div class="scroll" style="padding:0 20px">
-    <div style="height:16px"></div>
-    <div class="prog"><div class="prog-track"><div class="prog-fill" style="width:66%"></div></div><div class="prog-meta"><span>Paso 2 de 3</span><span>Salud</span></div></div>
-    <div style="height:16px"></div>
-    <div class="field"><div class="flbl">Condiciones crónicas</div>
-      <div class="chips" style="margin-top:6px">
-        <div class="chip on" onclick="this.classList.toggle('on')">Hipertensión</div>
-        <div class="chip on" onclick="this.classList.toggle('on')">Diabetes T2</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Hipotiroidismo</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Parkinson</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Demencia</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Osteoporosis</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Post-ACV</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Depresión</div>
-      </div>
-    </div>
-    <div class="field"><div class="flbl">Médico de cabecera</div><input class="fin" id="onb-medico" placeholder="Ej: Dr. Hernán Muñoz"></div>
-
-    <!-- Cuidadoras: lista dinámica 1 a N -->
-    <div class="field">
-      <div class="flbl">Cuidadoras del equipo</div>
-      <div id="onb-cuidadoras-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
-        <!-- Se genera dinámicamente -->
-      </div>
-      <button onclick="onbAgregarCuidadora()" style="display:flex;align-items:center;gap:8px;background:var(--sage-lt);border:1.5px dashed var(--sage-md);border-radius:var(--rs);padding:11px 14px;font-size:13px;font-weight:600;color:var(--sage);cursor:pointer;font-family:inherit;width:100%">
-        <span style="font-size:18px">＋</span> Agregar otra cuidadora
-      </button>
-      <div class="fhint" style="margin-top:6px">Puedes agregar una o varias. La primera es la cuidadora principal.</div>
-    </div>
-
-    <div class="ia"><div class="ia-ico">✦</div><div>La IA ajusta alertas de signos vitales según las condiciones registradas.</div></div>
-  </div>
-  <div class="btns">
-    <button class="btn btn-p" onclick="guardarOnbSalud()">Continuar →</button>
-    <button class="btn-g" onclick="navTo('s-onb-am')">← Volver</button>
-  </div>
-</div>
-
-<!-- Activación -->
-<div class="screen" id="s-activacion">
-  <div class="act">
-    <div class="act-ico">🌿</div>
-    <div class="act-title">¡Todo listo!</div>
-    <div class="act-sub">El cuidado de <strong id="act-nombre" style="color:#fff">esta persona</strong> ya está organizado en Raíz.</div>
-    <div class="act-stats">
-      <div><div class="as-n" id="act-meds">0</div><div class="as-l">Medicamentos</div></div>
-      <div><div class="as-n" id="act-cond">0</div><div class="as-l">Condiciones</div></div>
-      <div><div class="as-n" id="act-cuid">1</div><div class="as-l">Cuidadora</div></div>
+<header class="hero">
+  <div class="wrap">
+    <h1>Cuidar a tu familia, <span>sin perder nada de vista.</span></h1>
+    <p class="hero-sub">Medicamentos, bitácora, gastos y quién hace qué — coordinado entre toda la familia, en tiempo real.</p>
+    <div class="hero-ctas">
+      <a class="btn-p lg" href="/app/">Crear cuenta</a>
+      <a class="btn-ghost-pill" href="#tour">Saber más</a>
     </div>
   </div>
-  <div class="btns" style="background:var(--white)">
-    <button class="btn btn-p" onclick="irAlHome()">Ir al panel →</button>
-    <button class="btn btn-s" onclick="crearNuevoCuidado()">＋ Agregar otra persona cuidada</button>
-  </div>
-  <div style="padding:0 18px 20px">
-    <div class="ia"><div class="ia-ico">✦</div><div><strong>Próximos pasos:</strong> Agrega los medicamentos en el módulo de Salud, registra la primera bitácora del día e invita a familiares desde el menú.</div></div>
-  </div>
-</div>
-
-<!-- Home Admin -->
-<div class="screen" id="s-home-admin">
-  <div class="mob-hdr">
-    <div><div class="mob-hdr-title" id="home-admin-saludo">Hola 👋</div><div class="mob-hdr-sub" id="home-admin-fecha"></div></div>
-    <div><div id="home-admin-ava" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--sage);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title" id="home-admin-saludo-d">Hola 👋</div><div class="dh-sub" id="home-admin-fecha-d"></div></div>
-    <button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="navTo('s-bita-new')">+ Nueva bitácora</button>
-  </div>
-  <div class="scroll" id="home-admin-body"></div>
-  <div class="tabbar">
-    <div class="tab on" onclick="navTo('s-home-admin')"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud<div class="tab-dot" id="tab-meds-dot"></div></div>
-    <div class="tab" data-mod="alim" onclick="navTo('s-alim-hub')"><div class="tab-ico">🍽️</div>Alim.</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<!-- Home Familiar -->
-<div class="screen" id="s-home-familiar">
-  <div class="mob-hdr">
-    <div><div class="mob-hdr-title" id="home-fam-saludo">Hola 👋</div><div class="mob-hdr-sub" id="home-fam-fecha"></div></div>
-    <div><div id="home-fam-ava" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title" id="home-fam-saludo-d">Hola 👋</div><div class="dh-sub" id="home-fam-fecha-d"></div></div>
-  </div>
-  <div class="scroll" id="home-fam-body"></div>
-  <div class="tabbar">
-    <div class="tab on" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-new')"><div class="tab-ico">📋</div>Registrar</div>
-    <div class="tab" data-mod="agenda" onclick="navTo('s-agenda')"><div class="tab-ico">📅</div>Agenda</div>
-    <div class="tab" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<!-- Home Observador -->
-<div class="screen" id="s-home-observador">
-  <div class="mob-hdr">
-    <div><div class="mob-hdr-title" id="home-obs-saludo">Hola 👋</div><div class="mob-hdr-sub" id="home-obs-fecha"></div></div>
-    <div><div id="home-obs-ava" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title" id="home-obs-saludo-d">Hola 👋</div><div class="dh-sub" id="home-obs-fecha-d"></div></div>
-  </div>
-  <div class="scroll" id="home-obs-body"></div>
-  <div class="tabbar">
-    <div class="tab on" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Historial</div>
-    <div class="tab" data-mod="informe" onclick="navTo('s-informe-hub')"><div class="tab-ico">📊</div>Informe</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<!-- Home Cuidadora -->
-<div class="screen" id="s-home-cuidadora">
-  <div class="mob-hdr">
-    <div><div class="mob-hdr-title" id="home-cui-saludo">Hola 👋</div><div class="mob-hdr-sub" id="home-cui-fecha"></div></div>
-    <div><div id="home-cui-ava" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title" id="home-cui-saludo-d">Hola 👋</div><div class="dh-sub" id="home-cui-fecha-d"></div></div>
-    <button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="navTo('s-bita-new')">Registrar turno</button>
-  </div>
-  <div class="scroll" id="home-cui-body"></div>
-  <div class="tabbar">
-    <div class="tab on" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-new')"><div class="tab-ico">📋</div>Registrar</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab" data-mod="alim" onclick="navTo('s-alim-hub')"><div class="tab-ico">🍽️</div>Alim.</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<!-- Perfil -->
-<div class="screen" id="s-perfil">
-  <div class="mob-hdr">
-    <div><div class="mob-hdr-title">Perfil y ajustes</div></div>
-    <div><button style="font-size:13px;color:var(--sage);font-weight:700;background:none;border:none;cursor:pointer;font-family:inherit" onclick="guardarPerfil()">Guardar</button></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Perfil y ajustes</div></div>
-    <button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="guardarPerfil()">Guardar cambios</button>
-  </div>
-  <div class="scroll">
-    <div class="pf-hero" id="perfil-hero"></div>
-    <div id="perfil-am-section" style="display:none">
-      <div class="slbl">Persona cuidada activa</div>
-      <div style="padding:0 18px 14px;background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
-        <div style="display:flex;flex-direction:column;gap:12px;padding-top:14px">
-          <div class="field" style="margin:0"><div class="flbl">Nombre</div><input class="fin" id="pf-am-nombre" placeholder="Nombre de la persona cuidada"></div>
-          <div class="g2">
-            <div class="field" style="margin:0"><div class="flbl">Fecha de nacimiento</div><input class="fin" id="pf-am-fnac" type="date"></div>
-            <div class="field" style="margin:0"><div class="flbl">Relación</div><select class="fin" id="pf-am-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
+  <div class="showcase">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="ph-screen">
+        <div class="ph-hdr">
+          <div><div class="ph-hi">Hola, Javiera 👋</div><div class="ph-date">domingo, 16 de agosto</div></div>
+          <div class="ph-ava">JR</div>
+        </div>
+        <div class="ph-card">
+          <div class="ph-card-top">
+            <div><div class="ph-name">Elena · 78 años</div><div class="ph-rel">Mamá</div></div>
+            <div class="ph-badge">Activo ✓</div>
           </div>
-          <div class="field" style="margin:0"><div class="flbl">RUT</div><input class="fin" id="pf-am-rut" placeholder="Ej: 12.345.678-9" oninput="formatearRut(this)"><div class="fhint">Con puntos y guión</div></div>
-          <div class="field" style="margin:0"><div class="flbl">Cuidadora principal</div><input class="fin" id="pf-cuidadora" placeholder="Ej: Carmen Fuentes"></div>
-          <div class="field" style="margin:0"><div class="flbl">Médico de cabecera</div><input class="fin" id="pf-medico" placeholder="Ej: Dr. Hernán Muñoz"></div>
-          <div class="field" style="margin:0;margin-bottom:4px">
-            <div class="flbl">Presupuesto mensual</div>
-            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:700;color:var(--ink3)">$</span><input class="fin" id="pf-presupuesto" type="text" inputmode="numeric" placeholder="150.000" oninput="formatearMontoInput(this)" style="flex:1"></div>
+          <div class="ph-stats">
+            <div class="ph-stat"><div style="font-size:13px">❤️</div><div class="ph-stat-lbl">Presión</div><div class="ph-stat-val">120/80</div></div>
+            <div class="ph-stat"><div style="font-size:13px">🍽️</div><div class="ph-stat-lbl">Almuerzo</div><div class="ph-stat-val">Completo</div></div>
+            <div class="ph-stat"><div style="font-size:13px">💊</div><div class="ph-stat-lbl">Meds</div><div class="ph-stat-val">1 pend.</div></div>
+            <div class="ph-stat"><div style="font-size:13px">😊</div><div class="ph-stat-lbl">Ánimo</div><div class="ph-stat-val">Tranquila</div></div>
           </div>
         </div>
-      </div>
-
-      <!-- Lista de todas las personas cuidadas -->
-      <div class="slbl">Todas las personas cuidadas</div>
-      <div id="pf-cuidados-lista" style="background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
-        <!-- Se rellena dinámicamente -->
-      </div>
-      <div style="padding:12px 18px">
-        <button onclick="crearNuevoCuidado()" style="display:flex;align-items:center;gap:8px;background:var(--sage-lt);border:1.5px dashed var(--sage-md);border-radius:var(--rs);padding:12px 16px;font-size:13px;font-weight:600;color:var(--sage);cursor:pointer;font-family:inherit;width:100%">
-          <span style="font-size:18px">＋</span> Agregar otra persona cuidada
-        </button>
-      </div>
-
-      <div class="slbl">Acceso y permisos</div>
-      <div onclick="navTo('s-permisos')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--white);cursor:pointer">
-        <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">🔐</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:600;color:var(--ink)">Permisos por rol</div>
-          <div style="font-size:12px;color:var(--ink3);margin-top:1px">Qué puede ver y hacer cada perfil</div>
+        <div class="ph-lbl">Hoy requiere atención</div>
+        <div class="ph-atencion">
+          <div class="ph-aticon">⚠️</div>
+          <div><div class="ph-attitle">Losartán 50mg · 14:00</div><div class="ph-atsub">Toma pendiente de confirmar</div></div>
         </div>
-        <div style="color:var(--ink3);font-size:16px">›</div>
-      </div>
-    </div>
-    <div class="slbl">Cuenta</div>
-    <div style="padding:0 18px 14px;display:flex;flex-direction:column;gap:8px">
-      <button class="btn btn-s" onclick="irAlHome()">← Volver al panel</button>
-      <button class="btn btn-danger" onclick="cerrarSesion()">Cerrar sesión</button>
-    </div>
-  </div>
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab on"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<!-- Permisos por rol -->
-<div class="screen" id="s-permisos">
-  <div class="mob-hdr">
-    <button class="back-btn" onclick="navTo('s-perfil')">‹ Perfil</button>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Permisos por rol</div><div class="dh-sub">Elige qué puede ver y hacer cada perfil</div></div>
-  </div>
-  <div style="padding:2px 18px 0" class="mob-only-title">
-    <div class="mob-hdr-title" style="margin-top:6px">Permisos por rol</div>
-    <div class="mob-hdr-sub">Elige qué puede ver y hacer cada perfil</div>
-  </div>
-
-  <div class="rolsel" id="perm-rolsel"></div>
-  <div class="rolnota" id="perm-rolnota"></div>
-
-  <div class="scroll">
-    <div class="modlist" id="perm-modlist"></div>
-  </div>
-
-  <div class="fixedbar">
-    <button class="btn btn-ghost" onclick="restablecerPermisosRol()">Restablecer</button>
-    <button class="btn btn-p" onclick="guardarPermisos()">Guardar cambios</button>
-  </div>
-</div>
-
-<!-- Pantallas placeholder (Bloque 2 y 3 las reemplazarán) -->
-<div class="screen" id="s-bita-list">
-  <!-- Header mobile -->
-  <div class="mob-hdr">
-    <div>
-      <div class="mob-hdr-title">Bitácora</div>
-      <div class="mob-hdr-sub" id="bita-list-sub">Historial de registros</div>
-    </div>
-    <div id="bita-list-hdr-action"></div>
-  </div>
-  <!-- Header desktop -->
-  <div class="desk-hdr">
-    <div>
-      <div class="dh-title">Bitácora</div>
-      <div class="dh-sub" id="bita-list-sub-d">Historial de registros</div>
-    </div>
-    <div id="bita-list-hdr-action-d"></div>
-  </div>
-
-  <!-- Filtros -->
-  <div class="filter-bar">
-    <div class="fpill on" onclick="setFiltro('todos',this)">Todos</div>
-    <div class="fpill" onclick="setFiltro('hoy',this)">Hoy</div>
-    <div class="fpill" onclick="setFiltro('semana',this)">Esta semana</div>
-    <div class="fpill" onclick="setFiltro('mes',this)">Este mes</div>
-  </div>
-
-  <!-- Aviso solo lectura para familiar/observador -->
-  <div id="bita-obs-notice" style="display:none">
-    <div class="obs-notice">
-      <span style="font-size:14px;flex-shrink:0">👁</span>
-      <div id="bita-obs-txt">Solo puedes ver los registros. El administrador o la cuidadora crean los registros.</div>
-    </div>
-  </div>
-
-  <!-- Lista de bitácoras -->
-  <div class="scroll" id="bita-list-body">
-    <div class="empty">
-      <div class="empty-ico">📋</div>
-      <div class="empty-title">Cargando...</div>
-    </div>
-  </div>
-
-  <!-- FAB solo para Admin y Cuidadora -->
-  <button class="fab" id="bita-fab" onclick="navTo('s-bita-new')" title="Nuevo registro">＋</button>
-
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab on" data-mod="bitacora" data-screen="s-bita-list"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-<div class="screen" id="s-bita-new">
-  <div class="mob-hdr">
-    <div>
-      <button class="back-btn" onclick="navTo('s-bita-list')">‹ Bitácora</button>
-      <div class="mob-hdr-title" style="margin-top:4px" id="new-titulo">Nuevo registro</div>
-      <div class="mob-hdr-sub" id="new-fecha-display"></div>
-    </div>
-    <div style="font-size:12px;color:var(--ink3)" id="new-hora-display"></div>
-  </div>
-  <div class="desk-hdr">
-    <div>
-      <div class="dh-title" id="new-titulo-d">Nuevo registro</div>
-      <div class="dh-sub" id="new-fecha-display-d"></div>
-    </div>
-    <button class="back-btn" onclick="navTo('s-bita-list')">‹ Volver a Bitácora</button>
-  </div>
-
-  <div class="scroll">
-
-    <!-- Quien registra: siempre según la sesión activa, no es seleccionable -->
-    <div class="slbl">Quien registra</div>
-    <div style="padding:0 18px 14px;font-size:14px;color:var(--ink2);font-weight:600" id="quien-display"></div>
-
-    <!-- Signos vitales -->
-    <div class="slbl">Signos vitales</div>
-    <div style="background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
-      <div class="vital-row">
-        <div class="vital-ico">❤️</div>
-        <div class="vital-lbl">Presión arterial</div>
-        <input class="vital-inp" id="v-presion" placeholder="128/78"
-               oninput="validarPresion(this)" onblur="validarPresion(this)">
-        <div class="vital-unit">mmHg</div>
-      </div>
-      <div id="presion-msg" style="padding:0 18px 6px;display:none"><span class="fwarn show">⚠ Verifica el valor — formato esperado: 120/80</span></div>
-      <div class="vital-row">
-        <div class="vital-ico">🌡️</div>
-        <div class="vital-lbl">Temperatura</div>
-        <input class="vital-inp" id="v-temp" placeholder="36.5" type="number" step="0.1" inputmode="decimal"
-               oninput="validarTemp(this)" onblur="validarTemp(this)">
-        <div class="vital-unit">°C</div>
-      </div>
-      <div id="temp-msg" style="padding:0 18px 6px;display:none"><span class="fwarn show" id="temp-warn-txt"></span></div>
-      <div class="vital-row">
-        <div class="vital-ico">🫁</div>
-        <div class="vital-lbl">Saturación O₂</div>
-        <input class="vital-inp" id="v-sato" placeholder="96" type="number" inputmode="numeric"
-               oninput="validarSato(this)" onblur="validarSato(this)">
-        <div class="vital-unit">%</div>
-      </div>
-      <div id="sato-msg" style="padding:0 18px 6px;display:none"><span class="fwarn show" id="sato-warn-txt"></span></div>
-      <div class="vital-row" style="border:none">
-        <div class="vital-ico">💓</div>
-        <div class="vital-lbl">Frecuencia cardíaca</div>
-        <input class="vital-inp" id="v-fc" placeholder="72" type="number" inputmode="numeric"
-               oninput="validarFc(this)" onblur="validarFc(this)">
-        <div class="vital-unit">lpm</div>
-      </div>
-      <div id="fc-msg" style="padding:0 18px 6px;display:none"><span class="fwarn show" id="fc-warn-txt"></span></div>
-    </div>
-
-    <!-- Alimentación -->
-    <div class="slbl">Alimentación del día</div>
-    <div style="background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
-      <div class="porcion-row">
-        <div class="porcion-lbl">☀️ Desayuno</div>
-        <div class="porcion-btns" id="pbs-desayuno">
-          <button class="pb todo" onclick="selPorcion('desayuno','Todo',this)">Todo ✓</button>
-          <button class="pb" onclick="selPorcion('desayuno','Mitad',this)">La mitad</button>
-          <button class="pb" onclick="selPorcion('desayuno','Nada',this)">No comió</button>
+        <div class="ph-atencion">
+          <div class="ph-aticon cal">📅</div>
+          <div><div class="ph-attitle">Control cardiólogo · 16:30</div><div class="ph-atsub">Responsable: Tomás</div></div>
         </div>
-      </div>
-      <div class="porcion-row">
-        <div class="porcion-lbl">🌤 Almuerzo</div>
-        <div class="porcion-btns" id="pbs-almuerzo">
-          <button class="pb todo" onclick="selPorcion('almuerzo','Todo',this)">Todo ✓</button>
-          <button class="pb" onclick="selPorcion('almuerzo','Mitad',this)">La mitad</button>
-          <button class="pb" onclick="selPorcion('almuerzo','Nada',this)">No comió</button>
+        <div class="ph-lbl">Bitácora de hoy</div>
+        <div class="ph-bita">
+          <div class="ph-bita-top"><span class="ph-bita-who">09:15 · Marisol</span><span class="ph-bita-time">Cuidadora</span></div>
+          <div class="ph-bita-note">"Elena desayunó bien y caminamos 20 min por el patio. Buen ánimo hoy."</div>
         </div>
-      </div>
-      <div class="porcion-row" style="border:none">
-        <div class="porcion-lbl">🌙 Cena</div>
-        <div class="porcion-btns" id="pbs-cena">
-          <button class="pb" onclick="selPorcion('cena','Todo',this)">Todo ✓</button>
-          <button class="pb" onclick="selPorcion('cena','Mitad',this)">La mitad</button>
-          <button class="pb" onclick="selPorcion('cena','Nada',this)">No comió</button>
+        <div class="ph-tabbar">
+          <div class="ph-tab on"><div>🏠</div>Inicio</div>
+          <div class="ph-tab"><div>📋</div>Bitácora</div>
+          <div class="ph-tab"><div>💊</div>Salud</div>
+          <div class="ph-tab"><div>🍽️</div>Alim.</div>
+          <div class="ph-tab"><div>🧾</div>Gastos</div>
+          <div class="ph-tab"><div>⋯</div>Más</div>
         </div>
       </div>
     </div>
+  </div>
+</header>
 
-    <!-- Checklist -->
-    <div class="slbl">Otros controles</div>
-    <div style="background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
-      <div class="chk-item" onclick="togChk('bano')">
-        <div class="chkbox" id="cb-bano"></div>
-        <div class="chk-lbl" id="cl-bano">Fue al baño (deposición)</div>
+<section class="tour" id="tour">
+  <div class="wrap">
+    <div class="tour-head">
+      <div class="kicker">Recorrido</div>
+      <h2>Así se ve en el día a día</h2>
+      <p>Seis pantallas, seis cosas que hoy manejas por WhatsApp y en tu cabeza.</p>
+    </div>
+    <div class="tour-strip">
+      <div class="tour-card">
+        <div class="tc-mini">
+          <div class="row"><b>Losartán 50mg</b><span class="chip">✓ 08:00</span></div>
+          <div class="row"><b>Metformina</b><span class="chip warn">⚠ 14:00</span></div>
+          <div style="color:var(--ink3)">Stock: 15 ud. · 7 días</div>
+        </div>
+        <h3>💊 Medicamentos</h3>
+        <p>Recordatorio por horario y confirmación de cada toma. Aviso automático si el stock se acaba.</p>
       </div>
-      <div class="chk-item" onclick="togChk('hidra')">
-        <div class="chkbox" id="cb-hidra"></div>
-        <div class="chk-lbl" id="cl-hidra">Buena hidratación (~1.5L agua)</div>
+      <div class="tour-card">
+        <div class="tc-mini">
+          <div class="row"><b>09:15 · Marisol</b></div>
+          <div style="color:var(--ink2)">"Elena desayunó bien y caminamos 20 min. Buen ánimo hoy."</div>
+        </div>
+        <h3>📋 Bitácora</h3>
+        <p>Quien esté a cargo ese día registra cómo estuvo — toda la familia lo lee sin llamar a preguntar.</p>
       </div>
-      <div class="chk-item" onclick="togChk('activ')">
-        <div class="chkbox" id="cb-activ"></div>
-        <div class="chk-lbl" id="cl-activ">Realizó actividad física o kinesiología</div>
+      <div class="tour-card">
+        <div class="tc-mini">
+          <div class="row"><b>Control cardiólogo</b><span class="chip">15:00</span></div>
+          <div style="color:var(--ink3);margin-bottom:7px">Responsable: Tomás</div>
+          <div class="row"><b>Kinesiología</b><span class="chip warn">Mañana</span></div>
+          <div style="color:var(--ink3)">Responsable: Marisol</div>
+        </div>
+        <h3>📅 Agenda compartida</h3>
+        <p>Citas médicas y actividades, con quién es responsable de cada una — visible para toda la familia.</p>
       </div>
-      <div class="chk-item" style="border:none" onclick="togChk('visita')">
-        <div class="chkbox" id="cb-visita"></div>
-        <div class="chk-lbl" id="cl-visita">Recibió visita médica o familiar</div>
+      <div class="tour-card">
+        <div class="tc-mini">
+          <div class="row"><b>Gastado por persona</b></div>
+          <div class="row"><span>Marisol · Cuidadora</span><b>$180.000</b></div>
+          <div class="row"><span>Javiera · Admin</span><b>$38.000</b></div>
+        </div>
+        <h3>🧾 Gastos</h3>
+        <p>Cada gasto queda con quién lo hizo — para cuadrar cuentas entre hermanos sin discusiones.</p>
       </div>
-    </div>
-
-    <!-- Estado de ánimo -->
-    <div class="slbl">Estado de ánimo</div>
-    <div style="padding:0 18px 14px">
-      <div class="animo-btns" id="animo-btns">
-        <button class="ab on" onclick="selAnimo('Muy bien 😊',this)">Muy bien 😊</button>
-        <button class="ab" onclick="selAnimo('Bien 🙂',this)">Bien 🙂</button>
-        <button class="ab" onclick="selAnimo('Regular 😐',this)">Regular 😐</button>
-        <button class="ab" onclick="selAnimo('Mal 😔',this)">Mal 😔</button>
+      <div class="tour-card">
+        <div class="tc-mini">
+          <div class="row"><b>Cuidadora</b><span class="chip">Editar bitácora</span></div>
+          <div class="row"><b>Familiar</b><span class="chip warn">Solo ver gastos</span></div>
+        </div>
+        <h3>🔐 Permisos por rol</h3>
+        <p>Tú decides exactamente qué puede ver y hacer cada persona, y lo cambias cuando quieras.</p>
       </div>
-    </div>
-
-    <!-- Nota libre -->
-    <div class="slbl">Nota del día</div>
-    <div style="padding:0 18px 14px">
-      <textarea class="note-area" id="nota-libre"
-        placeholder="¿Qué pasó hoy? Cualquier novedad, visita, cambio en el estado, conversación relevante..."></textarea>
-      <div class="ia" style="margin-top:8px"><div class="ia-ico">✦</div><div>La IA usa esta nota para generar el resumen diario que se envía a la familia.</div></div>
-    </div>
-
-    <div style="height:16px"></div>
-  </div>
-
-  <div class="btns">
-    <button class="btn btn-p" id="btn-guardar" onclick="guardarBitacora()">Guardar registro ✓</button>
-    <button class="btn-g" onclick="navTo('s-bita-list')">Cancelar</button>
-  </div>
-</div>
-<div class="screen" id="s-salud-hub">
-  <div class="mob-hdr">
-    <div>
-      <div class="mob-hdr-title">Salud</div>
-      <div class="mob-hdr-sub" id="salud-sub">Marta · 74 años</div>
-    </div>
-    <div id="salud-hdr-action"></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Salud</div><div class="dh-sub" id="salud-sub-d">Marta · 74 años</div></div>
-    <div id="salud-hdr-action-d"></div>
-  </div>
-
-  <!-- Tabs del hub -->
-  <div class="tab-hub" id="tab-hub">
-    <div class="th on" onclick="setTab('meds',this)">💊 Medicamentos</div>
-    <div class="th" onclick="setTab('ficha',this)">📋 Ficha clínica</div>
-    <div class="th" onclick="setTab('docs',this)">📄 Documentos</div>
-    <div class="th" onclick="setTab('historial',this)">📅 Historial</div>
-  </div>
-
-  <!-- Contenido del tab activo -->
-  <div class="scroll" id="salud-content">
-    <!-- Se rellena según el tab seleccionado -->
-  </div>
-
-  <!-- FAB contextual según tab -->
-  <button class="fab" id="salud-fab" onclick="fabAction()" title="Agregar">＋</button>
-
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab on" data-mod="salud"><div class="tab-ico">💊</div>Salud<div class="tab-dot" id="tab-salud-dot"></div></div>
-    <div class="tab" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-<div class="screen" id="s-gastos">
-  <div class="mob-hdr">
-    <div>
-      <div class="mob-hdr-title">Gastos</div>
-      <div class="mob-hdr-sub" id="gastos-sub">Registro mensual del cuidado</div>
-    </div>
-    <div id="gastos-hdr-action"></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Gastos</div><div class="dh-sub" id="gastos-sub-d">Registro mensual del cuidado</div></div>
-    <div id="gastos-hdr-action-d"></div>
-  </div>
-
-  <div class="tab-hub">
-    <div class="th on" onclick="setTabGastos('registro',this)">📝 Registro</div>
-    <div class="th"    onclick="setTabGastos('presupuesto',this)">📊 Presupuesto</div>
-    <div class="th"    onclick="setTabGastos('rendicion',this)">📋 Rendición</div>
-  </div>
-
-  <div class="scroll" id="gastos-content"></div>
-  <button class="fab" id="gastos-fab" onclick="fabActionGastos()" style="display:none">＋</button>
-
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab on" data-mod="gastos"><div class="tab-ico">🧾</div>Gastos</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-<div class="screen" id="s-agenda">
-  <div class="mob-hdr">
-    <div>
-      <div class="mob-hdr-title">Agenda</div>
-      <div class="mob-hdr-sub" id="agenda-sub">Citas y eventos del cuidado</div>
-    </div>
-    <div id="agenda-hdr-action"></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Agenda</div><div class="dh-sub" id="agenda-sub-d">Citas y eventos del cuidado</div></div>
-    <div id="agenda-hdr-action-d"></div>
-  </div>
-
-  <!-- Todo el contenido (calendario + eventos) es una sola columna scrolleable -->
-  <div class="scroll">
-    <!-- Navegación del mes -->
-    <div class="cal-nav" id="cal-nav">
-      <button class="cal-arrow" onclick="cambiarMes(-1)">‹</button>
-      <div class="cal-mes" id="cal-mes-label">Junio 2025</div>
-      <button class="cal-arrow" onclick="cambiarMes(1)">›</button>
-    </div>
-
-    <!-- Grid del mes -->
-    <div class="cal-grid" id="cal-grid"></div>
-
-    <!-- Línea divisoria -->
-    <div style="height:1px;background:var(--line)"></div>
-
-    <!-- Header del día seleccionado -->
-    <div class="dia-sel-header" id="dia-sel-header">
-      <div class="dsh-txt" id="dia-sel-txt">Selecciona un día</div>
-      <button class="dsh-action" id="dia-sel-btn" onclick="abrirSheetEvento()" style="display:none">+ Agregar</button>
-    </div>
-
-    <!-- Alertas de próximas citas -->
-    <div id="alertas-wrap"></div>
-
-    <!-- Eventos del día o próximos -->
-    <div id="eventos-body">
-      <div class="empty" style="padding:28px">
-        <div class="empty-ico" style="font-size:36px">📅</div>
-        <div class="empty-txt">Selecciona un día en el calendario para ver sus eventos</div>
+      <div class="tour-card">
+        <div class="tc-mini">
+          <div class="row"><b>Examen de sangre</b><span class="chip">📄 PDF</span></div>
+          <div style="color:var(--ink3);margin-bottom:7px">Dr. Contreras · 03-08</div>
+          <div class="row"><b>Radiografía tórax</b><span class="chip warn">🖼️ Foto</span></div>
+        </div>
+        <h3>📁 Documentos médicos</h3>
+        <p>Recetas, exámenes y resultados guardados de forma segura — listos para mostrar al médico cuando los necesites.</p>
       </div>
     </div>
-    <div style="height:80px"></div>
   </div>
+</section>
 
-  <button class="fab" id="agenda-fab" onclick="abrirSheetEvento()" title="Nuevo evento">＋</button>
-
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab on" data-mod="agenda"><div class="tab-ico">📅</div>Agenda</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-<div class="screen" id="s-invitaciones">
-  <div class="mob-hdr">
-    <div>
-      <div class="mob-hdr-title">Invitar personas</div>
-      <div class="mob-hdr-sub" id="inv-sub">Gestiona quién tiene acceso</div>
-    </div>
-    <button class="hdr-action" id="inv-hdr-btn" onclick="abrirSheetInvitacion()">+ Invitar</button>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Invitar personas</div><div class="dh-sub" id="inv-sub-d">Gestiona el acceso al cuidado</div></div>
-    <button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="abrirSheetInvitacion()">+ Invitar persona</button>
-  </div>
-
-  <div class="scroll">
-    <!-- Sección: Personas con acceso activo -->
-    <div class="slbl" style="margin-top:14px">Personas con acceso</div>
-    <div id="inv-accesos-lista"></div>
-
-    <!-- Sección: Invitaciones pendientes -->
-    <div class="slbl" id="inv-pendientes-label">Invitaciones pendientes</div>
-    <div id="inv-pendientes-lista"></div>
-
-    <!-- Info sobre roles -->
-    <div class="ia" style="margin:14px 16px">
-      <div class="ia-ico">💡</div>
+<section class="note-sec" id="confianza">
+  <div class="wrap">
+    <div class="note">
+      <div class="note-mark">🌿</div>
       <div>
-        <div style="font-weight:700;margin-bottom:4px">Tipos de acceso</div>
-        <div style="margin-bottom:3px"><strong>Familiar activo</strong> — Ve todo y puede registrar bitácoras y gastos</div>
-        <div style="margin-bottom:3px"><strong>Cuidadora</strong> — Registra turnos y confirma medicamentos</div>
-        <div><strong>Observador</strong> — Solo lectura del estado general, sin poder editar</div>
-      </div>
-    </div>
-    <div style="height:80px"></div>
-  </div>
-
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab on"><div class="tab-ico">👥</div>Personas</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<div class="screen" id="s-ocr-receta">
-  <div class="mob-hdr">
-    <div>
-      <button class="back-btn" onclick="navTo('s-salud-hub')">‹ Salud</button>
-      <div class="mob-hdr-title" style="margin-top:4px">Cargar receta médica</div>
-      <div class="mob-hdr-sub">La IA detecta los medicamentos automáticamente</div>
-    </div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Cargar receta médica</div><div class="dh-sub">La IA detecta los medicamentos automáticamente</div></div>
-    <button class="back-btn" onclick="navTo('s-salud-hub')">‹ Volver</button>
-  </div>
-
-  <div class="scroll" style="padding:14px 18px">
-    <div class="ia" style="margin-bottom:14px"><div class="ia-ico">✦</div><div>Fotografía la receta de tu médico — manuscrita o impresa. La IA extrae los medicamentos, dosis y frecuencia. Tú confirmas antes de agregar.</div></div>
-
-    <!-- Zona de carga de imagen -->
-    <div id="ocr-zona" class="ocr-zone" onclick="document.getElementById('ocr-file-input').click()">
-      <div class="ocr-ico">📷</div>
-      <div class="ocr-lbl">Tocar para fotografiar o subir imagen</div>
-      <div class="ocr-sub">JPG, PNG · La receta puede ser manuscrita o impresa</div>
-    </div>
-    <input type="file" id="ocr-file-input" accept="image/*,application/pdf" style="display:none" onchange="procesarRecetaOCR(this)">
-
-    <!-- Preview de imagen -->
-    <div class="ocr-preview" id="ocr-preview" style="display:none">
-      <img id="ocr-img" src="" alt="Receta cargada">
-    </div>
-
-    <!-- Spinner de procesamiento -->
-    <div class="spinner-wrap" id="ocr-spinner" style="display:none">
-      <div class="spinner"></div>
-      <div>La IA está leyendo la receta...</div>
-    </div>
-
-    <!-- Resultado OCR -->
-    <div id="ocr-resultado" style="display:none">
-      <div class="ocr-result" id="ocr-meds-lista"></div>
-      <div style="display:flex;gap:10px;margin-top:12px">
-        <button class="btn btn-p" style="flex:2" onclick="agregarMedsOCR()">Agregar medicamentos seleccionados ✓</button>
-        <button class="btn btn-s" style="flex:1" onclick="resetOCR()">Nueva foto</button>
-      </div>
-    </div>
-
-    <!-- Cómo funciona -->
-    <div id="ocr-info" style="margin-top:16px">
-      <div class="slbl" style="padding:0 0 8px">¿Cómo funciona?</div>
-      <div style="background:var(--surf);border-radius:var(--rs);padding:14px;display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;gap:10px;font-size:13px;color:var(--ink2)"><span style="font-size:16px">📷</span><span>Fotografías la receta de tu médico</span></div>
-        <div style="display:flex;gap:10px;font-size:13px;color:var(--ink2)"><span style="font-size:16px">✦</span><span>La IA lee el nombre del medicamento, dosis y frecuencia</span></div>
-        <div style="display:flex;gap:10px;font-size:13px;color:var(--ink2)"><span style="font-size:16px">✓</span><span>Tú revisas y confirmas antes de agregar a la lista</span></div>
-        <div style="display:flex;gap:10px;font-size:13px;color:var(--ink2)"><span style="font-size:16px">💊</span><span>Los meds quedan disponibles para el checklist diario</span></div>
+        <blockquote>"Raíz nació de una necesidad real: coordinar el cuidado de un familiar mayor entre varias personas, sin que la información se perdiera en llamadas y mensajes sueltos."</blockquote>
+        <cite>— Equipo Raíz</cite>
       </div>
     </div>
   </div>
-</div>
-<div class="screen" id="s-ficha-editar">
-  <div class="mob-hdr">
-    <div>
-      <button class="back-btn" onclick="navTo('s-salud-hub')">‹ Salud</button>
-      <div class="mob-hdr-title" style="margin-top:4px">Editar ficha clínica</div>
-    </div>
-    <button class="hdr-action" onclick="guardarFicha()">Guardar</button>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <h2>¿Lista para organizar el cuidado de tu familia?</h2>
+    <p>Coordina el cuidado de tu familia sin malos ratos ni discusiones. Acceso rápido y fácil, información segura y transparente para todos.</p>
+    <a class="btn-p lg" href="/app/">Crear cuenta</a>
   </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Editar ficha clínica</div></div>
-    <div style="display:flex;gap:10px">
-      <button class="back-btn" onclick="navTo('s-salud-hub')">‹ Volver</button>
-      <button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="guardarFicha()">Guardar cambios</button>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div class="foot-brand">🌿 Raíz</div>
+    <div class="foot-links">
+      <a href="#tour">La app</a>
+      <a href="#">Privacidad</a>
+      <a href="#">Contacto</a>
     </div>
+    <div style="font-size:12.5px;color:var(--ink3)">© 2026 Raíz</div>
   </div>
+</footer>
 
-  <div class="scroll" style="padding:0 18px">
-    <div style="height:14px"></div>
-    <div class="field">
-      <div class="flbl">Médico de cabecera</div>
-      <input class="fin" id="ficha-medico" placeholder="Ej: Dr. Hernán Muñoz">
-    </div>
-    <div class="field">
-      <div class="flbl">Especialidades / otros médicos</div>
-      <input class="fin" id="ficha-especialistas" placeholder="Ej: Dr. Alvarado (Neurología), Dra. Vega (Cardiología)">
-    </div>
-    <div class="slbl" style="padding:8px 0 8px">Condiciones crónicas</div>
-    <div class="chips" id="ficha-condiciones-chips" style="margin-bottom:14px">
-      <div class="chip" onclick="this.classList.toggle('on')">Hipertensión</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Diabetes T2</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Hipotiroidismo</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Parkinson</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Demencia</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Osteoporosis</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Post-ACV</div>
-      <div class="chip" onclick="this.classList.toggle('on')">EPOC</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Depresión</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Insuficiencia cardíaca</div>
-    </div>
-    <div class="field">
-      <div class="flbl">Alergias (separadas por coma)</div>
-      <input class="fin" id="ficha-alergias" placeholder="Ej: Mariscos, penicilina">
-    </div>
-    <div class="field">
-      <div class="flbl">Restricciones alimentarias (separadas por coma)</div>
-      <input class="fin" id="ficha-restricciones" placeholder="Ej: Sin sal, sin azúcar, alimentos blandos">
-    </div>
-    <div class="field">
-      <div class="flbl">Grupo sanguíneo</div>
-      <select class="fin" id="ficha-sangre">
-        <option value="">No especificado</option>
-        <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
-        <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
-      </select>
-    </div>
-    <div class="field">
-      <div class="flbl">Notas médicas adicionales</div>
-      <textarea class="fin" id="ficha-notas" style="min-height:80px;resize:none" placeholder="Observaciones generales del médico, instrucciones especiales..."></textarea>
-    </div>
-    <div style="height:16px"></div>
-  </div>
-</div>
-<div class="screen" id="s-alim-hub">
-  <div class="mob-hdr">
-    <div>
-      <div class="mob-hdr-title">Alimentación</div>
-      <div class="mob-hdr-sub" id="alim-sub">Plan y registro diario</div>
-    </div>
-    <div id="alim-hdr-action"></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Alimentación</div><div class="dh-sub" id="alim-sub-d">Plan y registro diario</div></div>
-    <div id="alim-hdr-action-d"></div>
-  </div>
-
-  <div class="tab-hub">
-    <div class="th on"  onclick="setTabAlim('plan',this)">📅 Plan semanal</div>
-    <div class="th"     onclick="setTabAlim('restricciones',this)">🚫 Restricciones</div>
-    <div class="th"     onclick="setTabAlim('diario',this)">📝 Registro del día</div>
-    <div class="th"     onclick="setTabAlim('compras',this)">🛒 Lista de compras</div>
-  </div>
-
-  <div class="scroll" id="alim-content"></div>
-  <button class="fab" id="alim-fab" onclick="fabActionAlim()" style="display:none">＋</button>
-
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab on" data-mod="alim"><div class="tab-ico">🍽️</div>Comida</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<div class="screen" id="s-bita-detalle">
-  <div class="mob-hdr">
-    <div>
-      <button class="back-btn" onclick="navTo('s-bita-list')">‹ Bitácora</button>
-      <div class="mob-hdr-title" style="margin-top:4px" id="detalle-titulo">Registro del día</div>
-      <div class="mob-hdr-sub" id="detalle-sub"></div>
-    </div>
-    <div id="detalle-acciones-hdr"></div>
-  </div>
-  <div class="desk-hdr">
-    <div>
-      <div class="dh-title" id="detalle-titulo-d">Registro del día</div>
-      <div class="dh-sub" id="detalle-sub-d"></div>
-    </div>
-    <button class="back-btn" onclick="navTo('s-bita-list')">‹ Volver</button>
-  </div>
-
-  <div class="scroll" id="detalle-body">
-    <!-- Se rellena dinámicamente -->
-  </div>
-
-  <div class="btns" id="detalle-btns-wrap">
-    <!-- Se rellena según rol -->
-  </div>
-</div>
-
-<div class="screen" id="s-resumen-ia">
-  <div class="mob-hdr">
-    <div>
-      <button class="back-btn" onclick="navTo('s-bita-list')">‹ Bitácora</button>
-      <div class="mob-hdr-title" style="margin-top:4px">Resumen del día</div>
-      <div class="mob-hdr-sub" id="resumen-fecha-display"></div>
-    </div>
-    <div style="font-size:12px;color:var(--ink3)" id="resumen-hora-display"></div>
-  </div>
-  <div class="desk-hdr">
-    <div>
-      <div class="dh-title">Resumen generado por IA</div>
-      <div class="dh-sub" id="resumen-fecha-display-d"></div>
-    </div>
-    <button class="back-btn" onclick="navTo('s-bita-list')">‹ Bitácora</button>
-  </div>
-
-  <div class="scroll">
-    <div style="padding:14px 16px 0">
-      <div class="ia"><div class="ia-ico">✦</div><div><strong>Generado automáticamente</strong> con los datos que registraste. Puedes enviarlo tal como está o adaptarlo antes.</div></div>
-    </div>
-
-    <!-- Box de resumen IA -->
-    <div class="resumen-ia-box">
-      <div class="ria-header"><span>✦</span> Raíz · Resumen del día</div>
-      <div class="ria-text" id="ria-texto">Generando...</div>
-      <div class="ria-actions">
-        <button class="ria-btn ria-btn-wa" onclick="enviarWhatsApp()">💬 Enviar por WhatsApp</button>
-        <button class="ria-btn ria-btn-copy" onclick="copiarResumen()">📋 Copiar texto</button>
-      </div>
-    </div>
-
-    <!-- Datos registrados en este registro -->
-    <div class="slbl">Datos del registro guardado</div>
-    <div class="reg-tabla" id="resumen-datos-tabla">
-      <!-- Se rellena dinámicamente -->
-    </div>
-
-    <div style="height:20px"></div>
-  </div>
-
-  <div class="btns">
-    <button class="btn btn-s" onclick="irAlHome()">Ir al inicio</button>
-  </div>
-
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab on" data-mod="bitacora"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<!-- M6 — EQUIPO -->
-
-<div class="screen" id="s-equipo-hub">
-  <div class="mob-hdr">
-    <div>
-      <div class="mob-hdr-title">Equipo de cuidado</div>
-      <div class="mob-hdr-sub" id="equipo-sub">Personas que la cuidan</div>
-    </div>
-    <div id="equipo-hdr-action"></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Equipo de cuidado</div><div class="dh-sub" id="equipo-sub-d">Personas que la cuidan</div></div>
-    <div id="equipo-hdr-action-d"></div>
-  </div>
-
-  <div class="tab-hub">
-    <div class="th on"  onclick="setTabEquip('cuidadoras',this)">🧑‍⚕️ Cuidadoras</div>
-    <div class="th"     onclick="setTabEquip('especialistas',this)">👨‍⚕️ Especialistas</div>
-    <div class="th"     onclick="setTabEquip('turnos',this)">📅 Calendario de turnos</div>
-  </div>
-
-  <div class="scroll" id="equipo-content"></div>
-  <button class="fab" id="equipo-fab" onclick="fabActionEquip()" style="display:none">＋</button>
-
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab on" data-mod="equipo"><div class="tab-ico">👥</div>Equipo</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<!-- M8 — HOGAR -->
-
-<div class="screen" id="s-hogar-hub">
-  <div class="mob-hdr">
-    <div>
-      <div class="mob-hdr-title">Hogar e insumos</div>
-      <div class="mob-hdr-sub" id="hogar-sub">Stock y proveedores del cuidado</div>
-    </div>
-    <div id="hogar-hdr-action"></div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Hogar e insumos</div><div class="dh-sub" id="hogar-sub-d">Stock y proveedores</div></div>
-    <div id="hogar-hdr-action-d"></div>
-  </div>
-
-  <div class="tab-hub">
-    <div class="th on"  onclick="setTabHogar('insumos',this)">📦 Insumos y stock</div>
-    <div class="th"     onclick="setTabHogar('proveedores',this)">📋 Proveedores</div>
-  </div>
-
-  <div class="scroll" id="hogar-content"></div>
-  <button class="fab" id="hogar-fab" onclick="fabActionHogar()" style="display:none">＋</button>
-
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab on" data-mod="hogar"><div class="tab-ico">🏠</div>Hogar</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<!-- M10 — INFORME -->
-
-<div class="screen" id="s-informe-hub">
-  <div class="mob-hdr">
-    <div>
-      <div class="mob-hdr-title">Informe mensual</div>
-      <div class="mob-hdr-sub" id="inf-sub">Generado por IA con todos los datos del mes</div>
-    </div>
-  </div>
-  <div class="desk-hdr">
-    <div><div class="dh-title">Informe mensual</div><div class="dh-sub" id="inf-sub-d">Generado por IA con todos los datos del mes</div></div>
-    <button id="desk-gen-btn" style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="iniciarGeneracion()">✦ Generar informe</button>
-  </div>
-  <div class="scroll" id="inf-hub-body">
-    <!-- Se rellena dinámicamente -->
-  </div>
-  <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab on" data-mod="informe"><div class="tab-ico">📊</div>Informe</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
-  </div>
-</div>
-
-<div class="screen" id="s-generando">
-  <div class="mob-hdr" style="padding-top:max(44px,env(safe-area-inset-top))">
-    <div><div class="mob-hdr-title">Generando informe...</div></div>
-  </div>
-  <div class="generando-screen">
-    <div class="gen-logo">🌿</div>
-    <div class="gen-titulo">Raíz IA trabajando</div>
-    <div class="gen-sub">Analizando todos los datos del mes para generar tu informe personalizado.</div>
-    <div class="gen-pasos" id="gen-pasos">
-      <div class="gen-paso" id="gp-0"><div class="gp-ico">📋</div>Leyendo bitácoras del mes</div>
-      <div class="gen-paso" id="gp-1"><div class="gp-ico">💊</div>Analizando adherencia medicamentos</div>
-      <div class="gen-paso" id="gp-2"><div class="gp-ico">🍽️</div>Procesando datos de alimentación</div>
-      <div class="gen-paso" id="gp-3"><div class="gp-ico">🧾</div>Revisando gastos y presupuesto</div>
-      <div class="gen-paso" id="gp-4"><div class="gp-ico">✦</div>Redactando resumen con IA</div>
-    </div>
-    <div class="gen-prog">
-      <div class="gp-track"><div class="gp-fill" id="gen-fill" style="width:0%"></div></div>
-      <div class="gp-pct" id="gen-pct">0%</div>
-    </div>
-  </div>
-</div>
-
-<div class="screen" id="s-informe-detalle">
-  <!-- Header del informe -->
-  <div class="informe-header" id="inf-det-header">
-    <div class="ih-marca"><span>🌿</span> Raíz · Informe Mensual IA</div>
-    <div class="ih-titulo" id="inf-det-titulo">Informe de Junio 2025</div>
-    <div class="ih-sub" id="inf-det-sub">Marta Rodríguez · 74 años</div>
-    <div class="ih-pills" id="inf-det-pills"></div>
-  </div>
-
-  <!-- Selector versión -->
-  <div class="version-tabs">
-    <div class="vtab on"  id="vtab-familiar"  onclick="selVersion('familiar')">👨‍👩‍👧 Para la familia</div>
-    <div class="vtab"     id="vtab-clinico"   onclick="selVersion('clinico')">🩺 Versión clínica</div>
-  </div>
-
-  <!-- Contenido del informe -->
-  <div class="scroll" id="inf-det-body"></div>
-
-  <!-- Barra de acciones -->
-  <div class="acciones-bar">
-    <button class="acc-btn acc-wa"   onclick="compartirInformeWA()">💬 WhatsApp</button>
-    <button class="acc-btn acc-copy" onclick="copiarInforme()">📋 Copiar</button>
-    <button class="acc-btn acc-arch" onclick="archivarInforme()">📁 Archivar</button>
-  </div>
-</div>
-
-</div><!-- /main -->
-</div><!-- /app -->
-
-<!-- Sheet multi-cuidado -->
-<div class="overlay" id="ov-switcher" onclick="cerrarSheet('ov-switcher')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title">Cambiar cuidado activo</div>
-    <div id="switcher-lista"></div>
-    <div style="padding:12px 18px;border-top:1px solid var(--line)">
-      <button onclick="crearNuevoCuidado();cerrarSheet('ov-switcher')" style="display:flex;align-items:center;gap:8px;background:var(--sage-lt);border:1.5px dashed var(--sage-md);border-radius:var(--rs);padding:11px 14px;font-size:13px;font-weight:600;color:var(--sage);cursor:pointer;font-family:inherit;width:100%">
-        <span style="font-size:18px">＋</span> Agregar otra persona cuidada
-      </button>
-    </div>
-    <div style="padding:0 18px 14px"><button class="btn btn-s" onclick="cerrarSheet('ov-switcher')">Cerrar</button></div>
-  </div>
-</div>
-
-<!-- Sheet "Mas" -- todos los modulos (equivalente mobile del sidebar) -->
-<div class="overlay" id="ov-mas" onclick="cerrarSheet('ov-mas')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title">Todos los módulos</div>
-    <div id="mas-lista" class="scroll" style="max-height:70vh"></div>
-    <div style="padding:0 18px 14px"><button class="btn btn-s" onclick="cerrarSheet('ov-mas')">Cerrar</button></div>
-  </div>
-</div>
-
-<!-- Overlays M4 — Salud -->
-<div class="overlay" id="ov-add-med" onclick="cerrarSheet('ov-add-med')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title" id="sh-med-titulo">Agregar medicamento</div>
-    <div class="scroll" style="flex:1;min-height:0;max-height:70vh">
-      <div style="padding:14px 18px;display:flex;flex-direction:column;gap:14px">
-
-        <!-- Nombre y dosis -->
-        <div class="field" style="margin:0">
-          <div class="flbl">Nombre del medicamento</div>
-          <input class="fin" id="am-nombre" placeholder="Ej: Paracetamol" oninput="this.classList.remove('error')">
-        </div>
-        <div class="g2">
-          <div class="field" style="margin:0">
-            <div class="flbl">Dosis</div>
-            <input class="fin" id="am-dosis" placeholder="Ej: 500mg">
-          </div>
-          <div class="field" style="margin:0">
-            <div class="flbl">Cantidad por toma</div>
-            <input class="fin" id="am-cantidad" placeholder="Ej: 1 comprimido">
-          </div>
-        </div>
-        <div class="field" style="margin:0">
-          <div class="flbl">Indicado por</div>
-          <input class="fin" id="am-medico" placeholder="Ej: Dr. Muñoz">
-        </div>
-
-        <!-- Horario -->
-        <div style="background:var(--surf);border-radius:var(--rs);padding:14px;display:flex;flex-direction:column;gap:12px">
-          <div style="font-size:13px;font-weight:700;color:var(--ink)">⏰ Horario de administración</div>
-          <div class="g2">
-            <div class="field" style="margin:0">
-              <div class="flbl">Periodicidad (días)</div>
-              <input class="fin" id="am-periocidad" type="number" inputmode="numeric" placeholder="Ej: 7" value="7" min="1">
-              <div style="font-size:11px;color:var(--ink3);margin-top:4px">Días de tratamiento</div>
-            </div>
-            <div class="field" style="margin:0">
-              <div class="flbl">Frecuencia (cada N horas)</div>
-              <select class="fin" id="am-frecuencia-hrs" onchange="actualizarPreviewHorarios()">
-                <option value="4">Cada 4 hrs</option>
-                <option value="6">Cada 6 hrs</option>
-                <option value="8" selected>Cada 8 hrs</option>
-                <option value="12">Cada 12 hrs</option>
-                <option value="24">1 vez al día</option>
-                <option value="0">Solo si necesita</option>
-              </select>
-            </div>
-          </div>
-          <div class="field" style="margin:0">
-            <div class="flbl">Hora de primera toma</div>
-            <input class="fin" id="am-hora-inicio" type="time" value="08:00" onchange="actualizarPreviewHorarios()">
-          </div>
-          <!-- Preview de horarios calculados -->
-          <div id="am-horarios-preview" style="background:var(--white);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:36px;font-size:13px;color:var(--ink)"></div>
-        </div>
-
-        <!-- Stock -->
-        <div style="background:var(--surf);border-radius:var(--rs);padding:14px;display:flex;flex-direction:column;gap:12px">
-          <div style="font-size:13px;font-weight:700;color:var(--ink)">📦 Stock inicial</div>
-          <div class="field" style="margin:0">
-            <div class="flbl">Unidades disponibles al iniciar</div>
-            <input class="fin" id="am-stock" type="number" inputmode="numeric" placeholder="30" value="30" min="0">
-            <div style="font-size:11px;color:var(--ink3);margin-top:4px">El stock se descontará automáticamente con cada toma confirmada</div>
-          </div>
-        </div>
-
-        <div class="field" style="margin:0">
-          <div class="flbl">Notas o instrucciones especiales</div>
-          <input class="fin" id="am-notas" placeholder="Ej: Tomar con comida">
-        </div>
-
-      </div>
-    </div>
-    <div class="btns">
-      <button class="btn btn-p" onclick="guardarMedManual()">Guardar medicamento</button>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-add-doc" onclick="cerrarSheet('ov-add-doc')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title">Agregar documento médico</div>
-    <div style="padding:14px 18px;display:flex;flex-direction:column;gap:12px">
-      <div class="field" style="margin:0">
-        <div class="flbl">Tipo de documento</div>
-        <select class="fin" id="doc-tipo">
-          <option value="receta">📋 Receta médica</option>
-          <option value="examen">🔬 Examen de laboratorio</option>
-          <option value="imagen">🩻 Imagen diagnóstica (Rx, TAC, etc.)</option>
-          <option value="informe">📄 Informe médico</option>
-          <option value="certificado">📜 Certificado</option>
-          <option value="otro">📁 Otro</option>
-        </select>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Nombre / descripción</div>
-        <input class="fin" id="doc-nombre" placeholder="Ej: Examen de sangre junio 2025">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Médico que lo emitió</div>
-        <input class="fin" id="doc-medico" placeholder="Ej: Dr. Hernán Muñoz">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Fecha del documento</div>
-        <input class="fin" id="doc-fecha" type="date">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Notas o indicaciones</div>
-        <textarea class="fin" id="doc-notas" style="min-height:60px;resize:none" placeholder="Indicaciones, resultados importantes, seguimiento necesario..."></textarea>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Archivo <span style="font-weight:400;color:var(--ink3)">(opcional)</span></div>
-        <div id="doc-archivo-area" onclick="document.getElementById('doc-archivo-input').click()"
-          style="border:2px dashed var(--line);border-radius:var(--rs);padding:16px;text-align:center;cursor:pointer;background:var(--surf);transition:border-color .2s">
-          <div id="doc-archivo-placeholder">
-            <div style="font-size:24px;margin-bottom:6px">📎</div>
-            <div style="font-size:13px;font-weight:600;color:var(--ink3)">Toca para subir foto o PDF</div>
-            <div style="font-size:11px;color:var(--ink3);margin-top:2px">JPG, PNG o PDF (máx 10MB)</div>
-          </div>
-          <div id="doc-archivo-preview" style="display:none">
-            <img id="doc-archivo-img" alt="Documento cargado" style="max-width:100%;max-height:160px;border-radius:6px;object-fit:cover;display:none">
-            <div id="doc-archivo-pdf-info" style="display:none;font-size:13px;font-weight:600;color:var(--ink2)">📄 <span id="doc-archivo-nombre-pdf"></span></div>
-            <div style="margin-top:8px;display:flex;gap:8px;justify-content:center">
-              <button onclick="event.stopPropagation();document.getElementById('doc-archivo-input').click()"
-                style="padding:5px 12px;border-radius:var(--rs);background:var(--surf);border:1.5px solid var(--line);font-size:12px;color:var(--ink3);cursor:pointer;font-family:inherit">
-                Cambiar
-              </button>
-              <button onclick="event.stopPropagation();limpiarArchivoDoc()"
-                style="padding:5px 12px;border-radius:var(--rs);background:var(--red-lt);border:1px solid var(--red);font-size:12px;color:var(--red);cursor:pointer;font-family:inherit">
-                Quitar
-              </button>
-            </div>
-          </div>
-        </div>
-        <input type="file" id="doc-archivo-input" accept="image/*,application/pdf"
-          style="display:none" onchange="previewArchivoDoc(this)">
-      </div>
-    </div>
-    <div class="btns"><button class="btn btn-p" id="btn-guardar-doc" onclick="guardarDocumento()">Guardar documento</button></div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-edit-stock" onclick="cerrarSheet('ov-edit-stock')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title" id="stock-med-nombre">Gestionar stock</div>
-    <div style="padding:18px;display:flex;flex-direction:column;gap:16px">
-
-      <!-- Stock actual calculado -->
-      <div style="background:var(--surf);border-radius:var(--rs);padding:14px;text-align:center">
-        <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">Stock disponible actual</div>
-        <div id="stock-actual-display" style="font-size:36px;font-weight:900;color:var(--sage)">—</div>
-        <div style="font-size:12px;color:var(--ink3)">unidades</div>
-        <div id="stock-consumido-display" style="font-size:12px;color:var(--ink3);margin-top:6px"></div>
-      </div>
-
-      <!-- Registrar reposición (compra) -->
-      <div style="border:1.5px solid var(--sage-md);border-radius:var(--rs);padding:14px;display:flex;flex-direction:column;gap:10px">
-        <div style="font-size:13px;font-weight:700;color:var(--sage)">🛒 Registrar compra / reposición</div>
-        <div class="field" style="margin:0">
-          <div class="flbl">Unidades compradas</div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <button onclick="ajustarStock(-1)" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--line);background:var(--surf);font-size:20px;cursor:pointer;font-family:inherit">−</button>
-            <input id="stock-valor" type="number" inputmode="numeric"
-              style="flex:1;font-size:24px;font-weight:900;text-align:center;border:2px solid var(--sage);border-radius:var(--rs);padding:8px;font-family:inherit;outline:none">
-            <button onclick="ajustarStock(1)" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--sage);background:var(--sage-lt);font-size:20px;cursor:pointer;font-family:inherit;color:var(--sage)">＋</button>
-          </div>
-        </div>
-        <div class="field" style="margin:0">
-          <div class="flbl">Fecha de compra</div>
-          <input class="fin" id="stock-fecha" type="date">
-        </div>
-        <div class="field" style="margin:0">
-          <div class="flbl">Nota (opcional)</div>
-          <input class="fin" id="stock-nota" placeholder="Ej: Farmacia Cruz Verde · $8.500">
-        </div>
-      </div>
-
-      <!-- Historial de reposiciones -->
-      <div id="stock-historial" style="font-size:12px;color:var(--ink3)"></div>
-
-    </div>
-    <div class="btns">
-      <button class="btn btn-p" onclick="guardarReposicion()">Registrar compra</button>
-    </div>
-  </div>
-</div>
-
-<!-- Overlays M5 — Alimentación -->
-<div class="overlay" id="ov-add-comida" onclick="cerrarSheet('ov-add-comida')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title" id="sh-comida-titulo">Agregar comida</div>
-    <div style="padding:14px 18px;display:flex;flex-direction:column;gap:12px">
-      <div class="field" style="margin:0">
-        <div class="flbl">Descripción de la comida</div>
-        <input class="fin" id="comida-desc" placeholder="Ej: Puré de papas con pollo desmenuzado">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Momento del día</div>
-        <select class="fin" id="comida-momento">
-          <option value="desayuno">☀️ Desayuno</option>
-          <option value="almuerzo">🌤 Almuerzo</option>
-          <option value="once">🫖 Once</option>
-          <option value="cena">🌙 Cena</option>
-        </select>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Notas adicionales (opcional)</div>
-        <input class="fin" id="comida-notas" placeholder="Ej: Sin sal, triturado fino">
-      </div>
-    </div>
-    <div class="btns"><button class="btn btn-p" onclick="guardarComida()">Agregar al plan</button></div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-add-rest" onclick="cerrarSheet('ov-add-rest')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title">Nueva restricción alimentaria</div>
-    <div style="padding:14px 18px;display:flex;flex-direction:column;gap:12px">
-      <div class="field" style="margin:0">
-        <div class="flbl">Tipo</div>
-        <select class="fin" id="rest-tipo">
-          <option value="alergia">⚠️ Alergia</option>
-          <option value="intolerancia">🔶 Intolerancia</option>
-          <option value="medica">🏥 Restricción médica</option>
-          <option value="preferencia">💚 Preferencia</option>
-        </select>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Alimento o ingrediente</div>
-        <input class="fin" id="rest-desc" placeholder="Ej: Mariscos, sal añadida, azúcar refinada">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Razón o indicación (opcional)</div>
-        <input class="fin" id="rest-razon" placeholder="Ej: Indicado por Dr. Muñoz, diabetes tipo 2">
-      </div>
-    </div>
-    <div class="btns"><button class="btn btn-p" onclick="guardarRestriccion()">Agregar restricción</button></div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-add-compra" onclick="cerrarSheet('ov-add-compra')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title">Agregar a la lista</div>
-    <div class="cat-grid" id="cat-grid-compra">
-      <div class="cat-btn on" data-cat="verduras" onclick="selCatCompra(this)"><div class="cat-ico">🥦</div><div class="cat-lbl">Verduras</div></div>
-      <div class="cat-btn" data-cat="frutas"   onclick="selCatCompra(this)"><div class="cat-ico">🍎</div><div class="cat-lbl">Frutas</div></div>
-      <div class="cat-btn" data-cat="proteina" onclick="selCatCompra(this)"><div class="cat-ico">🍗</div><div class="cat-lbl">Proteína</div></div>
-      <div class="cat-btn" data-cat="lacteo"   onclick="selCatCompra(this)"><div class="cat-ico">🥛</div><div class="cat-lbl">Lácteos</div></div>
-      <div class="cat-btn" data-cat="cereal"   onclick="selCatCompra(this)"><div class="cat-ico">🌾</div><div class="cat-lbl">Cereales</div></div>
-      <div class="cat-btn" data-cat="insumo"   onclick="selCatCompra(this)"><div class="cat-ico">🧴</div><div class="cat-lbl">Insumos</div></div>
-      <div class="cat-btn" data-cat="bebida"   onclick="selCatCompra(this)"><div class="cat-ico">💧</div><div class="cat-lbl">Bebidas</div></div>
-      <div class="cat-btn" data-cat="otro"     onclick="selCatCompra(this)"><div class="cat-ico">📦</div><div class="cat-lbl">Otro</div></div>
-    </div>
-    <div style="padding:0 18px 14px;display:flex;flex-direction:column;gap:10px">
-      <div class="field" style="margin:0">
-        <div class="flbl">Producto</div>
-        <input class="fin" id="compra-nombre" placeholder="Ej: Pechuga de pollo">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Cantidad</div>
-        <input class="fin" id="compra-cantidad" placeholder="Ej: 500g, 1 unidad, 2 paquetes">
-      </div>
-    </div>
-    <div class="btns"><button class="btn btn-p" onclick="guardarCompra()">Agregar a la lista</button></div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-sel-dia" onclick="cerrarSheet('ov-sel-dia')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title">Seleccionar día</div>
-    <div id="dia-selector-lista" style="padding:8px 0"></div>
-  </div>
-</div>
-
-<!-- Overlays M6-M10 -->
-<div class="overlay" id="ov-add-cuidadora" onclick="cerrarSheet('ov-add-cuidadora')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title" id="sh-cuidadora-title">Agregar cuidadora</div>
-    <div style="padding:14px 18px;display:flex;flex-direction:column;gap:12px">
-      <div class="field" style="margin:0">
-        <div class="flbl">Nombre completo</div>
-        <input class="fin" id="c-nombre" placeholder="Ej: Carmen Fuentes">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Teléfono de contacto</div>
-        <input class="fin" id="c-telefono" type="tel" placeholder="+56 9 1234 5678" inputmode="tel">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Rol en el cuidado</div>
-        <select class="fin" id="c-rol">
-          <option value="cuidadora_principal">Cuidadora principal</option>
-          <option value="cuidadora_suplente">Cuidadora suplente / turno</option>
-          <option value="acompanante">Acompañante puntual</option>
-        </select>
-      </div>
-      <div>
-        <div class="flbl" style="margin-bottom:8px">Días de turno</div>
-        <div style="display:flex;gap:6px" id="c-dias-btns">
-          <!-- Se rellena dinámicamente -->
-        </div>
-      </div>
-      <div class="g2">
-        <div class="field" style="margin:0">
-          <div class="flbl">Hora entrada</div>
-          <input class="fin" id="c-hora-ini" type="time" value="08:00">
-        </div>
-        <div class="field" style="margin:0">
-          <div class="flbl">Hora salida</div>
-          <input class="fin" id="c-hora-fin" type="time" value="18:00">
-        </div>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Notas (opcional)</div>
-        <input class="fin" id="c-notas" placeholder="Ej: Tiene experiencia con adultos con demencia">
-      </div>
-      <div class="ia">
-        <div class="ia-ico">📱</div>
-        <div>Si la cuidadora va a usar la app, invítala desde <span style="color:var(--sage);font-weight:600;cursor:pointer" onclick="cerrarSheet('ov-add-cuidadora');navTo('s-invitaciones')">Invitar personas →</span> con un código de acceso. Aquí registras sus datos de contacto y turno.</div>
-      </div>
-    </div>
-    <div class="btns"><button class="btn btn-p" onclick="guardarCuidadora()">Guardar cuidadora</button></div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-edit-cuidadora" onclick="cerrarSheet('ov-edit-cuidadora')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title">Editar cuidadora</div>
-    <div style="padding:14px 18px;display:flex;flex-direction:column;gap:12px">
-      <input type="hidden" id="edit-c-id">
-      <div class="field" style="margin:0">
-        <div class="flbl">Nombre completo</div>
-        <input class="fin" id="edit-c-nombre" placeholder="Ej: Carmen Fuentes">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Teléfono de contacto</div>
-        <input class="fin" id="edit-c-telefono" type="tel" inputmode="tel">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Rol</div>
-        <select class="fin" id="edit-c-rol">
-          <option value="cuidadora_principal">Cuidadora principal</option>
-          <option value="cuidadora_suplente">Cuidadora suplente / turno</option>
-          <option value="acompanante">Acompañante puntual</option>
-        </select>
-      </div>
-      <div>
-        <div class="flbl" style="margin-bottom:8px">Días de turno</div>
-        <div style="display:flex;gap:6px" id="edit-c-dias-btns"></div>
-      </div>
-      <div class="g2">
-        <div class="field" style="margin:0">
-          <div class="flbl">Hora entrada</div>
-          <input class="fin" id="edit-c-hora-ini" type="time">
-        </div>
-        <div class="field" style="margin:0">
-          <div class="flbl">Hora salida</div>
-          <input class="fin" id="edit-c-hora-fin" type="time">
-        </div>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Notas</div>
-        <input class="fin" id="edit-c-notas" placeholder="Notas sobre esta cuidadora">
-      </div>
-    </div>
-    <div class="btns"><button class="btn btn-p" onclick="actualizarCuidadora()">Guardar cambios</button></div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-add-esp" onclick="cerrarSheet('ov-add-esp')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title">Agregar especialista</div>
-    <div style="padding:14px 18px;display:flex;flex-direction:column;gap:12px">
-      <div class="field" style="margin:0">
-        <div class="flbl">Especialidad</div>
-        <select class="fin" id="esp-tipo">
-          <option value="medico">🩺 Médico</option>
-          <option value="enfermera">💉 Enfermera / TENS</option>
-          <option value="kinesiologo">🏃 Kinesiólogo/a</option>
-          <option value="nutricionista">🥗 Nutricionista</option>
-          <option value="psicologo">🧠 Psicólogo/a</option>
-          <option value="terapeuta">🤝 Terapeuta ocupacional</option>
-          <option value="otro">👤 Otro especialista</option>
-        </select>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Nombre completo</div>
-        <input class="fin" id="esp-nombre" placeholder="Ej: Dr. Hernán Muñoz">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Especialización (opcional)</div>
-        <input class="fin" id="esp-especializacion" placeholder="Ej: Geriatría, Neurología">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Teléfono / contacto</div>
-        <input class="fin" id="esp-telefono" placeholder="+56 2 1234 5678" inputmode="tel">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Centro / clínica</div>
-        <input class="fin" id="esp-centro" placeholder="Ej: Clínica Las Condes, CESFAM Lo Barnechea">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Frecuencia de visita</div>
-        <select class="fin" id="esp-frecuencia">
-          <option value="semanal">Semanal</option>
-          <option value="quincenal">Quincenal</option>
-          <option value="mensual">Mensual</option>
-          <option value="segun_necesidad">Según necesidad</option>
-        </select>
-      </div>
-    </div>
-    <div class="btns"><button class="btn btn-p" onclick="guardarEspecialista()">Agregar especialista</button></div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-evento" onclick="cerrarSheet('ov-evento')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title" id="sh-evento-titulo">Nuevo evento</div>
-
-    <!-- Selector de tipo -->
-    <div class="tipo-grid" id="tipo-grid">
-      <button class="tipo-btn on" data-tipo="cita_medica" onclick="selTipo(this)">
-        <div class="tipo-ico">🩺</div><div class="tipo-lbl">Cita médica</div>
-      </button>
-      <button class="tipo-btn" data-tipo="control" onclick="selTipo(this)">
-        <div class="tipo-ico">🩻</div><div class="tipo-lbl">Control / examen</div>
-      </button>
-      <button class="tipo-btn" data-tipo="kinesiologia" onclick="selTipo(this)">
-        <div class="tipo-ico">🏃</div><div class="tipo-lbl">Kinesiología</div>
-      </button>
-      <button class="tipo-btn" data-tipo="medicamento" onclick="selTipo(this)">
-        <div class="tipo-ico">💊</div><div class="tipo-lbl">Medicamento</div>
-      </button>
-      <button class="tipo-btn" data-tipo="cumpleanos" onclick="selTipo(this)">
-        <div class="tipo-ico">🎂</div><div class="tipo-lbl">Cumpleaños</div>
-      </button>
-      <button class="tipo-btn" data-tipo="otro" onclick="selTipo(this)">
-        <div class="tipo-ico">📌</div><div class="tipo-lbl">Otro</div>
-      </button>
-    </div>
-
-    <div style="padding:0 18px;display:flex;flex-direction:column;gap:12px">
-      <!-- Selector de Cuidado (a quién corresponde el evento) -->
-      <div class="field" style="margin:0" id="ev-selector-cuidado">
-        <div class="flbl">¿Para quién es este evento?</div>
-        <div id="ev-cuidado-chips" style="display:flex;flex-wrap:wrap;gap:0"></div>
-      </div>
-
-      <div class="field" style="margin:0">
-        <div class="flbl">Título</div>
-        <input class="fin" id="ev-titulo" placeholder="Ej: Control con Dr. Muñoz">
-      </div>
-      <div class="g2">
-        <div class="field" style="margin:0">
-          <div class="flbl">Fecha</div>
-          <input class="fin" id="ev-fecha" type="date">
-        </div>
-        <div class="field" style="margin:0">
-          <div class="flbl">Hora</div>
-          <input class="fin" id="ev-hora" type="time" value="10:00">
-        </div>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Lugar / centro</div>
-        <input class="fin" id="ev-lugar" placeholder="Ej: Clínica Las Condes, piso 3">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">¿Quién acompaña?</div>
-        <input class="fin" id="ev-acompanante" placeholder="Ej: Valentina, Carmen">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Notas o indicaciones</div>
-        <textarea class="fin" id="ev-notas" style="min-height:70px;resize:none" placeholder="Llevar exámenes previos, ayunar 8 horas, etc."></textarea>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Alerta (días antes)</div>
-        <select class="fin" id="ev-alerta">
-          <option value="0">Sin alerta</option>
-          <option value="1" selected>1 día antes</option>
-          <option value="2">2 días antes</option>
-          <option value="3">3 días antes</option>
-          <option value="7">1 semana antes</option>
-        </select>
-      </div>
-    </div>
-    <div style="height:8px"></div>
-    <div class="btns">
-      <button class="btn btn-p" onclick="guardarEvento()">Guardar evento</button>
-      <div id="btn-eliminar-evento" style="display:none">
-        <button class="btn btn-danger" onclick="eliminarEventoActual()">Eliminar evento</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-insumo" onclick="cerrarSheet('ov-insumo')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title" id="sh-insumo-titulo">Agregar insumo</div>
-
-    <div class="cat-grid" id="cat-grid-insumo">
-      <button class="cat-btn on" data-cat="higiene" onclick="selCatInsumo(this)"><div class="cat-ico-s">🧴</div><div class="cat-lbl-s">Higiene</div></button>
-      <button class="cat-btn" data-cat="incontinencia" onclick="selCatInsumo(this)"><div class="cat-ico-s">🩱</div><div class="cat-lbl-s">Incontinencia</div></button>
-      <button class="cat-btn" data-cat="movilidad" onclick="selCatInsumo(this)"><div class="cat-ico-s">♿</div><div class="cat-lbl-s">Movilidad</div></button>
-      <button class="cat-btn" data-cat="alimentacion" onclick="selCatInsumo(this)"><div class="cat-ico-s">🥄</div><div class="cat-lbl-s">Alimentación</div></button>
-      <button class="cat-btn" data-cat="limpieza" onclick="selCatInsumo(this)"><div class="cat-ico-s">🧹</div><div class="cat-lbl-s">Limpieza</div></button>
-      <button class="cat-btn" data-cat="ropa" onclick="selCatInsumo(this)"><div class="cat-ico-s">👕</div><div class="cat-lbl-s">Ropa / cama</div></button>
-      <button class="cat-btn" data-cat="medico" onclick="selCatInsumo(this)"><div class="cat-ico-s">🩺</div><div class="cat-lbl-s">Médico</div></button>
-      <button class="cat-btn" data-cat="otro" onclick="selCatInsumo(this)"><div class="cat-ico-s">📦</div><div class="cat-lbl-s">Otro</div></button>
-    </div>
-
-    <div style="padding:0 18px;display:flex;flex-direction:column;gap:12px">
-      <div class="field" style="margin:0">
-        <div class="flbl">Nombre del insumo</div>
-        <input class="fin" id="ins-nombre" placeholder="Ej: Pañales talla L, Crema barrera">
-      </div>
-      <div class="g2">
-        <div class="field" style="margin:0">
-          <div class="flbl">Stock actual</div>
-          <input class="fin" id="ins-stock" type="number" placeholder="0" value="0" inputmode="numeric">
-        </div>
-        <div class="field" style="margin:0">
-          <div class="flbl">Stock mínimo</div>
-          <input class="fin" id="ins-min" type="number" placeholder="5" value="5" inputmode="numeric">
-          <div class="fhint">Alerta cuando llegue a este nivel</div>
-        </div>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Unidad de medida</div>
-        <select class="fin" id="ins-unidad">
-          <option value="unidades">Unidades</option>
-          <option value="paquetes">Paquetes</option>
-          <option value="litros">Litros</option>
-          <option value="ml">Mililitros</option>
-          <option value="kg">Kilogramos</option>
-          <option value="gramos">Gramos</option>
-          <option value="rollos">Rollos</option>
-        </select>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Notas (opcional)</div>
-        <input class="fin" id="ins-notas" placeholder="Ej: Comprar en farmacia Cruz Verde">
-      </div>
-    </div>
-    <div class="btns">
-      <button class="btn btn-p" onclick="guardarInsumo()">Guardar insumo</button>
-      <div id="btn-del-insumo" style="display:none"><button class="btn btn-danger" onclick="eliminarInsumoActual()">Eliminar insumo</button></div>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-proveedor" onclick="cerrarSheet('ov-proveedor')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title" id="sh-prov-titulo">Agregar proveedor / servicio</div>
-
-    <div class="cat-grid" id="cat-grid-prov" style="grid-template-columns:repeat(3,1fr)">
-      <button class="cat-btn on" data-cat="farmacia" onclick="selCatProv(this)"><div class="cat-ico-s">💊</div><div class="cat-lbl-s">Farmacia</div></button>
-      <button class="cat-btn" data-cat="medico_domicilio" onclick="selCatProv(this)"><div class="cat-ico-s">🩺</div><div class="cat-lbl-s">Médico a domicilio</div></button>
-      <button class="cat-btn" data-cat="kinesiologia" onclick="selCatProv(this)"><div class="cat-ico-s">🏃</div><div class="cat-lbl-s">Kinesiología</div></button>
-      <button class="cat-btn" data-cat="enfermeria" onclick="selCatProv(this)"><div class="cat-ico-s">💉</div><div class="cat-lbl-s">Enfermería</div></button>
-      <button class="cat-btn" data-cat="nutricion" onclick="selCatProv(this)"><div class="cat-ico-s">🥗</div><div class="cat-lbl-s">Nutrición</div></button>
-      <button class="cat-btn" data-cat="transporte" onclick="selCatProv(this)"><div class="cat-ico-s">🚗</div><div class="cat-lbl-s">Transporte</div></button>
-      <button class="cat-btn" data-cat="supermercado" onclick="selCatProv(this)"><div class="cat-ico-s">🛒</div><div class="cat-lbl-s">Supermercado</div></button>
-      <button class="cat-btn" data-cat="tecnico" onclick="selCatProv(this)"><div class="cat-ico-s">🔧</div><div class="cat-lbl-s">Servicio técnico</div></button>
-      <button class="cat-btn" data-cat="otro" onclick="selCatProv(this)"><div class="cat-ico-s">📋</div><div class="cat-lbl-s">Otro</div></button>
-    </div>
-
-    <div style="padding:0 18px;display:flex;flex-direction:column;gap:12px">
-      <div class="field" style="margin:0">
-        <div class="flbl">Nombre</div>
-        <input class="fin" id="prov-nombre" placeholder="Ej: Farmacia Cruz Verde, Dr. Muñoz">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Teléfono de contacto</div>
-        <input class="fin" id="prov-telefono" type="tel" placeholder="+56 9 1234 5678" inputmode="tel">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Dirección o cobertura</div>
-        <input class="fin" id="prov-direccion" placeholder="Ej: Av. Apoquindo 4800, Lo Barnechea">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Horario de atención</div>
-        <input class="fin" id="prov-horario" placeholder="Ej: Lun–Vie 9:00–18:00, 24h">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Notas (opcional)</div>
-        <input class="fin" id="prov-notas" placeholder="Ej: Tiene convenio con la clínica, entrega a domicilio">
-      </div>
-    </div>
-    <div class="btns">
-      <button class="btn btn-p" onclick="guardarProveedor()">Guardar proveedor</button>
-      <div id="btn-del-prov" style="display:none"><button class="btn btn-danger" onclick="eliminarProvActual()">Eliminar proveedor</button></div>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-gasto" onclick="cerrarSheet('ov-gasto')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title" id="sh-gasto-titulo">Registrar gasto</div>
-
-    <div class="cat-grid" id="cat-grid-gasto">
-      <button class="cat-btn on" data-cat="medicamentos" onclick="selCat(this)"><div class="cat-ico">💊</div><div class="cat-lbl">Medicam.</div></button>
-      <button class="cat-btn" data-cat="alimentacion"  onclick="selCat(this)"><div class="cat-ico">🛒</div><div class="cat-lbl">Aliment.</div></button>
-      <button class="cat-btn" data-cat="insumos"       onclick="selCat(this)"><div class="cat-ico">🧴</div><div class="cat-lbl">Insumos</div></button>
-      <button class="cat-btn" data-cat="hogar"         onclick="selCat(this)"><div class="cat-ico">🏠</div><div class="cat-lbl">Hogar</div></button>
-      <button class="cat-btn" data-cat="traslado"      onclick="selCat(this)"><div class="cat-ico">🚗</div><div class="cat-lbl">Traslado</div></button>
-      <button class="cat-btn" data-cat="medico"        onclick="selCat(this)"><div class="cat-ico">🏥</div><div class="cat-lbl">Médico</div></button>
-      <button class="cat-btn" data-cat="cuidadora"     onclick="selCat(this)"><div class="cat-ico">👩‍⚕️</div><div class="cat-lbl">Cuidadora</div></button>
-      <button class="cat-btn" data-cat="otro"          onclick="selCat(this)"><div class="cat-ico">📦</div><div class="cat-lbl">Otro</div></button>
-    </div>
-
-    <div class="amount-input">
-      <div class="amount-cur">$</div>
-      <input class="amount-field" id="g-monto" type="text" placeholder="0" inputmode="numeric" oninput="formatearMontoInput(this)">
-    </div>
-
-    <div style="padding:12px 18px;display:flex;flex-direction:column;gap:10px">
-      <div class="field" style="margin:0">
-        <div class="flbl">Descripción</div>
-        <input class="fin" id="g-desc" placeholder="Ej: Enalapril 10mg · Farmacia Cruz Verde">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">¿Quién hizo este gasto?</div>
-        <div class="persel" id="g-persel"></div>
-      </div>
-      <div class="g2">
-        <div class="field" style="margin:0">
-          <div class="flbl">Fecha</div>
-          <input class="fin" id="g-fecha" type="date">
-        </div>
-        <div class="field" style="margin:0">
-          <div class="flbl">Requiere aprobación</div>
-          <select class="fin" id="g-aprobacion">
-            <option value="no">No</option>
-            <option value="pendiente">Sí — enviar a familiar</option>
-          </select>
-        </div>
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Boleta / comprobante <span style="font-weight:400;color:var(--ink3)">(opcional)</span></div>
-        <!-- Área de carga de imagen o PDF -->
-        <div id="g-boleta-area" onclick="document.getElementById('g-boleta-input').click()"
-          style="border:2px dashed var(--line);border-radius:var(--rs);padding:16px;text-align:center;cursor:pointer;background:var(--surf);transition:border-color .2s">
-          <div id="g-boleta-placeholder">
-            <div style="font-size:24px;margin-bottom:6px">📷</div>
-            <div style="font-size:13px;font-weight:600;color:var(--ink3)">Toca para subir foto o PDF de la boleta</div>
-            <div style="font-size:11px;color:var(--ink3);margin-top:2px">JPG, PNG o PDF (máx 10MB)</div>
-          </div>
-          <div id="g-boleta-preview" style="display:none">
-            <img id="g-boleta-img" alt="Boleta cargada" style="max-width:100%;max-height:160px;border-radius:6px;object-fit:cover;display:none">
-            <div id="g-boleta-pdf-info" style="display:none;font-size:13px;font-weight:600;color:var(--ink2)">📄 <span id="g-boleta-nombre-pdf"></span></div>
-            <div style="margin-top:8px;display:flex;gap:8px;justify-content:center">
-              <button onclick="event.stopPropagation();document.getElementById('g-boleta-input').click()"
-                style="padding:5px 12px;border-radius:var(--rs);background:var(--surf);border:1.5px solid var(--line);font-size:12px;color:var(--ink3);cursor:pointer;font-family:inherit">
-                Cambiar
-              </button>
-              <button onclick="event.stopPropagation();limpiarBoleta()"
-                style="padding:5px 12px;border-radius:var(--rs);background:var(--red-lt);border:1px solid var(--red);font-size:12px;color:var(--red);cursor:pointer;font-family:inherit">
-                Quitar
-              </button>
-            </div>
-          </div>
-        </div>
-        <input type="file" id="g-boleta-input" accept="image/*,application/pdf"
-          style="display:none" onchange="previewBoleta(this)">
-      </div>
-    </div>
-    <div class="btns">
-      <button class="btn btn-p" id="btn-guardar-gasto" onclick="guardarGasto()">Guardar gasto</button>
-      <div id="btn-del-gasto" style="display:none"><button class="btn btn-danger" onclick="eliminarGastoActual()">Eliminar gasto</button></div>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="ov-presupuesto" onclick="cerrarSheet('ov-presupuesto')">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sh-handle"></div>
-    <div class="sh-title">Editar presupuesto mensual</div>
-    <div style="padding:20px 18px">
-      <div style="font-size:13px;color:var(--ink3);margin-bottom:10px">Presupuesto total del mes (en pesos)</div>
-      <div class="amount-input" style="border-bottom:1px solid var(--line)">
-        <div class="amount-cur">$</div>
-        <input class="amount-field" id="pres-total" type="text" inputmode="numeric" oninput="formatearMontoInput(this)" style="font-size:34px">
-      </div>
-      <div style="height:10px"></div>
-      <div class="ia"><div class="ia-ico">✦</div><div>El presupuesto aparece en el home de los familiares como referencia de transparencia financiera.</div></div>
-    </div>
-    <div class="btns"><button class="btn btn-p" onclick="guardarPresupuesto()">Guardar presupuesto</button></div>
-  </div>
-</div>
-
-
-<!-- Overlay — Nueva invitación -->
-<div class="overlay" id="ov-invitacion" onclick="if(event.target===this)cerrarSheet('ov-invitacion')">
-  <div class="sheet">
-    <div class="sh-hdr">
-      <div class="sh-title" id="sh-inv-titulo">Invitar persona</div>
-      <button class="sh-close" onclick="cerrarSheet('ov-invitacion')">✕</button>
-    </div>
-    <div style="padding:0 18px;display:flex;flex-direction:column;gap:12px">
-      <div class="field" style="margin:0">
-        <div class="flbl">Nombre</div>
-        <input class="fin" id="inv-nombre-input" placeholder="Nombre completo">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Email</div>
-        <input class="fin" id="inv-email-input" type="email" placeholder="correo@ejemplo.com">
-      </div>
-      <div class="field" style="margin:0">
-        <div class="flbl">Rol de acceso</div>
-        <select class="fin" id="inv-rol-select">
-          <option value="familiar">👨‍👩‍👧 Familiar activo — ve todo, puede registrar</option>
-          <option value="cuidadora">👩‍⚕️ Cuidadora — registra turnos y meds</option>
-          <option value="observador">👁 Observador — solo lectura</option>
-        </select>
-      </div>
-      <!-- Selector de Cuidado si hay más de uno -->
-      <div class="field" style="margin:0" id="inv-selector-cuidado">
-        <div class="flbl">¿A qué persona cuidada da acceso?</div>
-        <select class="fin" id="inv-cuidado-select"></select>
-      </div>
-      <!-- Preview del código generado -->
-      <div id="inv-codigo-preview" style="display:none;background:var(--sage-lt);border-radius:var(--r);padding:16px;text-align:center">
-        <div style="font-size:12px;color:var(--ink3);margin-bottom:6px">Código de invitación generado</div>
-        <div id="inv-codigo-numero" style="font-size:32px;font-weight:900;letter-spacing:8px;color:var(--sage);font-family:monospace"></div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:4px">Válido por 7 días · Solo un uso</div>
-        <button onclick="copiarCodigoInv()" style="margin-top:10px;padding:8px 20px;background:var(--sage);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📋 Copiar código</button>
-        <button onclick="compartirCodigoInv()" style="margin-top:10px;margin-left:8px;padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">WhatsApp</button>
-      </div>
-    </div>
-    <div style="padding:16px 18px;display:flex;gap:10px" id="inv-btns-crear">
-      <button onclick="cerrarSheet('ov-invitacion')" style="flex:1;padding:13px;background:var(--surf);color:var(--ink);border:1.5px solid var(--line);border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Cancelar</button>
-      <button onclick="crearInvitacion()" style="flex:2;padding:13px;background:var(--sage);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Generar código</button>
-    </div>
-    <div style="padding:0 18px 16px;display:none" id="inv-btns-listo">
-      <button onclick="cerrarSheet('ov-invitacion');renderInvitaciones();" style="width:100%;padding:13px;background:var(--sage);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✓ Listo</button>
-    </div>
-  </div>
-</div>
-
-<!-- Confirm -->
-<div class="confirm-ov" id="confirm-ov">
-  <div class="confirm-box">
-    <div class="cb-title" id="cb-title">¿Estás seguro?</div>
-    <div class="cb-text"  id="cb-text">Esta acción no se puede deshacer.</div>
-    <div class="cb-btns">
-      <button class="btn btn-s" style="flex:1" onclick="cerrarConfirm()">Cancelar</button>
-      <button class="btn btn-danger" style="flex:1" id="cb-ok">Confirmar</button>
-    </div>
-  </div>
-</div>
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-<script src="js/app.js"></script>
 </body>
 </html>
