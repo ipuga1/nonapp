@@ -2850,13 +2850,22 @@ function editarStock(medId){
   $('ov-edit-stock').classList.add('open');
 }
 
+/* Cantidades de insumos admiten decimales (medio paquete, 3/4 de frasco, etc).
+   Centraliza parseo + coma decimal + redondeo a 2 decimales + clamp a 0 para
+   que stock/stockMin nunca queden negativos ni con ruido de punto flotante,
+   sin importar si el valor viene de un input o de un ajuste +/-. */
+function _normalizarStockNum(v, def){
+  const n=parseFloat(String(v).trim().replace(',','.'));
+  return Math.round(Math.max(0, isNaN(n)?def:n)*100)/100;
+}
+
 /* ── M8: Ajustar stock de insumo del hogar ── */
 function ajustarStockInsumo(id, delta){
   if(!tienePermiso('hogar','stock')){ toast('No tienes permiso para esto','err'); return; }
   const comp=DB.getCompartido();
   const ins=(comp.hogar?.insumos||[]).find(i=>i.id===id);
   if(!ins) return;
-  ins.stock=Math.max(0, (ins.stock||0)+delta);
+  ins.stock=_normalizarStockNum((ins.stock||0)+delta, 0);
   ins.cantidad=ins.stock;
   DB.saveCompartido(comp);
   renderTabHogar('insumos');
@@ -5390,13 +5399,15 @@ function guardarInsumo(){
   if(!nombre){ toast('Escribe el nombre del insumo','err'); return; }
   if(_bloqueadoPorDobleClick('insumo')) return;
   const hogar=DB.getHogar(); if(!hogar) return;
+  const stockVal=_normalizarStockNum($('ins-stock').value, 0);
+  const minVal=_normalizarStockNum($('ins-min').value, 5);
   const data={
     cat:_catInsumoActual||_catActualHogar||'general',
     nombre,
-    stock:parseInt($('ins-stock').value)||0,
-    cantidad:parseInt($('ins-stock').value)||0,
-    minimo:parseInt($('ins-min').value)||5,
-    stockMin:parseInt($('ins-min').value)||5,
+    stock:stockVal,
+    cantidad:stockVal,
+    minimo:minVal,
+    stockMin:minVal,
     unidad:$('ins-unidad').value,
     notas:$('ins-notas').value.trim(),
   };
