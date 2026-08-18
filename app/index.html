@@ -544,7 +544,7 @@
       <div class="vital-row">
         <div class="vital-ico">🌡️</div>
         <div class="vital-lbl">Temperatura</div>
-        <input class="vital-inp" id="v-temp" placeholder="36.5" type="number" step="0.1" inputmode="decimal"
+        <input class="vital-inp" id="v-temp" placeholder="36.5" type="text" inputmode="decimal"
                oninput="validarTemp(this)" onblur="validarTemp(this)">
         <div class="vital-unit">°C</div>
       </div>
@@ -1746,11 +1746,11 @@
       <div class="g2">
         <div class="field" style="margin:0">
           <div class="flbl">Stock actual</div>
-          <input class="fin" id="ins-stock" type="number" step="0.1" min="0" placeholder="0" value="0" inputmode="decimal">
+          <input class="fin" id="ins-stock" type="text" placeholder="0" value="0" inputmode="decimal">
         </div>
         <div class="field" style="margin:0">
           <div class="flbl">Stock mínimo</div>
-          <input class="fin" id="ins-min" type="number" step="0.1" min="0" placeholder="5" value="5" inputmode="decimal">
+          <input class="fin" id="ins-min" type="text" placeholder="5" value="5" inputmode="decimal">
           <div class="fhint">Alerta cuando llegue a este nivel</div>
         </div>
       </div>

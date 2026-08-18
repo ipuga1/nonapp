@@ -2194,7 +2194,7 @@ function validarPresion(inp){
 }
 
 function validarTemp(inp){
-  const v=parseFloat(inp.value);
+  const v=parseFloat(inp.value.replace(',','.'));
   if(!inp.value){ inp.classList.remove('warn','ok'); $('temp-msg').style.display='none'; return; }
   const ok=v>=34 && v<=42;
   inp.classList.toggle('warn',!ok);
@@ -2251,7 +2251,11 @@ function guardarBitacora(){
 
   // Leer valores actuales del formulario
   const presion=$('v-presion').value.trim();
-  const temp=$('v-temp').value.trim();
+  // Temperatura es texto libre (para aceptar coma decimal en cualquier teclado),
+  // pero solo se guarda si es un número real — evita persistir texto pegado por
+  // error como si fuera una lectura clínica válida.
+  const tempRaw=$('v-temp').value.trim().replace(',','.');
+  const temp=(tempRaw && !isNaN(parseFloat(tempRaw))) ? String(parseFloat(tempRaw)) : '';
   const sato=$('v-sato').value.trim();
   const fc=$('v-fc').value.trim();
   const nota=$('nota-libre').value.trim();
