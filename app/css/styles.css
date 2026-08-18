@@ -16,6 +16,14 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--surf);color:var(--ink);overflow:hidden;}
+/* Piso mínimo de 16px para TODO campo de formulario: cualquier input/select/
+   textarea por debajo de este tamaño hace que Safari en iOS haga zoom
+   automático al enfocarlo, y ese zoom a veces no se revierte limpiamente al
+   cerrar el teclado (deja la pantalla visualmente corrida hasta que algo
+   fuerza un recálculo). !important es intencional — este archivo tiene
+   reglas de input duplicadas por módulo; esto evita que una futura clase
+   nueva reintroduzca el bug sin que nadie lo note. */
+input,select,textarea{font-size:16px!important}
 
 /* ── App shell ── */
 .app{display:flex;height:100vh;height:100dvh;max-width:1100px;margin:0 auto;background:var(--white);box-shadow:0 0 60px rgba(0,0,0,.1);overflow:hidden;position:relative;}
@@ -84,7 +92,7 @@ html,body{height:100%;margin:0;padding:0;font-family:-apple-system,BlinkMacSyste
 /* ── Fields ── */
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .flbl{font-size:13px;font-weight:600;color:var(--ink2)}
-.fin{background:var(--surf);border:1.5px solid var(--line);border-radius:var(--rs);padding:13px 14px;font-size:15px;color:var(--ink);width:100%;outline:none;font-family:inherit;transition:border-color .15s}
+.fin{background:var(--surf);border:1.5px solid var(--line);border-radius:var(--rs);padding:13px 14px;font-size:16px;color:var(--ink);width:100%;outline:none;font-family:inherit;transition:border-color .15s}
 .fin:focus{border-color:var(--sage)}.fin::placeholder{color:var(--ink3)}
 .fin.error{border-color:var(--red) !important}
 .fhint{font-size:11px;color:var(--ink3)}
@@ -354,7 +362,7 @@ html,body{
 /* ── Fields ── */
 .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
 .flbl { font-size:13px; font-weight:600; color:var(--ink2); }
-.fin  { background:var(--surf); border:1.5px solid var(--line); border-radius:var(--rs); padding:13px 14px; font-size:15px; color:var(--ink); width:100%; outline:none; font-family:inherit; transition:border-color .15s; }
+.fin  { background:var(--surf); border:1.5px solid var(--line); border-radius:var(--rs); padding:13px 14px; font-size:16px; color:var(--ink); width:100%; outline:none; font-family:inherit; transition:border-color .15s; }
 .fin:focus{ border-color:var(--sage); }
 .fin::placeholder{ color:var(--ink3); }
 .fin.warn{ border-color:var(--amber); }
@@ -451,7 +459,7 @@ html,body{
 .vital-inp{
   background:var(--surf); border:1.5px solid var(--line);
   border-radius:var(--rs); padding:8px 10px;
-  font-size:15px; font-weight:700; color:var(--ink);
+  font-size:16px; font-weight:700; color:var(--ink);
   width:96px; text-align:center; outline:none;
   font-family:inherit; transition:border-color .15s;
 }
@@ -683,7 +691,7 @@ html,body{ height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
 /* ── Fields ── */
 .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
 .flbl{ font-size:13px; font-weight:600; color:var(--ink2); }
-.fin{ background:var(--surf); border:1.5px solid var(--line); border-radius:var(--rs); padding:13px 14px; font-size:15px; color:var(--ink); width:100%; outline:none; font-family:inherit; transition:border-color .15s; }
+.fin{ background:var(--surf); border:1.5px solid var(--line); border-radius:var(--rs); padding:13px 14px; font-size:16px; color:var(--ink); width:100%; outline:none; font-family:inherit; transition:border-color .15s; }
 .fin:focus{ border-color:var(--sage); }
 .fin::placeholder{ color:var(--ink3); }
 .fhint{ font-size:11px; color:var(--ink3); }
@@ -1026,7 +1034,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sa
 /* ── Fields ── */
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .flbl{font-size:13px;font-weight:600;color:var(--ink2)}
-.fin{background:var(--surf);border:1.5px solid var(--line);border-radius:var(--rs);padding:13px 14px;font-size:15px;color:var(--ink);width:100%;outline:none;font-family:inherit;transition:border-color .15s}
+.fin{background:var(--surf);border:1.5px solid var(--line);border-radius:var(--rs);padding:13px 14px;font-size:16px;color:var(--ink);width:100%;outline:none;font-family:inherit;transition:border-color .15s}
 .fin:focus{border-color:var(--sage)}.fin::placeholder{color:var(--ink3)}
 .fhint{font-size:11px;color:var(--ink3)}
 .g2{display:grid;grid-template-columns:1fr;gap:10px}
