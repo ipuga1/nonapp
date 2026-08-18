@@ -930,9 +930,9 @@ function validarCodigo(){
 // crea su perfil en Firestore, marca el código como usado y lo deja adentro.
 // Se usa tanto en el registro normal como en la recuperación de un registro
 // que se cortó a mitad de camino (ver registrarInvitado).
-async function _completarRegistroInvitado(uid, nombre){
+async function _completarRegistroInvitado(uid, nombre, email){
   const adminId=_invActual.adminId;
-  const userData={id:uid,nombre,email:_invActual.email||'',rol:_invActual.rol,
+  const userData={id:uid,nombre,email,rol:_invActual.rol,
     cuidadoId:_invActual.cuidadoId,adminId,creado:hoy()};
   await _fsSet('usuarios/'+uid, userData);
 
@@ -953,9 +953,19 @@ async function _completarRegistroInvitado(uid, nombre){
 // Registro invitado
 function registrarInvitado(){
   const nombre=$('inv-nombre').value.trim();
+  // El email lo define quien se registra, no quien invitó — el campo
+  // opcional que el admin llena al generar el código es solo referencia
+  // para su propia lista de invitaciones. Antes esta función ignoraba lo
+  // que la persona invitada escribía aquí y usaba ese dato del admin (o un
+  // email inventado si venía vacío), así que la cuenta terminaba creada con
+  // un email que la persona invitada nunca ve ni puede usar para recuperar
+  // su contraseña más adelante.
+  const email=$('inv-email').value.trim().toLowerCase();
   const pass=$('inv-pass').value;
   const pass2=$('inv-pass2').value;
+  hideErr('inv-email-err');
   if(!nombre){ toast('Escribe tu nombre','err'); return; }
+  if(!email||!email.includes('@')){ showErr('inv-email-err','Email inválido'); return; }
   if(pass.length<6){ toast('Mínimo 6 caracteres','err'); return; }
   if(pass!==pass2){ toast('Las contraseñas no coinciden','err'); return; }
   if(!_invActual){ toast('Código no validado','err'); return; }
@@ -965,10 +975,10 @@ function registrarInvitado(){
 
   setLoading('inv-spinner','inv-btn-txt',true);
 
-  fb.createUserWithEmailAndPassword(fb.auth, _invActual.email||`${Date.now()}@raiz-invitado.app`, pass)
+  fb.createUserWithEmailAndPassword(fb.auth, email, pass)
     .then(async(cred)=>{
       setLoading('inv-spinner','inv-btn-txt',false);
-      await _completarRegistroInvitado(cred.user.uid, nombre);
+      await _completarRegistroInvitado(cred.user.uid, nombre, email);
     })
     .catch(async(err)=>{
       // "Email ya en uso" casi siempre significa que un intento anterior creó
@@ -979,7 +989,7 @@ function registrarInvitado(){
       // de dejarla varada con un mensaje que promete algo que no va a pasar.
       if(err.code==='auth/email-already-in-use'){
         try{
-          const cred=await fb.signInWithEmailAndPassword(fb.auth, _invActual.email, pass);
+          const cred=await fb.signInWithEmailAndPassword(fb.auth, email, pass);
           const uid=cred.user.uid;
           const perfilExistente=await _fsGet('usuarios/'+uid);
           setLoading('inv-spinner','inv-btn-txt',false);
@@ -990,7 +1000,7 @@ function registrarInvitado(){
             renderSidebar();
             irAlHome();
           } else {
-            await _completarRegistroInvitado(uid, nombre);
+            await _completarRegistroInvitado(uid, nombre, email);
           }
         }catch(e2){
           setLoading('inv-spinner','inv-btn-txt',false);
