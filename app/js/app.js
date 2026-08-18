@@ -926,6 +926,30 @@ function validarCodigo(){
   });
 }
 
+// Completa el registro de un invitado ya autenticado en Firebase (uid válido):
+// crea su perfil en Firestore, marca el código como usado y lo deja adentro.
+// Se usa tanto en el registro normal como en la recuperación de un registro
+// que se cortó a mitad de camino (ver registrarInvitado).
+async function _completarRegistroInvitado(uid, nombre){
+  const adminId=_invActual.adminId;
+  const userData={id:uid,nombre,email:_invActual.email||'',rol:_invActual.rol,
+    cuidadoId:_invActual.cuidadoId,adminId,creado:hoy()};
+  await _fsSet('usuarios/'+uid, userData);
+
+  const invs=DB.getInvs().map(i=>i.codigo===_invActual.codigo?{...i,estado:'usado',usadoPor:uid}:i);
+  DB.setInvs(invs);
+  // Invalidar también el código en Firestore para que no pueda reutilizarse desde otro dispositivo
+  _fsSet('codigos_inv/'+_invActual.codigo, {..._invActual, estado:'usado', usadoPor:uid});
+
+  await _cargarDatosFirestore(uid, _invActual.cuidadoId, adminId);
+  const usuarios=DB.getUsuarios();
+  if(!usuarios.find(u=>u.id===uid)) { usuarios.push(userData); _cache['raiz_users']=usuarios; }
+
+  DB.setSesion({userId:uid,nombre,email:userData.email,rol:_invActual.rol,cuidadoId:_invActual.cuidadoId});
+  renderSidebar();
+  irAlHome();
+}
+
 // Registro invitado
 function registrarInvitado(){
   const nombre=$('inv-nombre').value.trim();
@@ -944,34 +968,38 @@ function registrarInvitado(){
   fb.createUserWithEmailAndPassword(fb.auth, _invActual.email||`${Date.now()}@raiz-invitado.app`, pass)
     .then(async(cred)=>{
       setLoading('inv-spinner','inv-btn-txt',false);
-      const uid=cred.user.uid;
-      const adminId=_invActual.adminId;
-
-      // Crear usuario en Firestore
-      const userData={id:uid,nombre,email:_invActual.email||'',rol:_invActual.rol,
-        cuidadoId:_invActual.cuidadoId,adminId,creado:hoy()};
-      await _fsSet('usuarios/'+uid, userData);
-
-      // Marcar invitación como usada
-      const invs=DB.getInvs().map(i=>i.codigo===_invActual.codigo?{...i,estado:'usado',usadoPor:uid}:i);
-      DB.setInvs(invs);
-      // Invalidar también el código en Firestore para que no pueda reutilizarse desde otro dispositivo
-      _fsSet('codigos_inv/'+_invActual.codigo, {..._invActual, estado:'usado', usadoPor:uid});
-
-      // Cargar datos del hogar
-      await _cargarDatosFirestore(uid, _invActual.cuidadoId, adminId);
-      // Agregar el nuevo usuario al caché de usuarios
-      const usuarios=DB.getUsuarios();
-      if(!usuarios.find(u=>u.id===uid)) { usuarios.push(userData); _cache['raiz_users']=usuarios; }
-
-      DB.setSesion({userId:uid,nombre,email:userData.email,rol:_invActual.rol,cuidadoId:_invActual.cuidadoId});
-      renderSidebar();
-      irAlHome();
+      await _completarRegistroInvitado(cred.user.uid, nombre);
     })
-    .catch((err)=>{
+    .catch(async(err)=>{
+      // "Email ya en uso" casi siempre significa que un intento anterior creó
+      // las credenciales de Firebase pero se cortó antes de crear el perfil
+      // en Firestore (ej. se perdió la conexión a mitad de camino). Decirle
+      // simplemente "inicia sesión" no sirve: sin perfil, el login no la
+      // lleva a ningún lado. Probamos completar ese registro trunco en vez
+      // de dejarla varada con un mensaje que promete algo que no va a pasar.
+      if(err.code==='auth/email-already-in-use'){
+        try{
+          const cred=await fb.signInWithEmailAndPassword(fb.auth, _invActual.email, pass);
+          const uid=cred.user.uid;
+          const perfilExistente=await _fsGet('usuarios/'+uid);
+          setLoading('inv-spinner','inv-btn-txt',false);
+          if(perfilExistente){
+            toast('Esta cuenta ya estaba activa — te dejamos entrar','ok');
+            DB.setSesion({userId:uid,nombre:perfilExistente.nombre,email:perfilExistente.email,rol:perfilExistente.rol,cuidadoId:perfilExistente.cuidadoId});
+            await _cargarDatosFirestore(uid, perfilExistente.cuidadoId, perfilExistente.adminId||uid);
+            renderSidebar();
+            irAlHome();
+          } else {
+            await _completarRegistroInvitado(uid, nombre);
+          }
+        }catch(e2){
+          setLoading('inv-spinner','inv-btn-txt',false);
+          toast('Este email ya tiene una cuenta con otra contraseña. Ve a "Iniciar sesión" y usa "¿Olvidaste tu contraseña?"','err',6000);
+        }
+        return;
+      }
       setLoading('inv-spinner','inv-btn-txt',false);
-      const msgs={'auth/email-already-in-use':'Este email ya tiene cuenta — inicia sesión normalmente'};
-      toast(msgs[err.code]||'Error al registrarse','err');
+      toast('Error al registrarse','err');
     });
 }
 
