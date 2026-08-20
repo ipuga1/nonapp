@@ -1082,6 +1082,55 @@
   </div>
 </div>
 
+<!-- Residentes de la institución (solo cuentas B2B) -->
+<div class="screen" id="s-residentes">
+  <div class="mob-hdr">
+    <div>
+      <div class="mob-hdr-title">Residentes</div>
+      <div class="mob-hdr-sub" id="residentes-sub">Personas cuidadas de la institución</div>
+    </div>
+  </div>
+  <div class="desk-hdr">
+    <div><div class="dh-title">Residentes</div><div class="dh-sub" id="residentes-sub-d">Personas cuidadas de la institución</div></div>
+  </div>
+  <div class="scroll" id="residentes-content"></div>
+  <div class="tabbar">
+    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+  </div>
+</div>
+
+<!-- Sheet: asignar personal a un residente (solo B2B) -->
+<div class="overlay" id="ov-asignar-staff" onclick="if(event.target===this)cerrarSheet('ov-asignar-staff')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="asig-titulo">Asignar personal</div>
+    <div style="padding:14px 18px 0">
+      <div class="field">
+        <div class="flbl">Persona del staff</div>
+        <select class="fin" id="asig-staff-select"></select>
+        <div class="fhint">Solo aparecen cuidadoras/enfermeras ya invitadas a esta institución.</div>
+      </div>
+      <div class="field">
+        <div class="flbl">Turno <span style="color:var(--ink3);font-weight:400">(informativo, no restringe el acceso)</span></div>
+        <select class="fin" id="asig-turno-select">
+          <option value="mañana">☀️ Mañana</option>
+          <option value="tarde">🌤️ Tarde</option>
+          <option value="noche">🌙 Noche</option>
+        </select>
+      </div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-p" onclick="guardarAsignacionStaff()">Asignar</button>
+    </div>
+    <div class="slbl">Personal ya asignado</div>
+    <div id="asig-lista-actual" style="padding-bottom:8px"></div>
+  </div>
+</div>
+
 <!-- M8 — HOGAR -->
 
 <div class="screen" id="s-hogar-hub">
@@ -1196,9 +1245,9 @@
 <div class="overlay" id="ov-switcher" onclick="cerrarSheet('ov-switcher')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
-    <div class="sh-title">Cambiar cuidado activo</div>
+    <div class="sh-title" id="switcher-titulo">Cambiar cuidado activo</div>
     <div id="switcher-lista"></div>
-    <div style="padding:12px 18px;border-top:1px solid var(--line)">
+    <div id="switcher-agregar-wrap" style="padding:12px 18px;border-top:1px solid var(--line)">
       <button onclick="crearNuevoCuidado();cerrarSheet('ov-switcher')" style="display:flex;align-items:center;gap:8px;background:var(--sage-lt);border:1.5px dashed var(--sage-md);border-radius:var(--rs);padding:11px 14px;font-size:13px;font-weight:600;color:var(--sage);cursor:pointer;font-family:inherit;width:100%">
         <span style="font-size:18px">＋</span> Agregar otra persona cuidada
       </button>
@@ -1942,6 +1991,7 @@
         <select class="fin" id="inv-rol-select">
           <option value="familiar">👨‍👩‍👧 Familiar activo — ve todo, puede registrar</option>
           <option value="cuidadora">👩‍⚕️ Cuidadora — registra turnos y meds</option>
+          <option value="enfermera">🩺 Enfermera — acceso clínico ampliado</option>
           <option value="observador">👁 Observador — solo lectura</option>
         </select>
       </div>

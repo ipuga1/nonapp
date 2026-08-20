@@ -100,6 +100,22 @@ async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
   }
 
   try {
+    // Cargar asignaciones de personal (relevante solo para instituciones B2B,
+    // pero se carga siempre igual que usuarios/cuidados — es una colección
+    // vacía para cuentas D2C, sin costo real).
+    const asigSnap = await fb.getDocs(
+      fb.query(fb.collection(fb.db, 'asignaciones'),
+               fb.where('adminId', '==', adminId))
+    );
+    const asignaciones = [];
+    asigSnap.forEach(d => asignaciones.push(d.data()));
+    _cache['raiz_asignaciones'] = asignaciones;
+  } catch(e) {
+    console.warn('Error cargando asignaciones:', e.message);
+    ok = false;
+  }
+
+  try {
     // Cargar datos compartidos del hogar
     const compSnap = await fb.getDoc(fb.doc(fb.db, 'compartido', adminId));
     if (compSnap.exists()) {
@@ -184,6 +200,39 @@ const DB = {
     const s=this.getSesion(); if(!s) return [];
     if(s.rol==='admin') return this.getCuidados().filter(c=>c.adminId===s.userId);
     const c=this.getCuidado(); return c?[c]:[];
+  },
+
+  /* Tipo de cuenta — 'd2c' (una familia) o 'b2b' (institución). Se define
+     una sola vez al crear la cuenta admin y nunca cambia (ver PROPUESTAS.md
+     #1). Toda cuenta creada antes de este campo existir se trata como 'd2c'
+     por defecto — así ninguna cuenta existente cambia de comportamiento. */
+  getTipoCuenta(){ return this.getSesion()?.tipoCuenta || 'd2c'; },
+
+  /* Asignaciones de personal (cuidadoras/enfermeras) a residentes — solo
+     tiene datos reales para cuentas B2B. Colección propia en Firestore
+     (una asignación = un documento), igual que usuarios/cuidados, para no
+     repetir el riesgo de "un solo documento reescrito por todos" que ya
+     tiene compartido/{adminId}. */
+  getAsignaciones(){ return this._get('raiz_asignaciones')||[]; },
+  setAsignacionesCache(lista){ this._set('raiz_asignaciones', lista); },
+  getAsignacionesPorCuidado(cuidadoId){
+    return this.getAsignaciones().filter(a=>a.cuidadoId===cuidadoId && a.activo!==false);
+  },
+  getAsignacionesPorStaff(staffUid){
+    return this.getAsignaciones().filter(a=>a.staffUid===staffUid && a.activo!==false);
+  },
+  async guardarAsignacion(a){
+    const lista=this.getAsignaciones();
+    const idx=lista.findIndex(x=>x.id===a.id);
+    if(idx>=0) lista[idx]=a; else lista.push(a);
+    this._set('raiz_asignaciones', lista);
+    return await _fsSet('asignaciones/'+a.id, a);
+  },
+  async eliminarAsignacion(id){
+    const lista=this.getAsignaciones().map(a=>a.id===id?{...a,activo:false}:a);
+    this._set('raiz_asignaciones', lista);
+    const a=lista.find(x=>x.id===id);
+    if(a) return await _fsSet('asignaciones/'+id, a);
   },
 
   /* Datos compartidos del hogar */
@@ -299,9 +348,9 @@ async function _eliminarArchivoStorage(url){
 }
 
 /* ── ROL MAPS ── */
-const ROL_COLOR={admin:'#4A7C6F',familiar:'#3A6EA8',observador:'#6B5EA8',cuidadora:'#C47A2B'};
-const ROL_LABEL={admin:'Administrador',familiar:'Familiar activo',observador:'Observador',cuidadora:'Cuidadora'};
-const ROL_EMOJI={admin:'👩‍💼',familiar:'👨‍👩‍👧',observador:'👁',cuidadora:'👩‍⚕️'};
+const ROL_COLOR={admin:'#4A7C6F',familiar:'#3A6EA8',observador:'#6B5EA8',cuidadora:'#C47A2B',enfermera:'#2E7D4F'};
+const ROL_LABEL={admin:'Administrador',familiar:'Familiar activo',observador:'Observador',cuidadora:'Cuidadora',enfermera:'Enfermera'};
+const ROL_EMOJI={admin:'👩‍💼',familiar:'👨‍👩‍👧',observador:'👁',cuidadora:'👩‍⚕️',enfermera:'🩺'};
 
 // Cuentas reales del hogar activo (admin + familiares + cuidadoras + observadores
 // invitados) — no confundir con el roster de "Equipo" (cuidadoras/especialistas de
@@ -406,6 +455,15 @@ const PERMISOS_DEFAULT = {
     hogar:{on:false, stock:false, insumos:false},
     informe:{on:true, generar:false, eliminar:false},
   },
+  enfermera: {
+    bitacora:{on:true, crear:true, editar:false, eliminar:false},
+    salud:{on:true, confirmar:true, agregar:true, ocr:true, docs:true},
+    alim:{on:false, porciones:false, plan:false, restr:false, compras:false},
+    agenda:{on:false, gestionar:false},
+    gastos:{on:false, registrar:false, aprobar:false},
+    hogar:{on:false, stock:false, insumos:false},
+    informe:{on:false, generar:false, eliminar:false},
+  },
 };
 
 // Permisos vigentes del rol dado: lo que el admin guardó en ajustes/{adminId},
@@ -432,6 +490,7 @@ function tienePermiso(modulo, accion){
 const ROLES_PERMISOS=[
   {id:'familiar', emoji:'👨‍👩‍👧', label:'Familiar'},
   {id:'cuidadora', emoji:'👩‍⚕️', label:'Cuidadora'},
+  {id:'enfermera', emoji:'🩺', label:'Enfermera'},
   {id:'observador', emoji:'👁️', label:'Observador'},
 ];
 
@@ -683,6 +742,7 @@ function navTo(id){
     },0);
   }
   if(id==='s-informe-hub')  setTimeout(renderHub,0);
+  if(id==='s-residentes')   setTimeout(renderResidentes,0);
   if(id==='s-agenda')       setTimeout(renderAgenda,0);
   if(id==='s-permisos')     setTimeout(renderPermisos,0);
   if(['s-home-admin','s-home-familiar','s-home-observador','s-home-cuidadora'].includes(id)){
@@ -693,7 +753,7 @@ function navTo(id){
 
 function irAlHome(){
   const s=DB.getSesion(); if(!s) return navTo('s-splash');
-  const m={admin:'s-home-admin',familiar:'s-home-familiar',observador:'s-home-observador',cuidadora:'s-home-cuidadora'};
+  const m={admin:'s-home-admin',familiar:'s-home-familiar',observador:'s-home-observador',cuidadora:'s-home-cuidadora',enfermera:'s-home-cuidadora'};
   navTo(m[s.rol]||'s-home-admin');
 }
 
@@ -745,7 +805,7 @@ function hacerLogin(){
       }
       const adminId=uData.adminId||uid;
       const cargaOk=await _cargarDatosFirestore(uid, uData.cuidadoId, adminId);
-      DB.setSesion({userId:uid,nombre:uData.nombre,email:uData.email,rol:uData.rol,cuidadoId:uData.cuidadoId});
+      DB.setSesion({userId:uid,nombre:uData.nombre,email:uData.email,rol:uData.rol,cuidadoId:uData.cuidadoId,tipoCuenta:uData.tipoCuenta||'d2c'});
       if(!cargaOk){
         toast('⚠ No se pudo sincronizar con el servidor. Verifica tu conexión y reintenta desde el inicio si faltan datos.','err',6000);
       }
@@ -839,8 +899,10 @@ function registrarAdmin(){
         am:{nombre:'',edad:0,fechaNacimiento:'',rut:'',relacion:'',condiciones:[],alergias:[],medico:'',restricciones:[]},
         meds:[],bitacoras:[],confirmaciones:{},informes:[]};
 
-      // Crear usuario en Firestore
-      const userData={id:uid,nombre,email,rol:'admin',cuidadoId:cid,adminId:uid,creado:hoy()};
+      // Crear usuario en Firestore — este flujo (registro directo, sin
+      // invitación) siempre crea una cuenta D2C. El alta de instituciones
+      // B2B es un flujo separado (ver PROPUESTAS.md #1, Fase 4).
+      const userData={id:uid,nombre,email,rol:'admin',cuidadoId:cid,adminId:uid,tipoCuenta:'d2c',creado:hoy()};
       const ok1=await _fsSet('usuarios/'+uid, userData);
       const ok2=await _fsSet('cuidados/'+cid, cuidado);
       // Compartido vacío
@@ -854,7 +916,8 @@ function registrarAdmin(){
       _cache['raiz_cuidados']=[cuidado];
       _cache['raiz_compartido_'+uid]=comp;
       _cache['raiz_invitaciones']=[];
-      DB.setSesion({userId:uid,nombre,email,rol:'admin',cuidadoId:cid});
+      _cache['raiz_asignaciones']=[];
+      DB.setSesion({userId:uid,nombre,email,rol:'admin',cuidadoId:cid,tipoCuenta:'d2c'});
 
       if(!(ok1&&ok2&&ok3)){
         toast('⚠ Tu cuenta se creó, pero no se pudo sincronizar con el servidor. Solo funcionará en este dispositivo hasta que reintentes.','err',6000);
@@ -917,12 +980,16 @@ function validarCodigo(){
       toast('Este código ha expirado','err'); return;
     }
     _invActual=inv;
-    // Cargar datos básicos del hogar para mostrar el nombre del familiar
-    _fsGet('cuidados/'+inv.cuidadoId).then(c=>{
-      if(c && $('inv-bienvenida-nombre')) $('inv-bienvenida-nombre').textContent=c.am?.nombre||'la persona cuidada';
-      if($('inv-bienvenida-rol')) $('inv-bienvenida-rol').textContent=ROL_LABEL[inv.rol]||inv.rol;
-      navTo('s-registro-invitado');
-    });
+    // Mostrar el rol real de la invitación en el badge de la pantalla de
+    // registro (antes apuntaba a un id que no existe en el HTML, así que
+    // toda invitación —incluida cualquier Enfermera— se veía siempre como
+    // "Familiar activo" sin importar el rol real asignado).
+    const badge=$('inv-rol-badge');
+    if(badge){
+      badge.className='rol-badge-pill rb-'+inv.rol;
+      badge.textContent=`${ROL_EMOJI[inv.rol]||''} ${ROL_LABEL[inv.rol]||inv.rol}`;
+    }
+    navTo('s-registro-invitado');
   });
 }
 
@@ -932,8 +999,12 @@ function validarCodigo(){
 // que se cortó a mitad de camino (ver registrarInvitado).
 async function _completarRegistroInvitado(uid, nombre, email){
   const adminId=_invActual.adminId;
+  // tipoCuenta se copia de la invitación (que a su vez lo copió del admin al
+  // crearse) — así el usuario invitado queda marcado igual que el resto de
+  // su institución sin tener que consultarla por separado en cada login.
+  const tipoCuenta=_invActual.tipoCuenta||'d2c';
   const userData={id:uid,nombre,email,rol:_invActual.rol,
-    cuidadoId:_invActual.cuidadoId,adminId,creado:hoy()};
+    cuidadoId:_invActual.cuidadoId,adminId,tipoCuenta,creado:hoy()};
   await _fsSet('usuarios/'+uid, userData);
 
   const invs=DB.getInvs().map(i=>i.codigo===_invActual.codigo?{...i,estado:'usado',usadoPor:uid}:i);
@@ -945,7 +1016,7 @@ async function _completarRegistroInvitado(uid, nombre, email){
   const usuarios=DB.getUsuarios();
   if(!usuarios.find(u=>u.id===uid)) { usuarios.push(userData); _cache['raiz_users']=usuarios; }
 
-  DB.setSesion({userId:uid,nombre,email:userData.email,rol:_invActual.rol,cuidadoId:_invActual.cuidadoId});
+  DB.setSesion({userId:uid,nombre,email:userData.email,rol:_invActual.rol,cuidadoId:_invActual.cuidadoId,tipoCuenta});
   renderSidebar();
   irAlHome();
 }
@@ -995,7 +1066,7 @@ function registrarInvitado(){
           setLoading('inv-spinner','inv-btn-txt',false);
           if(perfilExistente){
             toast('Esta cuenta ya estaba activa — te dejamos entrar','ok');
-            DB.setSesion({userId:uid,nombre:perfilExistente.nombre,email:perfilExistente.email,rol:perfilExistente.rol,cuidadoId:perfilExistente.cuidadoId});
+            DB.setSesion({userId:uid,nombre:perfilExistente.nombre,email:perfilExistente.email,rol:perfilExistente.rol,cuidadoId:perfilExistente.cuidadoId,tipoCuenta:perfilExistente.tipoCuenta||'d2c'});
             await _cargarDatosFirestore(uid, perfilExistente.cuidadoId, perfilExistente.adminId||uid);
             renderSidebar();
             irAlHome();
@@ -1108,6 +1179,11 @@ function eliminarCuidado(cid){
       const cuidados=DB.getCuidados().filter(x=>x.id!==cid);
       DB.setCuidados(cuidados);
       _fsDelete('cuidados/'+cid);
+      // Desactivar también las asignaciones de personal a este residente —
+      // sin esto quedan "fantasma": siguen contando en el badge de la pill
+      // "Cambiar residente" de la cuidadora/enfermera aunque el residente
+      // ya no exista.
+      DB.getAsignacionesPorCuidado(cid).forEach(a=>DB.eliminarAsignacion(a.id));
       toast(`✓ Cuidado de ${nombre} eliminado`,'ok');
       renderPerfil();
     }
@@ -1264,12 +1340,17 @@ function renderHome(rol){
     return`<div class="semaforo">${s('p',true)}${s('a',true)}<div class="sem${meds.length===0?' empty':medsHoy.length===0?' ok':' warn'}" style="cursor:pointer" onclick="navTo('s-salud-hub')"><div class="sem-ico">💊</div><div class="sem-lbl">Salud</div><div class="sem-val">${meds.length===0?'—':medsHoy.length===0?'✓ Todo':medsHoy.length+' pend.'}</div></div>${s('n',true)}</div>`;
   };
 
+  // Staff B2B con más de un residente asignado: pill para cambiar de
+  // residente activo, accesible también en mobile (el switcher de la
+  // sidebar solo existe en escritorio). Ver PROPUESTAS.md #1.
+  const misAsignaciones=(rol==='cuidadora'||rol==='enfermera')?DB.getAsignacionesPorStaff(s.userId):[];
   const hero=`<div class="hero-card" onclick="navTo('s-perfil')">
     <div class="hc-name">${escapeHtml(am.nombre)||'la persona cuidada'} · ${am.edad||'—'} años</div>
     <div class="hc-meta">Cuidadora: ${escapeHtml(nombreCuidadoraPrincipal(c))||'Por configurar'} · turno activo</div>
     <div class="hc-pills">
       <div class="hc-pill"><div class="hc-dot" style="background:${bitaHoy?'#A8F0D8':'#FFD97D'}"></div>${bitaHoy?'Bitácora registrada':'Sin bitácora hoy'}</div>
       <div class="hc-pill"><div class="hc-dot" style="background:${medsHoy.length===0&&meds.length>0?'#A8F0D8':'#FFD97D'}"></div>${medsHoy.length===0&&meds.length>0?'Meds al día ✓':medsHoy.length+' meds pendientes'}</div>
+      ${misAsignaciones.length>1?`<div class="hc-pill" style="cursor:pointer" onclick="event.stopPropagation();abrirSwitcher()">⇄ Cambiar residente (${misAsignaciones.length})</div>`:''}
     </div>
   </div>`;
 
@@ -1397,8 +1478,8 @@ function renderHome(rol){
       `<div class="empty" style="padding:28px"><div style="font-size:13px;color:var(--ink3)">Aún no hay registros del día de hoy.</div></div>`}
       <div class="ia" style="margin:0 16px 80px"><div class="ia-ico">✦</div><div>Como observador, ves el estado general del cuidado.</div></div>`;
 
-  } else if(rol==='cuidadora'){
-    setHdr('home-cui','var(--amber)');
+  } else if(rol==='cuidadora'||rol==='enfermera'){
+    setHdr('home-cui',rol==='enfermera'?'var(--green)':'var(--amber)');
     renderSidebar();
     const alim=DB.getAlim();
     const registroDiario=(alim.diario||{})[hoy()];
@@ -1464,10 +1545,20 @@ function _navItemsRol(s,c){
     observador:[{ico:'🏠',lbl:'Inicio',screen:'s-home-observador'},{ico:'📋',lbl:'Historial',screen:'s-bita-list',mod:'bitacora'},{ico:'🏠',lbl:'Hogar e insumos',screen:'s-hogar-hub',mod:'hogar'},{ico:'📊',lbl:'Informe',screen:'s-informe-hub',mod:'informe'},{ico:'⚙️',lbl:'Perfil',screen:'s-perfil'}],
     cuidadora:[{ico:'🏠',lbl:'Inicio',screen:'s-home-cuidadora'},{ico:'📋',lbl:'Registrar turno',screen:'s-bita-new',mod:'bitacora'},{ico:'💊',lbl:'Salud',screen:'s-salud-hub',badge:medsHoy.length||0,mod:'salud'},{ico:'🍽️',lbl:'Alimentación',screen:'s-alim-hub',mod:'alim'},{ico:'🏠',lbl:'Hogar e insumos',screen:'s-hogar-hub',mod:'hogar'},{ico:'⚙️',lbl:'Perfil',screen:'s-perfil'}],
   };
+  // Enfermera comparte pantallas con cuidadora — solo difieren en permisos
+  // (ROLES_PERMISOS/PERMISOS_DEFAULT), no en qué pantallas existen.
+  navMap.enfermera = navMap.cuidadora;
   const items=navMap[s.rol]||navMap.familiar;
   // admin siempre ve todo; los demás roles solo ven los módulos a los que
   // el admin les dio acceso desde Perfil → Permisos por rol.
-  if(s.rol==='admin') return items;
+  if(s.rol==='admin'){
+    // "Residentes" (gestión de personal por institución) solo existe para
+    // cuentas B2B — para D2C la lista de navegación queda idéntica a hoy.
+    if(DB.getTipoCuenta()==='b2b'){
+      return [items[0], {ico:'🏨',lbl:'Residentes',screen:'s-residentes'}, ...items.slice(1)];
+    }
+    return items;
+  }
   return items.filter(it=>!it.mod || tienePermiso(it.mod));
 }
 
@@ -1492,8 +1583,10 @@ function renderSidebar(){
   const ava=$('sb-ava'); if(ava){ ava.textContent=initials(s.nombre); ava.style.background=ROL_COLOR[s.rol]||'#888'; }
   $('sb-user-name').textContent=s.nombre.split(' ')[0];
   $('sb-user-rol').textContent=ROL_LABEL[s.rol]||s.rol;
-  // Switcher
-  const sw=$('sb-switcher'); if(sw) sw.style.display=s.rol==='admin'?'block':'none';
+  // Switcher — admin siempre lo ve; staff B2B (cuidadora/enfermera) solo si
+  // tiene más de un residente asignado (con uno solo, no hay nada que cambiar).
+  const puedeSwitchStaff=(s.rol==='cuidadora'||s.rol==='enfermera')&&DB.getAsignacionesPorStaff(s.userId).length>1;
+  const sw=$('sb-switcher'); if(sw) sw.style.display=(s.rol==='admin'||puedeSwitchStaff)?'block':'none';
   $('sb-sw-ava').textContent=initials(c.am?.nombre||'M');
   $('sb-sw-name').textContent=`${c.am?.nombre||'—'} · ${calcularEdad(c.am?.fechaNacimiento)||c.am?.edad||'—'} años`;
 
@@ -1539,15 +1632,33 @@ function selCuidadoYNav(cid){
   selCuidado(cid);
 }
 
+// Para admin: todos sus cuidados (como siempre). Para staff B2B (cuidadora/
+// enfermera) con más de una asignación activa: los residentes que le
+// asignaron, con su turno — el mismo componente visual, solo cambia de
+// dónde sale la lista. Ver PROPUESTAS.md #1.
 function abrirSwitcher(){
   const s=DB.getSesion(); if(!s) return;
-  const cuidados=DB.getCuidados().filter(c=>c.adminId===s.userId||c.id===s.cuidadoId);
+  const esAdmin=s.rol==='admin';
+  const asignaciones=esAdmin?null:DB.getAsignacionesPorStaff(s.userId);
+  const cuidados=esAdmin
+    ? DB.getCuidados().filter(c=>c.adminId===s.userId||c.id===s.cuidadoId)
+    : DB.getCuidados().filter(c=>asignaciones.some(a=>a.cuidadoId===c.id));
+  const turnoDe=(cid)=>{
+    if(esAdmin) return '';
+    const a=asignaciones.find(x=>x.cuidadoId===cid);
+    return a?.turno?` · Turno ${a.turno}`:'';
+  };
+  $('switcher-titulo').textContent=esAdmin?'Cambiar cuidado activo':'Cambiar residente activo';
   $('switcher-lista').innerHTML=cuidados.map(c=>`
     <div class="mc-item${c.id===s.cuidadoId?' active':''}" onclick="selCuidado('${c.id}')">
       <div class="mc-ava" style="background:var(--sage)">${escapeHtml(initials(c.am?.nombre||'?'))}</div>
-      <div><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años · ${escapeHtml(nombreCuidadoraPrincipal(c))||'Sin cuidadora'}</div></div>
+      <div><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años${esAdmin?' · '+(escapeHtml(nombreCuidadoraPrincipal(c))||'Sin cuidadora'):turnoDe(c.id)}</div></div>
       ${c.id===s.cuidadoId?'<div class="mc-check">✓</div>':''}
     </div>`).join('');
+  // El botón "+Agregar" es solo para admin — ocultar el contenedor completo
+  // (no solo el botón) para que el staff no vea una franja vacía con borde.
+  const agregarWrap=$('switcher-agregar-wrap');
+  if(agregarWrap) agregarWrap.style.display=esAdmin?'':'none';
   $('ov-switcher').classList.add('open');
 }
 function selCuidado(cid){
@@ -1560,6 +1671,98 @@ function selCuidado(cid){
   irAlHome();
   const c=DB.getCuidados().find(x=>x.id===cid);
   toast('Cambiado a '+(c?.am?.nombre||'el cuidado'),'ok');
+}
+
+/* ════ RESIDENTES E ASIGNACIONES DE STAFF (solo cuentas B2B) ════ */
+function renderResidentes(){
+  const s=DB.getSesion();
+  if(!s||s.rol!=='admin'||DB.getTipoCuenta()!=='b2b'){ navTo('s-perfil'); return; }
+  const cuidados=DB.getCuidadosAdmin();
+  const sub=`${cuidados.length} persona${cuidados.length===1?'':'s'}`;
+  if($('residentes-sub')) $('residentes-sub').textContent=sub;
+  if($('residentes-sub-d')) $('residentes-sub-d').textContent=sub;
+  const content=$('residentes-content'); if(!content) return;
+  if(!cuidados.length){
+    content.innerHTML=`<div class="empty"><div class="empty-ico">🏨</div><div class="empty-title">Sin residentes todavía</div><div class="empty-txt">Agrega residentes desde el selector de cuidado activo.</div></div>`;
+    return;
+  }
+  content.innerHTML=cuidados.map(c=>{
+    const n=DB.getAsignacionesPorCuidado(c.id).length;
+    // 3 niveles: sin nadie (rojo, urgente) · exactamente 1 (ámbar, sin
+    // respaldo si esa persona falta) · 2 o más (sage, con respaldo).
+    const badge=n===0
+      ? `<span class="badge b-err">Sin asignar</span>`
+      : n===1
+      ? `<span class="badge b-warn">1 asignado</span>`
+      : `<span class="badge b-ok">${n} asignados</span>`;
+    return `<div class="res-row">
+      <div class="mc-ava" style="background:var(--sage)">${escapeHtml(initials(c.am?.nombre||'?'))}</div>
+      <div><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años · ${badge}</div></div>
+      <button class="res-accion" onclick="abrirSheetAsignarStaff('${c.id}')">Asignar</button>
+    </div>`;
+  }).join('');
+}
+
+let _asigCuidadoActual=null;
+function abrirSheetAsignarStaff(cuidadoId){
+  const s=DB.getSesion(); if(!s||s.rol!=='admin') return;
+  _asigCuidadoActual=cuidadoId;
+  const c=DB.getCuidadoById(cuidadoId);
+  $('asig-titulo').textContent='Asignar personal — '+(c?.am?.nombre||'residente');
+  // Staff disponible: usuarios de esta institución ya invitados con rol
+  // cuidadora o enfermera (la asignación no crea cuentas, solo vincula).
+  const staff=DB.getUsuarios().filter(u=>u.adminId===s.userId&&(u.rol==='cuidadora'||u.rol==='enfermera'));
+  const sel=$('asig-staff-select');
+  sel.innerHTML = staff.length
+    ? staff.map(u=>`<option value="${u.id}">${u.rol==='enfermera'?'🩺':'👩‍⚕️'} ${escapeHtml(u.nombre)}</option>`).join('')
+    : `<option value="">Ningún staff invitado todavía</option>`;
+  _renderAsigLista();
+  $('ov-asignar-staff').classList.add('open');
+}
+function _renderAsigLista(){
+  const el=$('asig-lista-actual'); if(!el||!_asigCuidadoActual) return;
+  const lista=DB.getAsignacionesPorCuidado(_asigCuidadoActual);
+  if(!lista.length){
+    el.innerHTML=`<div class="empty"><div class="empty-ico">🧑‍⚕️</div><div class="empty-title">Todavía no hay nadie asignado</div><div class="empty-txt">Elige una persona del staff arriba y presiona "Asignar".</div></div>`;
+    return;
+  }
+  el.innerHTML=lista.map(a=>`
+    <div class="staff-mini-row">
+      <div class="staff-mini-ava" style="background:${ROL_COLOR[a.rolStaff]||'var(--amber)'}">${escapeHtml(initials(a.staffNombre||'?'))}</div>
+      <div><div style="font-size:13px;font-weight:600;color:var(--ink)">${escapeHtml(a.staffNombre)}</div><div style="font-size:11px;color:var(--ink3);margin-top:1px">${ROL_LABEL[a.rolStaff]||a.rolStaff} · Turno ${escapeHtml(a.turno)}</div></div>
+      <button class="staff-mini-del" onclick="eliminarAsignacionStaff('${a.id}')">✕</button>
+    </div>`).join('');
+}
+async function guardarAsignacionStaff(){
+  const s=DB.getSesion(); if(!s||s.rol!=='admin'||!_asigCuidadoActual) return;
+  const staffUid=$('asig-staff-select').value;
+  if(!staffUid){ toast('No hay ninguna cuidadora/enfermera para asignar — invita a alguien primero','err'); return; }
+  const staffUsuario=DB.getUsuarios().find(u=>u.id===staffUid);
+  if(!staffUsuario) return;
+  if(DB.getAsignacionesPorCuidado(_asigCuidadoActual).some(a=>a.staffUid===staffUid)){
+    toast('Esa persona ya está asignada a este residente','err'); return;
+  }
+  const a={
+    id:'asig-'+Date.now(),
+    adminId:s.userId,
+    cuidadoId:_asigCuidadoActual,
+    staffUid,
+    staffNombre:staffUsuario.nombre,
+    rolStaff:staffUsuario.rol,
+    turno:$('asig-turno-select').value,
+    activo:true,
+    creado:hoy(),
+  };
+  await DB.guardarAsignacion(a);
+  _renderAsigLista();
+  toast('✓ Personal asignado','ok');
+}
+async function eliminarAsignacionStaff(id){
+  const s=DB.getSesion(); if(!s||s.rol!=='admin') return;
+  await DB.eliminarAsignacion(id);
+  _renderAsigLista();
+  renderResidentes();
+  toast('Asignación eliminada','ok');
 }
 
 /* ════ PERFIL ════ */
@@ -1676,7 +1879,7 @@ window._raizOnAuth = async (firebaseUser) => {
 
     // Cargar todos los datos del hogar desde Firestore al caché
     await _cargarDatosFirestore(firebaseUser.uid, uData.cuidadoId, adminId);
-    DB.setSesion({userId:firebaseUser.uid, nombre:uData.nombre, email:uData.email, rol:uData.rol, cuidadoId:uData.cuidadoId});
+    DB.setSesion({userId:firebaseUser.uid, nombre:uData.nombre, email:uData.email, rol:uData.rol, cuidadoId:uData.cuidadoId, tipoCuenta:uData.tipoCuenta||'d2c'});
 
     // Verificar que los datos llegaron correctamente
     const cuidados = DB.getCuidados();
@@ -4472,7 +4675,7 @@ function renderCuidadoras(c, esAdmin){
   }
 
   // Cruzar con usuarios app
-  const enApp=new Set(usuarios.filter(u=>u.rol==='cuidadora').map(u=>u.nombre.toLowerCase()));
+  const enApp=new Set(usuarios.filter(u=>u.rol==='cuidadora'||u.rol==='enfermera').map(u=>u.nombre.toLowerCase()));
 
   let html='';
   cuidadoras.forEach((p,idx)=>{
@@ -6709,6 +6912,7 @@ async function crearInvitacion(){
     email: email || null,
     adminId: s.userId,
     cuidadoId,
+    tipoCuenta: DB.getTipoCuenta(),
     estado: 'pendiente',
     creado: hoy(),
     expira: expira.getFullYear()+'-'+String(expira.getMonth()+1).padStart(2,'0')+'-'+String(expira.getDate()).padStart(2,'0'),
@@ -6868,6 +7072,11 @@ function revocarAcceso(uid){
         x.id === uid ? {...x, revocado: true, rol: 'revocado'} : x
       );
       DB.setUsuarios(usuarios);
+      // Si era cuidadora/enfermera con residentes asignados, desactivar esas
+      // asignaciones — sin esto el admin ve residentes con personal
+      // "cubierto" en el badge cuando en realidad esa persona ya no puede
+      // entrar a la app.
+      DB.getAsignacionesPorStaff(uid).forEach(a=>DB.eliminarAsignacion(a.id));
       toast(`✓ Acceso de ${u.nombre} revocado`, 'ok');
       renderInvitaciones();
     }
