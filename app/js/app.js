@@ -1228,8 +1228,11 @@ async function guardarOnbAM(){
   // Un cuidado local sin id real es el placeholder que crea _raizOnAuth
   // cuando un admin todavía no tiene cuidadoId (típico en B2B antes del
   // primer residente) — cuenta como "no existe" para generarle un id de
-  // verdad acá, si no, se queda pegado sin id y nunca llega a Firestore.
-  if(c && !c.id) c=null;
+  // verdad acá. Además hay que sacarlo del caché de una vez: si no, queda
+  // pegado como una "persona" fantasma sin nombre en la lista de residentes
+  // por el resto de la sesión (nunca llegó a Firestore, así que un reload
+  // sí lo limpia solo, pero sin reload se queda ahí).
+  if(c && !c.id){ DB.setCuidados(DB.getCuidados().filter(x=>x.id)); c=null; }
   if(!c){
     // No existe un cuidado local (p.ej. nunca llegó a guardarse en Firestore
     // y se perdió al recargar la página, o es un cuidado nuevo) — crear uno
