@@ -58,7 +58,7 @@ async function _fsDelete(path) {
 
 // Cargar todos los datos del hogar en el caché (llamado tras login)
 // Devuelve true si la carga fue exitosa, false si falló (sin lanzar excepción)
-async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
+async function _cargarDatosFirestore(userId, cuidadoId, adminId, tipoCuenta) {
   const fb = window._fb;
   if (!fb) return false;
   // Cada carga en su propio try/catch: si las reglas de Firestore niegan una
@@ -116,10 +116,20 @@ async function _cargarDatosFirestore(userId, cuidadoId, adminId) {
   }
 
   try {
-    // Cargar datos compartidos del hogar
-    const compSnap = await fb.getDoc(fb.doc(fb.db, 'compartido', adminId));
-    if (compSnap.exists()) {
-      _cache['raiz_compartido_' + adminId] = compSnap.data();
+    // Cargar datos compartidos: en D2C es uno solo por admin (todo el hogar
+    // comparte gastos/agenda/equipo); en B2B es uno por residente, así que
+    // al cargar solo se trae el del cuidado activo — cambiar de residente
+    // (selCuidado) trae el suyo aparte. Ver PROPUESTAS.md #1, Fase 3.
+    // Un admin B2B recién creado, antes de tener su primer residente, no
+    // tiene cuidadoId todavía — sin este guard, fb.doc() recibe un id vacío
+    // y Firestore lo rechaza como referencia inválida (no es un problema de
+    // permisos, es una ruta malformada).
+    const compId = tipoCuenta==='b2b' ? cuidadoId : adminId;
+    if (compId) {
+      const compSnap = await fb.getDoc(fb.doc(fb.db, 'compartido', compId));
+      if (compSnap.exists()) {
+        _cache['raiz_compartido_' + compId] = compSnap.data();
+      }
     }
   } catch(e) {
     console.warn('Error cargando compartido:', e.message);
@@ -241,7 +251,16 @@ const DB = {
     if(s.rol==='admin') return s.userId;
     const c=this.getCuidado(); return c?.adminId||null;
   },
-  _keyC(){ const aid=this._adminId(); return aid?('raiz_compartido_'+aid):null; },
+  /* Id del documento "compartido" — separado de _adminId() a propósito:
+     ajustes/invitaciones siguen siendo por admin en B2B (política de toda
+     la institución), pero compartido (gastos/agenda/equipo/alimentación)
+     es por residente en B2B, para que no se mezclen entre personas
+     cuidadas distintas. Ver PROPUESTAS.md #1, Fase 3. */
+  _compartidoId(){
+    if(this.getTipoCuenta()==='b2b'){ const s=this.getSesion(); return s?.cuidadoId||null; }
+    return this._adminId();
+  },
+  _keyC(){ const id=this._compartidoId(); return id?('raiz_compartido_'+id):null; },
   getCompartido(){
     const k=this._keyC(); if(!k) return this._cVacio();
     return this._get(k)||this._cVacio();
@@ -249,8 +268,8 @@ const DB = {
   saveCompartido(d){
     const k=this._keyC(); if(!k) return;
     this._set(k,d);
-    const aid=this._adminId();
-    if(aid) _fsSet('compartido/'+aid, d);
+    const id=this._compartidoId();
+    if(id) _fsSet('compartido/'+id, d);
   },
   _cVacio(){
     return {
@@ -804,7 +823,7 @@ function hacerLogin(){
         return;
       }
       const adminId=uData.adminId||uid;
-      const cargaOk=await _cargarDatosFirestore(uid, uData.cuidadoId, adminId);
+      const cargaOk=await _cargarDatosFirestore(uid, uData.cuidadoId, adminId, uData.tipoCuenta);
       DB.setSesion({userId:uid,nombre:uData.nombre,email:uData.email,rol:uData.rol,cuidadoId:uData.cuidadoId,tipoCuenta:uData.tipoCuenta||'d2c'});
       if(!cargaOk){
         toast('⚠ No se pudo sincronizar con el servidor. Verifica tu conexión y reintenta desde el inicio si faltan datos.','err',6000);
@@ -1012,7 +1031,7 @@ async function _completarRegistroInvitado(uid, nombre, email){
   // Invalidar también el código en Firestore para que no pueda reutilizarse desde otro dispositivo
   _fsSet('codigos_inv/'+_invActual.codigo, {..._invActual, estado:'usado', usadoPor:uid});
 
-  await _cargarDatosFirestore(uid, _invActual.cuidadoId, adminId);
+  await _cargarDatosFirestore(uid, _invActual.cuidadoId, adminId, tipoCuenta);
   const usuarios=DB.getUsuarios();
   if(!usuarios.find(u=>u.id===uid)) { usuarios.push(userData); _cache['raiz_users']=usuarios; }
 
@@ -1067,7 +1086,7 @@ function registrarInvitado(){
           if(perfilExistente){
             toast('Esta cuenta ya estaba activa — te dejamos entrar','ok');
             DB.setSesion({userId:uid,nombre:perfilExistente.nombre,email:perfilExistente.email,rol:perfilExistente.rol,cuidadoId:perfilExistente.cuidadoId,tipoCuenta:perfilExistente.tipoCuenta||'d2c'});
-            await _cargarDatosFirestore(uid, perfilExistente.cuidadoId, perfilExistente.adminId||uid);
+            await _cargarDatosFirestore(uid, perfilExistente.cuidadoId, perfilExistente.adminId||uid, perfilExistente.tipoCuenta);
             renderSidebar();
             irAlHome();
           } else {
@@ -1184,6 +1203,12 @@ function eliminarCuidado(cid){
       // "Cambiar residente" de la cuidadora/enfermera aunque el residente
       // ya no exista.
       DB.getAsignacionesPorCuidado(cid).forEach(a=>DB.eliminarAsignacion(a.id));
+      // En B2B, este residente tenía su propio "compartido" — se elimina
+      // junto con él para no dejar basura huérfana en Firestore.
+      if(DB.getTipoCuenta()==='b2b'){
+        delete _cache['raiz_compartido_'+cid];
+        _fsDelete('compartido/'+cid);
+      }
       toast(`✓ Cuidado de ${nombre} eliminado`,'ok');
       renderPerfil();
     }
@@ -1191,7 +1216,7 @@ function eliminarCuidado(cid){
 }
 
 /* ════ MÓDULO 2 — ONBOARDING ════ */
-function guardarOnbAM(){
+async function guardarOnbAM(){
   const nombre=$('onb-nombre').value.trim();
   if(!nombre){ toast('Escribe el nombre de la persona cuidada','err'); return; }
   const fnac=$('onb-fnac').value;
@@ -1204,7 +1229,10 @@ function guardarOnbAM(){
     // No existe un cuidado local (p.ej. nunca llegó a guardarse en Firestore
     // y se perdió al recargar la página, o es un cuidado nuevo) — crear uno
     // para no quedar pegado en este paso sin ningún aviso.
-    const cid=_creandoCuidadoNuevo ? ('c-'+Date.now()) : (s.cuidadoId||('c-'+s.userId+'-'+Date.now()));
+    // El id SIEMPRE incluye el uid del admin creador (nunca solo 'c-'+timestamp)
+    // — es lo que permite que la regla de Firestore de `cuidados` valide que
+    // nadie pueda "ocupar" un id ajeno para secuestrar su compartido en B2B.
+    const cid=s.cuidadoId && !_creandoCuidadoNuevo ? s.cuidadoId : ('c-'+s.userId+'-'+Date.now());
     c={ id: cid, adminId: s.userId, creado: hoy(),
       am:{nombre:'',edad:0,fechaNacimiento:'',rut:'',relacion:'',condiciones:[],alergias:[],medico:'',restricciones:[]},
       meds:[], bitacoras:[], confirmaciones:{}, informes:[] };
@@ -1221,6 +1249,17 @@ function guardarOnbAM(){
     const u=DB.getUsuarios().find(x=>x.id===s.userId);
     if(u){ u.cuidadoId=c.id; DB.setUsuarios(DB.getUsuarios().map(x=>x.id===s.userId?u:x)); }
     DB.setSesion({...s, cuidadoId:c.id});
+    // En B2B, la regla de Firestore de compartido/{cuidadoId} valida contra
+    // cuidados/{cuidadoId} — hay que esperar (await) a que ese documento
+    // exista de verdad en el servidor antes de escribir su compartido, o la
+    // regla lo rechaza por no encontrar todavía el cuidado (carrera, no es
+    // un problema de permisos real, pero se ve como uno intermitente).
+    if(DB.getTipoCuenta()==='b2b'){
+      await _fsSet('cuidados/'+c.id, c);
+      const compVacio=DB._cVacio();
+      _cache['raiz_compartido_'+c.id]=compVacio;
+      _fsSet('compartido/'+c.id, compVacio);
+    }
     _creandoCuidadoNuevo=false;
   } else if(!s.cuidadoId){
     DB.setSesion({...s, cuidadoId:c.id});
@@ -1661,12 +1700,20 @@ function abrirSwitcher(){
   if(agregarWrap) agregarWrap.style.display=esAdmin?'':'none';
   $('ov-switcher').classList.add('open');
 }
-function selCuidado(cid){
+async function selCuidado(cid){
   const s=DB.getSesion(); if(!s) return;
   const u=DB.getUsuarios().find(x=>x.id===s.userId); if(!u) return;
   u.cuidadoId=cid;
   DB.setUsuarios(DB.getUsuarios().map(x=>x.id===s.userId?u:x));
   DB.setSesion({...s,cuidadoId:cid});
+  // B2B: cada residente tiene su propio compartido/{cuidadoId} — a diferencia
+  // de D2C (donde compartido es del admin y no cambia al cambiar de cuidado),
+  // hay que traerlo de Firestore antes de mostrar la pantalla del nuevo
+  // residente activo. Ver PROPUESTAS.md #1, Fase 3.
+  if(DB.getTipoCuenta()==='b2b'){
+    const comp=await _fsGet('compartido/'+cid);
+    _cache['raiz_compartido_'+cid]=comp||DB._cVacio();
+  }
   cerrarSheet('ov-switcher');
   irAlHome();
   const c=DB.getCuidados().find(x=>x.id===cid);
@@ -1878,7 +1925,7 @@ window._raizOnAuth = async (firebaseUser) => {
     const adminId = uData.adminId || firebaseUser.uid;
 
     // Cargar todos los datos del hogar desde Firestore al caché
-    await _cargarDatosFirestore(firebaseUser.uid, uData.cuidadoId, adminId);
+    await _cargarDatosFirestore(firebaseUser.uid, uData.cuidadoId, adminId, uData.tipoCuenta);
     DB.setSesion({userId:firebaseUser.uid, nombre:uData.nombre, email:uData.email, rol:uData.rol, cuidadoId:uData.cuidadoId, tipoCuenta:uData.tipoCuenta||'d2c'});
 
     // Verificar que los datos llegaron correctamente
@@ -7420,8 +7467,8 @@ async function recargarDesdeFB(){
       return;
     }
     const adminId = uData.adminId || s.userId;
-    await _cargarDatosFirestore(s.userId, uData.cuidadoId, adminId);
-    DB.setSesion({...s, cuidadoId: uData.cuidadoId});
+    await _cargarDatosFirestore(s.userId, uData.cuidadoId, adminId, uData.tipoCuenta);
+    DB.setSesion({...s, cuidadoId: uData.cuidadoId, tipoCuenta: uData.tipoCuenta||'d2c'});
     // Verificar si ahora hay datos
     const cuidados = DB.getCuidados();
     if(cuidados.length === 0){
