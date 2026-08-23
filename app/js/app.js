@@ -1225,6 +1225,11 @@ async function guardarOnbAM(){
   // Si venimos de "Agregar otro familiar cuidado", el cuidado se crea recién
   // aquí (no antes) para no dejar un cuidado vacío si se abandona el formulario.
   let c=_creandoCuidadoNuevo ? null : DB.getCuidado();
+  // Un cuidado local sin id real es el placeholder que crea _raizOnAuth
+  // cuando un admin todavía no tiene cuidadoId (típico en B2B antes del
+  // primer residente) — cuenta como "no existe" para generarle un id de
+  // verdad acá, si no, se queda pegado sin id y nunca llega a Firestore.
+  if(c && !c.id) c=null;
   if(!c){
     // No existe un cuidado local (p.ej. nunca llegó a guardarse en Firestore
     // y se perdió al recargar la página, o es un cuidado nuevo) — crear uno
@@ -1245,7 +1250,13 @@ async function guardarOnbAM(){
     relacion: $('onb-relacion').value,
   };
   DB.saveCuidado(c);
-  if(_creandoCuidadoNuevo){
+  // Se hace el bootstrap completo (usuarios, sesión y — en B2B — compartido)
+  // tanto al "agregar otro familiar" (_creandoCuidadoNuevo) como en el primer
+  // onboarding de un admin que todavía no tiene cuidadoId: son el mismo caso
+  // ("a este admin hay que asignarle este cuidado recién creado"), solo que
+  // llegan por caminos distintos (crearNuevoCuidado() vs. el fallback de
+  // _raizOnAuth cuando Firestore no tiene ningún cuidado todavía).
+  if(_creandoCuidadoNuevo || !s.cuidadoId){
     const u=DB.getUsuarios().find(x=>x.id===s.userId);
     if(u){ u.cuidadoId=c.id; DB.setUsuarios(DB.getUsuarios().map(x=>x.id===s.userId?u:x)); }
     DB.setSesion({...s, cuidadoId:c.id});
@@ -1261,8 +1272,6 @@ async function guardarOnbAM(){
       _fsSet('compartido/'+c.id, compVacio);
     }
     _creandoCuidadoNuevo=false;
-  } else if(!s.cuidadoId){
-    DB.setSesion({...s, cuidadoId:c.id});
   }
   const ns=$('onb-nombre-salud'); if(ns) ns.textContent=nombre;
   // Inicializar la lista de cuidadoras al entrar al paso 2
