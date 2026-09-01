@@ -131,6 +131,13 @@ async function _cargarDatosFirestore(userId, cuidadoId, adminId, tipoCuenta) {
         _cache['raiz_compartido_' + compId] = compSnap.data();
       }
     }
+    // userId===adminId identifica al admin dueño de los datos (un familiar/
+    // staff invitado nunca tiene su adminId apuntando a sí mismo) — solo él
+    // tiene permiso de escritura garantizado sobre compartido/cuidados, así
+    // que la migración de archivos legacy corre solo en su sesión.
+    if (compId && userId === adminId) {
+      await _migrarArchivosLegacy(compId, cuidadoId);
+    }
   } catch(e) {
     console.warn('Error cargando compartido:', e.message);
     ok = false;
@@ -364,6 +371,47 @@ async function _eliminarArchivoStorage(url){
   if(!url || !url.startsWith('http')) return; // dataURL legado o sin archivo: nada que borrar en Storage
   try{ await fb.deleteObject(fb.ref(fb.storage, url)); }
   catch(e){ console.warn('No se pudo eliminar archivo de Storage:', e.message); }
+}
+
+// Migración de boletas/documentos "legacy": cuentas que usaron la app antes
+// de que existiera _subirArchivo() (~3 ago 2026) tienen esos archivos guardados
+// como data: URL completas dentro del propio documento de Firestore en vez de
+// en Storage. Firestore rechaza cualquier documento que supere 1MB — con
+// suficientes fotos viejas acumuladas, el documento cruza ese límite y CUALQUIER
+// escritura nueva (p.ej. un gasto nuevo) se rechaza en silencio, sin error
+// visible para el usuario (caso real: cuenta de Paula Cisternas, sept 2026).
+// Se ejecuta sola, una vez por carga, solo para el admin dueño de los datos.
+async function _migrarArchivosLegacy(compId, cuidadoId){
+  try{
+    const comp=_cache['raiz_compartido_'+compId];
+    if(comp && Array.isArray(comp.gastos) && cuidadoId){
+      let cambio=false;
+      for(const g of comp.gastos){
+        if(g.boleta && g.boleta.startsWith('data:')){
+          try{
+            g.boleta=await _subirArchivo(`cuidados/${cuidadoId}/gastos/${g.id}-legacy-${Date.now()}`, g.boleta);
+            cambio=true;
+          }catch(e){ console.warn('No se pudo migrar boleta legacy:', g.id, e.message); }
+        }
+      }
+      if(cambio) await _fsSet('compartido/'+compId, comp);
+    }
+    const c=(_cache['raiz_cuidados']||[]).find(x=>x.id===cuidadoId);
+    if(c && Array.isArray(c.documentos)){
+      let cambio=false;
+      for(const d of c.documentos){
+        if(d.archivoUrl && d.archivoUrl.startsWith('data:')){
+          try{
+            d.archivoUrl=await _subirArchivo(`cuidados/${c.id}/documentos/${d.id}-legacy-${Date.now()}`, d.archivoUrl);
+            cambio=true;
+          }catch(e){ console.warn('No se pudo migrar documento legacy:', d.id, e.message); }
+        }
+      }
+      if(cambio) await _fsSet('cuidados/'+c.id, c);
+    }
+  }catch(e){
+    console.warn('Error migrando archivos legacy:', e.message);
+  }
 }
 
 /* ── ROL MAPS ── */
