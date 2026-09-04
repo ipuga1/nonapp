@@ -1850,7 +1850,14 @@ async function guardarAsignacionStaff(){
     toast('Esa persona ya está asignada a este residente','err'); return;
   }
   const a={
-    id:'asig-'+Date.now(),
+    // Id determinístico (no aleatorio): la regla de Firestore de cuidados/
+    // compartido necesita poder verificar "¿existe una asignación activa de
+    // este staffUid a este cuidadoId?" con un exists()/get() puntual — las
+    // reglas no pueden hacer un WHERE sobre la colección. Con esto, ese
+    // documento siempre vive en una ruta predecible. También formaliza algo
+    // que el código ya exigía (el chequeo de arriba): un solo documento por
+    // par staff+residente, nunca dos.
+    id: staffUid+'_'+_asigCuidadoActual,
     adminId:s.userId,
     cuidadoId:_asigCuidadoActual,
     staffUid,
