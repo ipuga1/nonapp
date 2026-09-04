@@ -85,33 +85,58 @@ async function _cargarDatosFirestore(userId, cuidadoId, adminId, tipoCuenta) {
     ok = false;
   }
 
+  // userId===adminId identifica al admin dueño de los datos (un familiar/
+  // staff invitado nunca tiene su adminId apuntando a sí mismo).
+  const esAdmin = userId === adminId;
+
+  let misAsignaciones = [];
   try {
-    // Cargar cuidados del hogar
-    const cuidadosSnap = await fb.getDocs(
-      fb.query(fb.collection(fb.db, 'cuidados'),
-               fb.where('adminId', '==', adminId))
-    );
-    const cuidados = [];
-    cuidadosSnap.forEach(d => cuidados.push(d.data()));
-    _cache['raiz_cuidados'] = cuidados;
+    // Para el admin, sigue siendo "todas las de mi institución" (adminId==X
+    // es válido para toda la consulta por igual, sin importar el documento).
+    // Para cualquier otro rol, la regla de asignaciones ahora exige
+    // staffUid==quien pregunta — condición que varía según el documento si
+    // se consulta por adminId, así que Firestore rechazaría la consulta
+    // entera. Consultando por staffUid en cambio sí es válida para todos
+    // los resultados por igual.
+    const asigQuery = esAdmin
+      ? fb.query(fb.collection(fb.db, 'asignaciones'), fb.where('adminId', '==', adminId))
+      : fb.query(fb.collection(fb.db, 'asignaciones'), fb.where('staffUid', '==', userId));
+    const asigSnap = await fb.getDocs(asigQuery);
+    asigSnap.forEach(d => misAsignaciones.push(d.data()));
+    _cache['raiz_asignaciones'] = misAsignaciones;
   } catch(e) {
-    console.warn('Error cargando cuidados:', e.message);
+    console.warn('Error cargando asignaciones:', e.message);
     ok = false;
   }
 
   try {
-    // Cargar asignaciones de personal (relevante solo para instituciones B2B,
-    // pero se carga siempre igual que usuarios/cuidados — es una colección
-    // vacía para cuentas D2C, sin costo real).
-    const asigSnap = await fb.getDocs(
-      fb.query(fb.collection(fb.db, 'asignaciones'),
-               fb.where('adminId', '==', adminId))
-    );
-    const asignaciones = [];
-    asigSnap.forEach(d => asignaciones.push(d.data()));
-    _cache['raiz_asignaciones'] = asignaciones;
+    // Cargar cuidados del hogar: para el admin, una sola consulta por
+    // adminId (mismo motivo que arriba — es válida para todos los
+    // resultados). Para cualquier otro rol, la regla de cuidados ahora
+    // exige que el residente sea el propio o tenga una asignación activa
+    // hacia quien pregunta — varía según el documento, así que esa misma
+    // consulta masiva quedaría rechazada entera. Hay que traer esos
+    // cuidados uno por uno (su propio cuidadoId, más los de sus
+    // asignaciones activas ya cargadas arriba).
+    let cuidados = [];
+    if (esAdmin) {
+      const cuidadosSnap = await fb.getDocs(
+        fb.query(fb.collection(fb.db, 'cuidados'),
+                 fb.where('adminId', '==', adminId))
+      );
+      cuidadosSnap.forEach(d => cuidados.push(d.data()));
+    } else {
+      const idsPropios = new Set();
+      if (cuidadoId) idsPropios.add(cuidadoId);
+      misAsignaciones.forEach(a => { if (a.activo !== false) idsPropios.add(a.cuidadoId); });
+      for (const cid of idsPropios) {
+        const snap = await fb.getDoc(fb.doc(fb.db, 'cuidados', cid));
+        if (snap.exists()) cuidados.push(snap.data());
+      }
+    }
+    _cache['raiz_cuidados'] = cuidados;
   } catch(e) {
-    console.warn('Error cargando asignaciones:', e.message);
+    console.warn('Error cargando cuidados:', e.message);
     ok = false;
   }
 
