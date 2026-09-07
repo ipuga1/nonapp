@@ -117,7 +117,7 @@
 <div class="screen" id="s-registro-admin">
   <div class="auth-hdr">
     <button class="back-btn" onclick="navTo('s-registro-tipo')">‹ Volver</button>
-    <div class="auth-title">Crear cuenta de administrador</div>
+    <div class="auth-title" id="reg-titulo">Crear cuenta de administrador</div>
     <div class="auth-sub">Podrás invitar a familiares y cuidadoras después.</div>
   </div>
   <div class="scroll" style="padding:16px 22px">
@@ -126,7 +126,7 @@
     <div class="field"><div class="flbl">Contraseña</div><input class="fin" id="reg-pass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" oninput="validarPass()"><div class="ferr" id="reg-pass-err">Mínimo 6 caracteres</div></div>
     <div class="field"><div class="flbl">Confirmar contraseña</div><input class="fin" id="reg-pass2" type="password" placeholder="Repite la contraseña" autocomplete="new-password" oninput="validarPass2()"><div class="ferr" id="reg-pass2-err">Las contraseñas no coinciden</div></div>
   </div>
-  <div class="btns"><button class="btn btn-p" onclick="registrarAdmin()"><div class="spinner" id="reg-spinner"></div><span id="reg-btn-txt">Crear mi cuenta</span></button></div>
+  <div class="btns"><button class="btn btn-p" onclick="registrarAdminOInstitucion()"><div class="spinner" id="reg-spinner"></div><span id="reg-btn-txt">Crear mi cuenta</span></button></div>
 </div>
 
 <!-- Ingresar código -->
@@ -199,6 +199,12 @@
       <div class="field"><div class="flbl">Relación</div><select class="fin" id="onb-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro familiar</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
     </div>
     <div class="field"><div class="flbl">RUT</div><input class="fin" id="onb-rut" placeholder="Ej: 12.345.678-9" oninput="formatearRut(this)"><div class="fhint">Con puntos y guión</div></div>
+    <!-- Solo instituciones B2B — crearNuevoCuidado() la muestra y la llena -->
+    <div class="field" id="onb-habitacion-wrap" style="display:none">
+      <div class="flbl">Habitación</div>
+      <select class="fin" id="onb-habitacion"></select>
+      <div class="fhint">Configura las habitaciones de la institución desde Residentes → 🚪 Habitaciones.</div>
+    </div>
     <div class="field"><div class="flbl">Tu mayor preocupación</div>
       <div class="chips" style="margin-top:6px">
         <div class="chip on" onclick="this.classList.toggle('on')">Medicamentos</div>
@@ -1089,9 +1095,11 @@
       <div class="mob-hdr-title">Residentes</div>
       <div class="mob-hdr-sub" id="residentes-sub">Personas cuidadas de la institución</div>
     </div>
+    <div id="residentes-hdr-action"></div>
   </div>
   <div class="desk-hdr">
     <div><div class="dh-title">Residentes</div><div class="dh-sub" id="residentes-sub-d">Personas cuidadas de la institución</div></div>
+    <div id="residentes-hdr-action-d" style="display:flex"></div>
   </div>
   <div class="scroll" id="residentes-content"></div>
   <div class="tabbar">
@@ -1100,6 +1108,59 @@
     <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
     <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
     <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+  </div>
+</div>
+
+<!-- Sheet: catálogo de habitaciones de la institución (solo B2B) -->
+<div class="overlay" id="ov-habitaciones" onclick="if(event.target===this)cerrarSheet('ov-habitaciones')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">Habitaciones de la institución</div>
+    <div style="padding:14px 18px 0">
+      <div class="field">
+        <div class="flbl">Una por línea</div>
+        <textarea class="fin" id="habitaciones-textarea" rows="8" placeholder="101&#10;102&#10;103" style="resize:vertical;font-family:inherit"></textarea>
+        <div class="fhint">Se usan al asignar habitación a un residente, y para encontrarlo rápido al asignar personal desde Equipo.</div>
+      </div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-p" onclick="guardarHabitaciones()">Guardar</button>
+      <button class="btn btn-s" onclick="cerrarSheet('ov-habitaciones')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sheet: perfil de una persona del staff — segunda vía de asignación,
+     desde el staff hacia el residente (solo B2B) -->
+<div class="overlay" id="ov-perfil-staff" onclick="if(event.target===this)cerrarSheet('ov-perfil-staff')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="perfil-staff-titulo">Cuidadora</div>
+    <div style="font-size:12px;color:var(--ink3);padding:0 18px 10px;margin-top:-8px" id="perfil-staff-rol"></div>
+    <div class="scroll" style="max-height:60vh;padding:0 18px">
+      <div style="font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:6px">Residentes asignados</div>
+      <div id="perfil-staff-actuales" style="margin-bottom:16px"></div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:6px">Asignar más residentes</div>
+      <div class="field">
+        <div class="flbl">Turno para lo que selecciones</div>
+        <select class="fin" id="perfil-staff-turno-default">
+          <option value="mañana">☀️ Mañana</option>
+          <option value="tarde">🌤️ Tarde</option>
+          <option value="noche">🌙 Noche</option>
+        </select>
+        <div class="fhint">Cada residente seleccionado puede tener su propio turno distinto, editable abajo.</div>
+      </div>
+      <div class="field">
+        <div class="flbl">Buscar por nombre o número de habitación</div>
+        <input class="fin" id="perfil-staff-busqueda" placeholder="Ej: Marta, o 204" oninput="filtrarResidentesStaff()">
+      </div>
+      <div id="perfil-staff-buscar-resultados" style="margin-bottom:8px"></div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-p" onclick="confirmarAsignacionesStaffPerfil()">Confirmar asignaciones</button>
+      <button class="btn btn-s" onclick="cerrarSheet('ov-perfil-staff')">Cerrar</button>
+    </div>
   </div>
 </div>
 

@@ -326,6 +326,16 @@ const DB = {
     const aid=this._adminId();
     if(aid) _fsSet('ajustes/'+aid, data);
   },
+  /* Catálogo de habitaciones — solo tiene sentido para instituciones B2B.
+     Vive en ajustes/{adminId} (config de toda la institución, no de un
+     residente puntual) junto a los permisos por rol — mismo documento,
+     mismas reglas de acceso, sin colección nueva que asegurar. */
+  getHabitaciones(){
+    return this.getAjustes()?.habitaciones || [];
+  },
+  setHabitaciones(lista){
+    this.saveAjustes({...(this.getAjustes()||{}), habitaciones:lista});
+  },
 
   /* Alias de conveniencia para M5 — Alimentación */
   getAlim(){
@@ -443,6 +453,7 @@ async function _migrarArchivosLegacy(compId, cuidadoId){
 const ROL_COLOR={admin:'#4A7C6F',familiar:'#3A6EA8',observador:'#6B5EA8',cuidadora:'#C47A2B',enfermera:'#2E7D4F'};
 const ROL_LABEL={admin:'Administrador',familiar:'Familiar activo',observador:'Observador',cuidadora:'Cuidadora',enfermera:'Enfermera'};
 const ROL_EMOJI={admin:'👩‍💼',familiar:'👨‍👩‍👧',observador:'👁',cuidadora:'👩‍⚕️',enfermera:'🩺'};
+const TURNOS_OPCIONES=[{v:'mañana',l:'☀️ Mañana'},{v:'tarde',l:'🌤️ Tarde'},{v:'noche',l:'🌙 Noche'}];
 
 // Cuentas reales del hogar activo (admin + familiares + cuidadoras + observadores
 // invitados) — no confundir con el roster de "Equipo" (cuidadoras/especialistas de
@@ -814,7 +825,16 @@ function navTo(id){
   if(id==='s-invitaciones') setTimeout(renderInvitaciones,0);
   if(id==='s-equipo-hub'){
     setTimeout(()=>{
+      // Para instituciones B2B, "Equipo" deja de ser la lista de contactos
+      // de una familia (cuidadoras/especialistas anotados a mano) y pasa a
+      // ser el staff real con cuenta en el sistema — pantalla propia, sin
+      // las pestañas D2C.
       const scrEquipo=document.getElementById('s-equipo-hub');
+      if(DB.getTipoCuenta()==='b2b'){ renderEquipoB2B(); return; }
+      // Camino D2C: restaurar el tab-hub por si la sesión anterior en esta
+      // misma pestaña era B2B (renderEquipoB2B lo oculta con style.display).
+      const hub=scrEquipo?.querySelector('.tab-hub'); if(hub) hub.style.display='flex';
+      const fab=$('equipo-fab'); if(fab) fab.style.display='';
       if(scrEquipo) scrEquipo.querySelectorAll('.tab-hub .th').forEach((t,i)=>t.classList.toggle('on',i===0));
       renderTabEquip('cuidadoras');
     },0);
@@ -855,6 +875,10 @@ function irAlHome(){
 
 // Tipo de registro
 let _tipoReg='admin';
+// true solo cuando se llega vía ?accion=institucion (link privado, sin
+// autoservicio público — ver PROPUESTAS.md #1, Fase 4). Decide si el botón
+// de s-registro-admin crea una cuenta D2C o una institución B2B.
+let _esRegistroInstitucion=false;
 function selTipoRegistro(tipo){
   _tipoReg=tipo;
   ['admin','invitado'].forEach(t=>{
@@ -864,7 +888,15 @@ function selTipoRegistro(tipo){
   });
 }
 function continuarRegistro(){
-  if(_tipoReg==='admin') navTo('s-registro-admin');
+  if(_tipoReg==='admin'){
+    // Este es el único camino normal (autoservicio, sin link especial) hacia
+    // s-registro-admin — resetear acá asegura que _esRegistroInstitucion
+    // nunca quede pegado en true de una visita anterior con
+    // ?accion=institucion y termine creando una cuenta B2B por error.
+    _esRegistroInstitucion=false;
+    const t=$('reg-titulo'); if(t) t.textContent='Crear cuenta de administrador';
+    navTo('s-registro-admin');
+  }
   else navTo('s-ingresar-codigo');
 }
 
@@ -1019,6 +1051,67 @@ function registrarAdmin(){
       const ns=$('onb-nombre-salud'); if(ns) ns.textContent=nombre.split(' ')[0];
       const sa=$('onb-am-saludo'); if(sa) sa.textContent='Hola, '+nombre.split(' ')[0]+' 👋';
       navTo('s-onb-am');
+    })
+    .catch((err)=>{
+      setLoading('reg-spinner','reg-btn-txt',false);
+      const msgs={'auth/email-already-in-use':'Este email ya tiene una cuenta','auth/weak-password':'La contraseña es muy débil'};
+      showErr('reg-email-err', msgs[err.code]||'Error al crear cuenta. Intenta de nuevo.');
+    });
+}
+
+// Decide, al enviar el formulario de s-registro-admin, si crea una cuenta
+// D2C (flujo normal) o una institución B2B (solo si se llegó vía el link
+// privado ?accion=institucion — ver PROPUESTAS.md #1, Fase 4).
+function registrarAdminOInstitucion(){
+  if(_esRegistroInstitucion) registrarInstitucion();
+  else registrarAdmin();
+}
+
+// Alta de institución B2B. A diferencia de registrarAdmin() (D2C), acá NO se
+// crea ningún residente todavía — el admin llega sin cuidadoId a la misma
+// pantalla de onboarding (s-onb-am) que ya crea/asigna residentes en Fase
+// 0-3, y ahí agrega el primero. Nada de esto es código nuevo por probar: es
+// el mismo camino que ya se probó con multi-residente real.
+function registrarInstitucion(){
+  const nombre=$('reg-nombre').value.trim();
+  const email=$('reg-email').value.trim().toLowerCase();
+  const pass=$('reg-pass').value;
+  const pass2=$('reg-pass2').value;
+  ['nombre','email','pass','pass2'].forEach(f=>hideErr('reg-'+f+'-err'));
+  if(!nombre){ showErr('reg-nombre-err','Ingresa tu nombre'); return; }
+  if(!email||!email.includes('@')){ showErr('reg-email-err','Email inválido'); return; }
+  if(pass.length<6){ showErr('reg-pass-err','Mínimo 6 caracteres'); return; }
+  if(pass!==pass2){ showErr('reg-pass2-err','Las contraseñas no coinciden'); return; }
+
+  const fb=window._fb;
+  if(!fb){ toast('Conectando... intenta en un momento','ok'); return; }
+
+  setLoading('reg-spinner','reg-btn-txt',true);
+
+  fb.createUserWithEmailAndPassword(fb.auth, email, pass)
+    .then(async (cred)=>{
+      setLoading('reg-spinner','reg-btn-txt',false);
+      const uid=cred.user.uid;
+
+      const userData={id:uid,nombre,email,rol:'admin',cuidadoId:'',adminId:uid,tipoCuenta:'b2b',creado:hoy()};
+      const ok=await _fsSet('usuarios/'+uid, userData);
+
+      _cache['raiz_users']=[userData];
+      _cache['raiz_cuidados']=[];
+      _cache['raiz_invitaciones']=[];
+      _cache['raiz_asignaciones']=[];
+      DB.setSesion({userId:uid,nombre,email,rol:'admin',cuidadoId:'',tipoCuenta:'b2b'});
+
+      if(!ok){
+        toast('⚠ Tu cuenta se creó, pero no se pudo sincronizar con el servidor. Reintenta en un momento.','err',6000);
+      }
+
+      _esRegistroInstitucion=false;
+      // A diferencia de D2C, no se fuerza el asistente de "agregar persona
+      // cuidada" — la institución aterriza en Residentes, con su propio
+      // botón para agregar residentes cuando quiera (ver renderResidentes()).
+      renderSidebar();
+      navTo('s-residentes');
     })
     .catch((err)=>{
       setLoading('reg-spinner','reg-btn-txt',false);
@@ -1324,6 +1417,8 @@ async function guardarOnbAM(){
     edad: edad||0,
     rut: $('onb-rut').value.trim(),
     relacion: $('onb-relacion').value,
+    // Solo aplica a instituciones — el campo queda oculto y vacío para D2C.
+    habitacion: DB.getTipoCuenta()==='b2b' ? ($('onb-habitacion')?.value||'') : (c.am?.habitacion||''),
   };
   DB.saveCuidado(c);
   // Se hace el bootstrap completo (usuarios, sesión y — en B2B — compartido)
@@ -1648,8 +1743,9 @@ function renderHome(rol){
 
 /* ════ NAVEGACIÓN POR ROL (fuente única: sidebar desktop y sheet "Más" mobile) ════ */
 function _navItemsRol(s,c){
-  const meds=c.meds||[];
-  const confs=c.confirmaciones||{};
+  // c es null para un admin B2B sin ningún residente todavía.
+  const meds=c?.meds||[];
+  const confs=c?.confirmaciones||{};
   const medsHoy=meds.filter(m=>medPendienteHoy(m,confs,hoy()));
   const navMap={
     admin:[
@@ -1689,7 +1785,7 @@ function _navItemsRol(s,c){
 // Sheet mobile "Más" — lista completa de módulos según el rol (equivalente al sidebar de escritorio)
 function abrirMas(){
   const s=DB.getSesion(); if(!s) return;
-  const c=DB.getCuidado(); if(!c) return;
+  const c=DB.getCuidado(); // null válido: admin B2B sin residentes todavía
   const items=_navItemsRol(s,c);
   const actual=document.querySelector('.screen.active')?.id;
   $('mas-lista').innerHTML=items.map(it=>`
@@ -1703,16 +1799,24 @@ function abrirMas(){
 /* ════ SIDEBAR ════ */
 function renderSidebar(){
   const s=DB.getSesion(); if(!s) return;
-  const c=DB.getCuidado(); if(!c) return;
+  // c puede ser null: una institución B2B recién creada (o que se quedó sin
+  // residentes) no tiene ninguno todavía — es un estado válido, no un motivo
+  // para dejar el sidebar entero sin renderizar (antes cortaba acá y el
+  // admin se quedaba sin ningún ítem de navegación, ni siquiera "Residentes"
+  // para agregar el primero).
+  const c=DB.getCuidado();
   const ava=$('sb-ava'); if(ava){ ava.textContent=initials(s.nombre); ava.style.background=ROL_COLOR[s.rol]||'#888'; }
   $('sb-user-name').textContent=s.nombre.split(' ')[0];
   $('sb-user-rol').textContent=ROL_LABEL[s.rol]||s.rol;
-  // Switcher — admin siempre lo ve; staff B2B (cuidadora/enfermera) solo si
-  // tiene más de un residente asignado (con uno solo, no hay nada que cambiar).
+  // Switcher — admin siempre lo ve (si ya tiene algún residente); staff B2B
+  // (cuidadora/enfermera) solo si tiene más de un residente asignado (con
+  // uno solo, no hay nada que cambiar).
   const puedeSwitchStaff=(s.rol==='cuidadora'||s.rol==='enfermera')&&DB.getAsignacionesPorStaff(s.userId).length>1;
-  const sw=$('sb-switcher'); if(sw) sw.style.display=(s.rol==='admin'||puedeSwitchStaff)?'block':'none';
-  $('sb-sw-ava').textContent=initials(c.am?.nombre||'M');
-  $('sb-sw-name').textContent=`${c.am?.nombre||'—'} · ${calcularEdad(c.am?.fechaNacimiento)||c.am?.edad||'—'} años`;
+  const sw=$('sb-switcher'); if(sw) sw.style.display=(c&&(s.rol==='admin'||puedeSwitchStaff))?'block':'none';
+  if(c){
+    $('sb-sw-ava').textContent=initials(c.am?.nombre||'M');
+    $('sb-sw-name').textContent=`${c.am?.nombre||'—'} · ${calcularEdad(c.am?.fechaNacimiento)||c.am?.edad||'—'} años`;
+  }
 
   const items=_navItemsRol(s,c);
   $('sb-nav').innerHTML=items.map(it=>`
@@ -1744,10 +1848,27 @@ function crearNuevoCuidado(){
   _creandoCuidadoNuevo=true;
   // Resetear lista de cuidadoras para el onboarding del nuevo
   _onbCuidadoras=[''];
-  // Ir al onboarding del nuevo familiar
-  const el=$('onb-am-saludo'); if(el) el.textContent=`Agregar familiar 👋`;
+  const esB2B=DB.getTipoCuenta()==='b2b';
+  // Ir al onboarding del nuevo familiar/residente
+  const el=$('onb-am-saludo'); if(el) el.textContent=esB2B?'Agregar residente 👋':'Agregar familiar 👋';
+  // El campo "Habitación" solo aplica a instituciones — se muestra y se
+  // llena desde el catálogo (DB.getHabitaciones()), nunca texto libre.
+  const wrap=$('onb-habitacion-wrap');
+  if(wrap){
+    wrap.style.display=esB2B?'block':'none';
+    const sel=$('onb-habitacion');
+    if(sel && esB2B){
+      const habitaciones=DB.getHabitaciones();
+      // La primera opción SIEMPRE es un placeholder vacío — sin esto, un
+      // admin que no toca el selector le queda asignando sin querer la
+      // primera habitación del catálogo a cada residente nuevo.
+      sel.innerHTML=habitaciones.length
+        ? `<option value="">Elige una habitación</option>`+habitaciones.map(h=>`<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('')
+        : `<option value="">Configura las habitaciones primero</option>`;
+    }
+  }
   navTo('s-onb-am');
-  toast('Completa los datos del nuevo familiar','ok');
+  toast(esB2B?'Completa los datos del nuevo residente':'Completa los datos del nuevo familiar','ok');
 }
 
 /* Cambiar cuidado activo y permanecer en home */
@@ -1813,9 +1934,16 @@ function renderResidentes(){
   const sub=`${cuidados.length} persona${cuidados.length===1?'':'s'}`;
   if($('residentes-sub')) $('residentes-sub').textContent=sub;
   if($('residentes-sub-d')) $('residentes-sub-d').textContent=sub;
+  // Botones de encabezado: agregar residente y gestionar el catálogo de
+  // habitaciones — siempre visibles, no solo en el estado vacío, para que
+  // una institución con muchos residentes pueda seguir sumando desde acá.
+  const deskBtn=(label,fn)=>`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-left:8px" onclick="${fn}">${label}</button>`;
+  const deskBtnS=(label,fn)=>`<button style="background:var(--surf);color:var(--ink);border:1.5px solid var(--line);border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="${fn}">${label}</button>`;
+  if($('residentes-hdr-action')) $('residentes-hdr-action').innerHTML=`<button class="hdr-action" onclick="abrirSheetHabitaciones()" style="margin-right:14px">🚪 Habitaciones</button><button class="hdr-action" onclick="crearNuevoCuidado()">+ Agregar</button>`;
+  if($('residentes-hdr-action-d')) $('residentes-hdr-action-d').innerHTML=deskBtnS('🚪 Habitaciones','abrirSheetHabitaciones()')+deskBtn('+ Agregar residente','crearNuevoCuidado()');
   const content=$('residentes-content'); if(!content) return;
   if(!cuidados.length){
-    content.innerHTML=`<div class="empty"><div class="empty-ico">🏨</div><div class="empty-title">Sin residentes todavía</div><div class="empty-txt">Agrega residentes desde el selector de cuidado activo.</div></div>`;
+    content.innerHTML=`<div class="empty"><div class="empty-ico">🏨</div><div class="empty-title">Sin residentes todavía</div><div class="empty-txt">Toca "+ Agregar" arriba para sumar al primero.</div></div>`;
     return;
   }
   content.innerHTML=cuidados.map(c=>{
@@ -1827,12 +1955,48 @@ function renderResidentes(){
       : n===1
       ? `<span class="badge b-warn">1 asignado</span>`
       : `<span class="badge b-ok">${n} asignados</span>`;
+    const habitacion=c.am?.habitacion?` · Hab. ${escapeHtml(c.am.habitacion)}`:'';
     return `<div class="res-row">
       <div class="mc-ava" style="background:var(--sage)">${escapeHtml(initials(c.am?.nombre||'?'))}</div>
-      <div><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años · ${badge}</div></div>
+      <div><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años${habitacion} · ${badge}</div></div>
+      <button class="res-accion" style="background:none;color:var(--sage);border:none;font-size:12px;font-weight:700;cursor:pointer;padding:6px 8px" onclick="invitarFamiliarResidente('${c.id}')" title="Invitar familiar de este residente">👨‍👩‍👧</button>
       <button class="res-accion" onclick="abrirSheetAsignarStaff('${c.id}')">Asignar</button>
     </div>`;
   }).join('');
+}
+
+// Invitar a un familiar de un residente puntual, directo desde su fila en
+// Residentes — mismo mecanismo de invitación de siempre (código de 6
+// dígitos, mismos permisos por rol configurables), solo que con el
+// residente ya decidido por el contexto en vez de tener que elegirlo de un
+// selector genérico en la pantalla general de "Invitar personas".
+function invitarFamiliarResidente(cuidadoId){
+  const c=DB.getCuidadoById(cuidadoId);
+  abrirSheetInvitacion();
+  const rolSel=$('inv-rol-select'); if(rolSel) rolSel.value='familiar';
+  const wrap=$('inv-selector-cuidado'); if(wrap) wrap.style.display='none';
+  const sel=$('inv-cuidado-select');
+  if(sel) sel.innerHTML=`<option value="${cuidadoId}">${escapeHtml(c?.am?.nombre)||'Residente'}</option>`;
+  const titulo=$('sh-inv-titulo'); if(titulo) titulo.textContent='Invitar familiar de '+(c?.am?.nombre||'este residente');
+}
+
+// Catálogo de habitaciones de la institución — una lista simple de
+// nombres/números, uno por línea. Se usa como origen de las opciones al
+// asignar habitación a un residente, y al buscar a quién asignar personal
+// desde Equipo — evitar texto libre ahí evita errores de tipeo.
+function abrirSheetHabitaciones(){
+  const s=DB.getSesion(); if(!s||s.rol!=='admin') return;
+  const ta=$('habitaciones-textarea');
+  if(ta) ta.value=DB.getHabitaciones().join('\n');
+  $('ov-habitaciones').classList.add('open');
+}
+async function guardarHabitaciones(){
+  const ta=$('habitaciones-textarea'); if(!ta) return;
+  const lista=[...new Set(ta.value.split('\n').map(x=>x.trim()).filter(Boolean))];
+  DB.setHabitaciones(lista);
+  cerrarSheet('ov-habitaciones');
+  toast('✓ Habitaciones actualizadas','ok');
+  renderResidentes();
 }
 
 let _asigCuidadoActual=null;
@@ -1902,6 +2066,134 @@ async function eliminarAsignacionStaff(id){
   _renderAsigLista();
   renderResidentes();
   toast('Asignación eliminada','ok');
+}
+
+/* ════ EQUIPO — segunda vía de asignación: desde el staff hacia el
+   residente (solo B2B). La primera vía (desde el residente hacia el staff)
+   es abrirSheetAsignarStaff() arriba — ambas escriben en la misma colección
+   asignaciones, con el mismo id determinístico {staffUid}_{cuidadoId}. ════ */
+function renderEquipoB2B(){
+  const s=DB.getSesion(); if(!s||s.rol!=='admin') return;
+  const scr=$('s-equipo-hub');
+  const hub=scr?.querySelector('.tab-hub'); if(hub) hub.style.display='none';
+  const fab=$('equipo-fab'); if(fab) fab.style.display='none';
+  const staff=DB.getUsuarios().filter(u=>u.adminId===s.userId&&(u.rol==='cuidadora'||u.rol==='enfermera'));
+  const sub=`${staff.length} persona${staff.length===1?'':'s'} en el equipo`;
+  if($('equipo-sub')) $('equipo-sub').textContent=sub;
+  if($('equipo-sub-d')) $('equipo-sub-d').textContent=sub;
+  const deskBtn=(label,fn)=>`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="${fn}">${label}</button>`;
+  if($('equipo-hdr-action')) $('equipo-hdr-action').innerHTML=`<button class="hdr-action" onclick="abrirSheetInvitacion()">+ Invitar</button>`;
+  if($('equipo-hdr-action-d')) $('equipo-hdr-action-d').innerHTML=deskBtn('+ Invitar personal','abrirSheetInvitacion()');
+  const content=$('equipo-content'); if(!content) return;
+  if(!staff.length){
+    content.innerHTML=`<div class="empty"><div class="empty-ico">🧑‍⚕️</div><div class="empty-title">Sin personal todavía</div><div class="empty-txt">Invita a tu primera cuidadora o enfermera con el botón de arriba.</div></div>`;
+    return;
+  }
+  content.innerHTML=staff.map(u=>{
+    const n=DB.getAsignacionesPorStaff(u.id).length;
+    const badge=n===0?`<span class="badge b-err">Sin residentes</span>`:`<span class="badge b-ok">${n} residente${n===1?'':'s'}</span>`;
+    return `<div class="res-row" style="cursor:pointer" onclick="abrirSheetPerfilStaff('${u.id}')">
+      <div class="mc-ava" style="background:${ROL_COLOR[u.rol]||'var(--amber)'}">${escapeHtml(initials(u.nombre))}</div>
+      <div><div class="mc-name">${escapeHtml(u.nombre)}</div><div class="mc-meta">${ROL_LABEL[u.rol]||u.rol} · ${badge}</div></div>
+    </div>`;
+  }).join('');
+}
+
+let _staffPerfilActual=null;
+let _asigStaffSeleccion={}; // {cuidadoId: turno} — solo mientras el sheet está abierto
+
+function abrirSheetPerfilStaff(staffUid){
+  const s=DB.getSesion(); if(!s||s.rol!=='admin') return;
+  const u=DB.getUsuarios().find(x=>x.id===staffUid); if(!u) return;
+  _staffPerfilActual=staffUid;
+  _asigStaffSeleccion={};
+  $('perfil-staff-titulo').textContent=u.nombre;
+  $('perfil-staff-rol').textContent=`${ROL_EMOJI[u.rol]||''} ${ROL_LABEL[u.rol]||u.rol}`;
+  $('perfil-staff-busqueda').value='';
+  _renderAsignacionesActualesStaff();
+  _renderBuscadorResidentesStaff();
+  $('ov-perfil-staff').classList.add('open');
+}
+
+function _renderAsignacionesActualesStaff(){
+  const el=$('perfil-staff-actuales'); if(!el||!_staffPerfilActual) return;
+  const lista=DB.getAsignacionesPorStaff(_staffPerfilActual);
+  if(!lista.length){
+    el.innerHTML=`<div style="font-size:12px;color:var(--ink3);padding:6px 0">Sin residentes asignados todavía.</div>`;
+    return;
+  }
+  el.innerHTML=lista.map(a=>{
+    const c=DB.getCuidadoById(a.cuidadoId);
+    const habitacion=c?.am?.habitacion?` · Hab. ${escapeHtml(c.am.habitacion)}`:'';
+    return `<div class="staff-mini-row">
+      <div class="staff-mini-ava" style="background:var(--sage)">${escapeHtml(initials(c?.am?.nombre||'?'))}</div>
+      <div><div style="font-size:13px;font-weight:600;color:var(--ink)">${escapeHtml(c?.am?.nombre)||'Residente'}</div><div style="font-size:11px;color:var(--ink3);margin-top:1px">Turno ${escapeHtml(a.turno)}${habitacion}</div></div>
+      <button class="staff-mini-del" onclick="quitarAsignacionStaffPerfil('${a.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function filtrarResidentesStaff(){ _renderBuscadorResidentesStaff(); }
+
+function _renderBuscadorResidentesStaff(){
+  const el=$('perfil-staff-buscar-resultados'); if(!el||!_staffPerfilActual) return;
+  const q=($('perfil-staff-busqueda').value||'').trim().toLowerCase();
+  const yaAsignados=new Set(DB.getAsignacionesPorStaff(_staffPerfilActual).map(a=>a.cuidadoId));
+  const candidatos=DB.getCuidadosAdmin().filter(c=>{
+    if(yaAsignados.has(c.id)) return false;
+    if(!q) return true;
+    return (c.am?.nombre||'').toLowerCase().includes(q) || (c.am?.habitacion||'').toLowerCase().includes(q);
+  });
+  if(!candidatos.length){
+    el.innerHTML=`<div style="font-size:12px;color:var(--ink3);padding:8px 0">${yaAsignados.size===DB.getCuidadosAdmin().length?'Ya está asignada a todos los residentes.':'Sin residentes que coincidan.'}</div>`;
+    return;
+  }
+  const turnoDefault=$('perfil-staff-turno-default')?.value||'mañana';
+  el.innerHTML=candidatos.map(c=>{
+    const marcado=Object.prototype.hasOwnProperty.call(_asigStaffSeleccion,c.id);
+    const habitacion=c.am?.habitacion?` · Hab. ${escapeHtml(c.am.habitacion)}`:'';
+    const turnoActual=_asigStaffSeleccion[c.id]||turnoDefault;
+    return `<div class="staff-mini-row">
+      <input type="checkbox" ${marcado?'checked':''} onchange="toggleSeleccionResidenteStaff('${c.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--sage)">
+      <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--ink)">${escapeHtml(c.am?.nombre)||'Residente'}</div><div style="font-size:11px;color:var(--ink3)">${c.am?.edad||'—'} años${habitacion}</div></div>
+      ${marcado?`<select class="fin" style="width:112px;font-size:12px;padding:6px" onchange="_asigStaffSeleccion['${c.id}']=this.value">${TURNOS_OPCIONES.map(t=>`<option value="${t.v}" ${turnoActual===t.v?'selected':''}>${t.l}</option>`).join('')}</select>`:''}
+    </div>`;
+  }).join('');
+}
+
+function toggleSeleccionResidenteStaff(cuidadoId, marcado){
+  if(marcado) _asigStaffSeleccion[cuidadoId]=$('perfil-staff-turno-default')?.value||'mañana';
+  else delete _asigStaffSeleccion[cuidadoId];
+  _renderBuscadorResidentesStaff();
+}
+
+async function confirmarAsignacionesStaffPerfil(){
+  const s=DB.getSesion(); if(!s||s.rol!=='admin'||!_staffPerfilActual) return;
+  const staffUsuario=DB.getUsuarios().find(u=>u.id===_staffPerfilActual); if(!staffUsuario) return;
+  const entradas=Object.entries(_asigStaffSeleccion);
+  if(!entradas.length){ toast('Selecciona al menos un residente','err'); return; }
+  for(const [cuidadoId,turno] of entradas){
+    const a={
+      id:_staffPerfilActual+'_'+cuidadoId,
+      adminId:s.userId, cuidadoId, staffUid:_staffPerfilActual,
+      staffNombre:staffUsuario.nombre, rolStaff:staffUsuario.rol,
+      turno, activo:true, creado:hoy(),
+    };
+    await DB.guardarAsignacion(a);
+  }
+  _asigStaffSeleccion={};
+  $('perfil-staff-busqueda').value='';
+  _renderAsignacionesActualesStaff();
+  _renderBuscadorResidentesStaff();
+  renderEquipoB2B();
+  toast('✓ Asignaciones guardadas','ok');
+}
+
+async function quitarAsignacionStaffPerfil(id){
+  await DB.eliminarAsignacion(id);
+  _renderAsignacionesActualesStaff();
+  _renderBuscadorResidentesStaff();
+  renderEquipoB2B();
 }
 
 /* ════ PERFIL ════ */
@@ -2023,18 +2315,27 @@ window._raizOnAuth = async (firebaseUser) => {
     // Verificar que los datos llegaron correctamente
     const cuidados = DB.getCuidados();
     if(cuidados.length === 0 && uData.rol === 'admin'){
-      // Firestore está vacío (o el cuidado nunca llegó a guardarse) — crear un
-      // cuidado vacío local con el mismo id para que el onboarding tenga algo
-      // que completar. Sin esto, guardarOnbAM() no encuentra ningún cuidado
-      // y se queda pegado en el paso 1 sin ningún aviso.
+      const sbEl = document.getElementById('sidebar');
+      if(sbEl) sbEl.style.display = '';
+      renderSidebar();
+      if((uData.tipoCuenta||'d2c')==='b2b'){
+        // Una institución recién creada (o que eliminó a su último residente)
+        // no tiene ningún cuidado todavía — es un estado normal, no un error.
+        // Aterriza en Residentes, donde puede agregar el primero cuando
+        // quiera, en vez de forzarla a un asistente apenas entra.
+        navTo('s-residentes');
+        return;
+      }
+      // D2C: un admin sin ningún cuidado es siempre una anomalía (nunca
+      // debería pasar salvo que Firestore esté vacío o el cuidado nunca
+      // llegó a guardarse) — se crea un cuidado local vacío para que el
+      // onboarding tenga algo que completar. Sin esto, guardarOnbAM() no
+      // encuentra ningún cuidado y se queda pegado en el paso 1 sin aviso.
       DB.saveCuidado({
         id: uData.cuidadoId, adminId: adminId, creado: hoy(),
         am:{nombre:'',edad:0,fechaNacimiento:'',rut:'',relacion:'',condiciones:[],alergias:[],medico:'',restricciones:[]},
         meds:[], bitacoras:[], confirmaciones:{}, informes:[],
       });
-      const sbEl = document.getElementById('sidebar');
-      if(sbEl) sbEl.style.display = '';
-      renderSidebar();
       navTo('s-onb-am');
       toast('Completa el perfil de la persona cuidada para comenzar', 'ok');
       return;
@@ -2053,6 +2354,17 @@ function irSegunAccionSinSesion(){
   const accion=new URLSearchParams(location.search).get('accion');
   if(accion==='login') navTo('s-login');
   else if(accion==='registro') navTo('s-registro-tipo');
+  // Alta de institución B2B: sin autoservicio público — este link solo se
+  // comparte directamente con una institución con la que ya se habló, nunca
+  // aparece como botón en la pantalla de registro normal (ver PROPUESTAS.md
+  // #1, Fase 4). Reutiliza la misma pantalla de "Crear cuenta de
+  // administrador" — _esRegistroInstitucion decide, al enviar el formulario,
+  // si crea una cuenta D2C o B2B.
+  else if(accion==='institucion'){
+    _esRegistroInstitucion=true;
+    const t=$('reg-titulo'); if(t) t.textContent='Crear cuenta de institución';
+    navTo('s-registro-admin');
+  }
   else navTo('s-splash');
 }
 
@@ -7564,6 +7876,13 @@ async function recargarDesdeFB(){
     // Verificar si ahora hay datos
     const cuidados = DB.getCuidados();
     if(cuidados.length === 0){
+      // Una institución sin residentes todavía es un estado normal, no una
+      // señal de que algo no se guardó — no la tratamos como error.
+      if((uData.tipoCuenta||'d2c')==='b2b' && s.rol === 'admin'){
+        toast('✓ Datos sincronizados', 'ok');
+        navTo('s-residentes');
+        return;
+      }
       toast('Firestore no tiene datos aún. Completa el onboarding.', 'err');
       if(s.rol === 'admin') navTo('s-onb-am');
       return;

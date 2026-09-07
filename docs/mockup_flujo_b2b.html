@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flujo B2B</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  :root{
+    /* Tokens reales de la app (app/css/styles.css) — se usan tal cual dentro
+       de cada "pantalla" para que la reproducción sea fiel al producto. */
+    --sage:#4A7C6F;--sage-lt:#E8F0EE;--sage-md:#C2D8D2;--sage-dk:#2E5C52;
+    --amber:#C47A2B;--amber-lt:#FAF0E2;
+    --red:#C0453A;--red-lt:#FAEAEA;
+    --blue:#3A6EA8;--blue-lt:#E8EFF8;
+    --purple:#6B5EA8;--purple-lt:#EEEAF8;
+    --green:#2E7D4F;--green-lt:#E4F4EC;
+    --ink:#1A1F1E;--ink2:#3D4442;--ink3:#6B7370;
+    --line:#E4E8E7;--surf:#F7F9F8;--app-white:#FFFFFF;
+
+    /* Tokens de esta página de recorrido (narración, no la app en sí) */
+    --page-bg:#F4F1EA;
+    --page-ink:#242220;
+    --page-ink-soft:#6E675C;
+    --rail-admin:#4A7C6F;
+    --rail-staff:#8A5A1E;
+    --card-line:#E3DDD0;
+    --card-bg:#FFFFFF;
+    --mono-chip-bg:#EFEAE0;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --page-bg:#1C1A17;
+      --page-ink:#EDE9E1;
+      --page-ink-soft:#A79E8E;
+      --card-line:#38332B;
+      --card-bg:#26221D;
+      --mono-chip-bg:#332E26;
+    }
+  }
+  :root[data-theme="dark"]{
+    --page-bg:#1C1A17;
+    --page-ink:#EDE9E1;
+    --page-ink-soft:#A79E8E;
+    --card-line:#38332B;
+    --card-bg:#26221D;
+    --mono-chip-bg:#332E26;
+  }
+
+  body{
+    background:var(--page-bg);
+    color:var(--page-ink);
+    font-family:"Source Serif 4",Georgia,serif;
+    padding:56px 24px 120px;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+
+  .masthead{margin-bottom:56px;}
+  .masthead .eyebrow{
+    font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--page-ink-soft);
+    margin-bottom:10px;
+  }
+  .masthead h1{
+    font-size:clamp(30px,5vw,42px);font-weight:700;letter-spacing:-.01em;
+    text-wrap:balance;line-height:1.08;margin-bottom:14px;
+  }
+  .masthead p{font-size:17px;line-height:1.55;color:var(--page-ink-soft);max-width:60ch;}
+
+  .part-divider{
+    display:flex;align-items:baseline;gap:14px;
+    margin:72px 0 28px;
+  }
+  .part-divider .tag{
+    font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:#fff;
+    padding:4px 10px;border-radius:100px;flex-shrink:0;
+  }
+  .part-divider.admin .tag{background:var(--rail-admin);}
+  .part-divider.staff .tag{background:var(--rail-staff);}
+  .part-divider h2{font-size:22px;font-weight:600;letter-spacing:-.01em;}
+  .part-divider .who{font-size:14px;color:var(--page-ink-soft);margin-left:auto;font-family:"Source Serif 4",serif;font-style:italic;}
+
+  .step{
+    display:flex;gap:20px;margin-bottom:44px;
+  }
+  .step-num{
+    font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;
+    color:var(--page-ink-soft);width:22px;flex-shrink:0;padding-top:4px;
+    font-variant-numeric:tabular-nums;
+  }
+  .step-body{flex:1;min-width:0;}
+  .step-cap{font-size:16px;line-height:1.5;margin-bottom:14px;max-width:58ch;}
+  .step-cap b{font-weight:600;}
+
+  /* ── Marco tipo navegador que envuelve cada pantalla ── */
+  .frame{
+    border:1px solid var(--card-line);border-radius:12px;background:var(--card-bg);
+    overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  .frame.admin{border-left:3px solid var(--rail-admin);}
+  .frame.staff{border-left:3px solid var(--rail-staff);}
+  .frame-bar{
+    display:flex;align-items:center;gap:8px;padding:9px 14px;
+    border-bottom:1px solid var(--card-line);background:var(--mono-chip-bg);
+  }
+  .frame-bar .dots{display:flex;gap:5px;flex-shrink:0;}
+  .frame-bar .dots span{width:8px;height:8px;border-radius:50%;background:var(--card-line);}
+  .frame-bar .url{
+    font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--page-ink-soft);
+    background:var(--card-bg);border:1px solid var(--card-line);border-radius:5px;
+    padding:3px 10px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+
+  /* ── Estilos reales de la app, escalados para caber dentro del marco ── */
+  .rz{
+    display:flex;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--app-white);color:var(--ink);font-size:13px;min-height:340px;
+  }
+  .rz-sb{width:168px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--app-white);}
+  .rz-logo{padding:14px 14px 10px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line);}
+  .rz-logo-ico{font-size:15px;}
+  .rz-logo-name{font-size:13px;font-weight:900;letter-spacing:-.3px;}
+  .rz-sw{padding:9px 10px;border-bottom:1px solid var(--line);}
+  .rz-sw-lbl{font-size:8px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+  .rz-sw-am{display:flex;align-items:center;gap:6px;background:var(--sage-lt);border-radius:8px;padding:6px 8px;border:1px solid var(--sage-md);}
+  .rz-sw-ava{width:20px;height:20px;border-radius:50%;background:var(--sage);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;}
+  .rz-sw-name{font-size:10.5px;font-weight:700;color:var(--sage-dk);}
+  .rz-sw-meta{font-size:9px;color:var(--ink3);}
+  .rz-nav{flex:1;padding:8px 8px;display:flex;flex-direction:column;gap:1px;}
+  .rz-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:7px;font-size:10.5px;font-weight:500;color:var(--ink3);}
+  .rz-item.on{background:var(--sage-lt);color:var(--sage);font-weight:700;}
+  .rz-item-ico{font-size:12px;width:14px;text-align:center;}
+  .rz-foot{padding:9px 10px;border-top:1px solid var(--line);display:flex;align-items:center;gap:7px;}
+  .rz-foot-ava{width:22px;height:22px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;}
+  .rz-foot-name{font-size:10px;font-weight:600;}
+  .rz-foot-rol{font-size:8.5px;color:var(--ink3);}
+
+  .rz-main{flex:1;min-width:0;padding:16px 18px;overflow:hidden;}
+  .rz-hdr-title{font-size:15px;font-weight:800;letter-spacing:-.2px;}
+  .rz-hdr-sub{font-size:10.5px;color:var(--ink3);margin-top:2px;margin-bottom:14px;}
+
+  .rz-card{background:var(--sage);color:#fff;border-radius:10px;padding:12px 14px;margin-bottom:12px;}
+  .rz-card .name{font-size:13px;font-weight:800;}
+  .rz-card .meta{font-size:10px;opacity:.85;margin-top:1px;}
+  .rz-pill{display:inline-block;background:rgba(255,255,255,.18);border-radius:100px;padding:2px 8px;font-size:9px;margin-top:8px;margin-right:5px;}
+
+  .rz-field{margin-bottom:10px;}
+  .rz-flbl{font-size:9.5px;font-weight:700;color:var(--ink2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em;}
+  .rz-fin{background:var(--surf);border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:11.5px;color:var(--ink);}
+  .rz-fin.filled{color:var(--ink);}
+
+  .rz-btn{background:var(--sage);color:#fff;border-radius:7px;padding:9px;text-align:center;font-size:11.5px;font-weight:700;margin-top:6px;}
+  .rz-btn.ghost{background:var(--surf);color:var(--ink);border:1px solid var(--line);}
+
+  .rz-list-row{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .rz-list-row:last-child{border-bottom:none;}
+  .rz-ava{width:26px;height:26px;border-radius:50%;background:var(--sage);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;}
+  .rz-list-name{font-size:11.5px;font-weight:700;}
+  .rz-list-meta{font-size:9.5px;color:var(--ink3);margin-top:1px;}
+  .rz-badge{margin-left:auto;font-size:8.5px;font-weight:700;padding:3px 8px;border-radius:100px;flex-shrink:0;}
+  .rz-badge.err{background:var(--red-lt);color:var(--red);}
+  .rz-badge.warn{background:var(--amber-lt);color:var(--amber);}
+  .rz-badge.ok{background:var(--sage-lt);color:var(--sage-dk);}
+
+  .rz-code{font-family:"JetBrains Mono",monospace;font-size:26px;font-weight:700;letter-spacing:.12em;color:var(--sage-dk);background:var(--sage-lt);border:1.5px dashed var(--sage-md);border-radius:9px;padding:12px;text-align:center;margin:10px 0;}
+
+  .rz-sheet-hdr{font-size:12.5px;font-weight:800;margin-bottom:10px;}
+  .rz-select{background:var(--surf);border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:11px;display:flex;justify-content:space-between;align-items:center;color:var(--ink);}
+  .rz-select .arrow{color:var(--ink3);}
+
+  .rz-check{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:11px;}
+  .rz-check .box{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--sage-md);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;}
+  .rz-check .box.on{background:var(--sage);border-color:var(--sage);}
+
+  .rz-switcher-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;margin-bottom:6px;}
+  .rz-switcher-item.active{background:var(--sage-lt);border:1px solid var(--sage-md);}
+  .rz-switcher-item:not(.active){border:1px solid var(--line);}
+  .rz-switcher-item .check{margin-left:auto;color:var(--sage);font-weight:800;font-size:12px;}
+
+  .rz-strike{position:relative;color:var(--ink3);}
+  .rz-strike::after{content:"";position:absolute;left:0;right:0;top:50%;height:1.5px;background:var(--red);opacity:.6;}
+
+  .fin-note{
+    margin-top:64px;padding-top:28px;border-top:1px solid var(--card-line);
+    font-size:14px;color:var(--page-ink-soft);line-height:1.6;max-width:58ch;
+  }
+  .fin-note b{color:var(--page-ink);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="eyebrow">Raíz · Fase 4</div>
+    <h1>El recorrido completo de una institución en Raíz</h1>
+    <p>Diez pantallas reales, en el orden en que ocurren: primero lo que arma la administradora de la institución, después lo que ve el personal que invita. Contenido real, tomado directamente de las pruebas ya corridas — no son datos de ejemplo.</p>
+  </div>
+
+  <!-- ══════════ PARTE 1 — ADMIN ══════════ -->
+  <div class="part-divider admin">
+    <span class="tag">Admin</span>
+    <h2>Arma la institución</h2>
+    <span class="who">Directora Residencia Test</span>
+  </div>
+
+  <!-- 1 -->
+  <div class="step">
+    <div class="step-num">01</div>
+    <div class="step-body">
+      <div class="step-cap">Llega por un <b>link privado</b> que tú le compartes directamente — <code style="font-family:'JetBrains Mono',monospace;font-size:13px">?accion=institucion</code>. No hay ningún botón público que lleve aquí; nadie lo descubre solo.</div>
+      <div class="frame admin">
+        <div class="frame-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">raizcare.cl/app/?accion=institucion</div></div>
+        <div class="rz" style="display:block;padding:22px 26px;">
+          <div style="font-size:9px;font-weight:700;color:var(--sage);cursor:default;margin-bottom:12px;">‹ Volver</div>
+          <div style="font-size:16px;font-weight:800;margin-bottom:3px;">Crear cuenta de institución</div>
+          <div style="font-size:10.5px;color:var(--ink3);margin-bottom:16px;">Podrás invitar a familiares y cuidadoras después.</div>
+          <div class="rz-field"><div class="rz-flbl">Tu nombre completo</div><div class="rz-fin filled">Directora Residencia Test</div></div>
+          <div class="rz-field"><div class="rz-flbl">Email</div><div class="rz-fin filled">directora@residenciatest.cl</div></div>
+          <div class="rz-field"><div class="rz-flbl">Contraseña</div><div class="rz-fin filled">••••••••••</div></div>
+          <div class="rz-btn" style="max-width:220px;">Crear mi cuenta</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="step">
+    <div class="step-num">02</div>
+    <div class="step-body">
+      <div class="step-cap">La cuenta se crea <b>sin ningún residente todavía</b> — a diferencia de una familia (D2C), una institución recién empieza a agregar personas. La misma pantalla de siempre, reutilizada tal cual.</div>
+      <div class="frame admin">
+        <div class="frame-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">raizcare.cl/app · onboarding</div></div>
+        <div class="rz" style="display:block;padding:22px 26px;">
+          <div style="font-size:15px;font-weight:800;margin-bottom:2px;">Hola, Directora 👋</div>
+          <div style="font-size:10.5px;color:var(--ink3);margin-bottom:14px;">Cuéntanos sobre la persona que cuidas.</div>
+          <div style="font-size:8.5px;font-weight:700;color:var(--sage);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Paso 1 de 3 · Perfil de la persona cuidada</div>
+          <div class="rz-field"><div class="rz-flbl">Nombre persona cuidada</div><div class="rz-fin filled">Primer Residente Real</div></div>
+          <div style="display:flex;gap:10px;">
+            <div class="rz-field" style="flex:1"><div class="rz-flbl">Fecha de nacimiento</div><div class="rz-fin filled">20-05-1945</div></div>
+            <div class="rz-field" style="flex:1"><div class="rz-flbl">Relación</div><div class="rz-fin filled">Mamá</div></div>
+          </div>
+          <div class="rz-btn" style="max-width:160px;">Continuar →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="step">
+    <div class="step-num">03</div>
+    <div class="step-body">
+      <div class="step-cap">El Home queda armado con ese primer residente. Nota el ítem <b>«Residentes»</b> en el menú — no existe en una cuenta de familia (D2C), solo aparece para instituciones.</div>
+      <div class="frame admin">
+        <div class="frame-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">raizcare.cl/app · inicio</div></div>
+        <div class="rz">
+          <div class="rz-sb">
+            <div class="rz-logo"><span class="rz-logo-ico">🌱</span><span class="rz-logo-name">Raíz</span></div>
+            <div class="rz-sw">
+              <div class="rz-sw-lbl">Cuidado activo</div>
+              <div class="rz-sw-am"><div class="rz-sw-ava">PR</div><div><div class="rz-sw-name">Primer Residente</div><div class="rz-sw-meta">81 años</div></div></div>
+            </div>
+            <div class="rz-nav">
+              <div class="rz-item on"><span class="rz-item-ico">🏠</span>Inicio</div>
+              <div class="rz-item"><span class="rz-item-ico">🧑‍🤝‍🧑</span>Residentes</div>
+              <div class="rz-item"><span class="rz-item-ico">📋</span>Bitácora</div>
+              <div class="rz-item"><span class="rz-item-ico">💊</span>Salud</div>
+              <div class="rz-item"><span class="rz-item-ico">👥</span>Equipo</div>
+            </div>
+            <div class="rz-foot"><div class="rz-foot-ava">DR</div><div><div class="rz-foot-name">Directora</div><div class="rz-foot-rol">Administrador</div></div></div>
+          </div>
+          <div class="rz-main">
+            <div class="rz-hdr-title">Hola, Directora 👋</div>
+            <div class="rz-hdr-sub">lunes, 7 de septiembre</div>
+            <div class="rz-card">
+              <div class="name">Primer Residente Real · 81 años</div>
+              <div class="meta">Sin cuidadora asignada</div>
+              <span class="rz-pill">Sin bitácora hoy</span><span class="rz-pill">0 meds pendientes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="step">
+    <div class="step-num">04</div>
+    <div class="step-body">
+      <div class="step-cap">Desde el switcher, agrega un <b>segundo y tercer residente</b> — el mismo formulario del paso 2, tantas veces como haga falta. Una institución con 40 residentes usa exactamente este mismo camino.</div>
+      <div class="frame admin">
+        <div class="frame-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">raizcare.cl/app · cambiar residente</div></div>
+        <div class="rz" style="display:block;padding:20px 24px;">
+          <div style="font-size:13.5px;font-weight:800;margin-bottom:12px;">Cambiar cuidado activo</div>
+          <div class="rz-switcher-item active"><div class="rz-ava">R1</div><div><div class="rz-list-name">Residente Uno</div><div class="rz-list-meta">81 años</div></div><span class="check">✓</span></div>
+          <div class="rz-switcher-item"><div class="rz-ava" style="background:var(--blue)">R2</div><div><div class="rz-list-name">Residente Dos</div><div class="rz-list-meta">76 años</div></div></div>
+          <div class="rz-switcher-item"><div class="rz-ava" style="background:var(--purple)">R3</div><div><div class="rz-list-name">Residente Tres</div><div class="rz-list-meta">66 años</div></div></div>
+          <div class="rz-btn ghost" style="margin-top:8px;">+ Agregar residente</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="step">
+    <div class="step-num">05</div>
+    <div class="step-body">
+      <div class="step-cap">La pantalla <b>«Residentes»</b> le da a la directora una vista de toda la institución de una vez — quién tiene personal cubriéndolo y quién no.</div>
+      <div class="frame admin">
+        <div class="frame-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">raizcare.cl/app · residentes</div></div>
+        <div class="rz" style="display:block;padding:20px 24px;">
+          <div style="font-size:13.5px;font-weight:800;margin-bottom:2px;">Residentes</div>
+          <div style="font-size:10px;color:var(--ink3);margin-bottom:14px;">3 personas</div>
+          <div class="rz-list-row"><div class="rz-ava">R1</div><div style="flex:1"><div class="rz-list-name">Residente Uno</div><div class="rz-list-meta">81 años</div></div><span class="rz-badge err">Sin asignar</span></div>
+          <div class="rz-list-row"><div class="rz-ava" style="background:var(--blue)">R2</div><div style="flex:1"><div class="rz-list-name">Residente Dos</div><div class="rz-list-meta">76 años</div></div><span class="rz-badge warn">1 asignado</span></div>
+          <div class="rz-list-row"><div class="rz-ava" style="background:var(--purple)">R3</div><div style="flex:1"><div class="rz-list-name">Residente Tres</div><div class="rz-list-meta">66 años</div></div><span class="rz-badge err">Sin asignar</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="step">
+    <div class="step-num">06</div>
+    <div class="step-body">
+      <div class="step-cap">La directora invita a una <b>cuidadora</b> — el mismo mecanismo de código que ya usan las familias, con un rol nuevo en el selector.</div>
+      <div class="frame admin">
+        <div class="frame-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">raizcare.cl/app · invitar persona</div></div>
+        <div class="rz" style="display:block;padding:20px 24px;">
+          <div class="rz-sheet-hdr">Invitar persona</div>
+          <div class="rz-field"><div class="rz-flbl">Nombre</div><div class="rz-fin filled">Cuidadora Rosita</div></div>
+          <div class="rz-field"><div class="rz-flbl">Rol</div><div class="rz-select"><span>🩺 Cuidadora</span><span class="arrow">▾</span></div></div>
+          <div class="rz-field"><div class="rz-flbl">Residente</div><div class="rz-select"><span>Residente Uno</span><span class="arrow">▾</span></div></div>
+          <div style="font-size:9.5px;color:var(--ink3);margin:8px 0 2px;text-align:center;">Código de invitación</div>
+          <div class="rz-code">268882</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="step">
+    <div class="step-num">07</div>
+    <div class="step-body">
+      <div class="step-cap">Una vez que la cuidadora acepta la invitación, la directora la <b>asigna a un residente específico</b>, con turno — esto es lo único que decide qué ve esa cuidadora más adelante.</div>
+      <div class="frame admin">
+        <div class="frame-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">raizcare.cl/app · asignar personal</div></div>
+        <div class="rz" style="display:block;padding:20px 24px;">
+          <div class="rz-sheet-hdr">Asignar personal — Residente Uno</div>
+          <div class="rz-field"><div class="rz-flbl">Personal</div><div class="rz-select"><span>🩺 Cuidadora Rosita</span><span class="arrow">▾</span></div></div>
+          <div class="rz-field"><div class="rz-flbl">Turno</div><div class="rz-select"><span>Mañana</span><span class="arrow">▾</span></div></div>
+          <div class="rz-btn" style="max-width:140px;">Asignar</div>
+          <div style="font-size:10px;font-weight:700;color:var(--ink2);margin:14px 0 6px;">Ya asignados</div>
+          <div class="rz-list-row"><div class="rz-ava" style="background:var(--amber);width:22px;height:22px;font-size:9px;">CR</div><div style="flex:1"><div class="rz-list-name" style="font-size:10.5px">Cuidadora Rosita</div><div class="rz-list-meta">Cuidadora · Turno mañana</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ PARTE 2 — STAFF ══════════ -->
+  <div class="part-divider staff">
+    <span class="tag">Cuidadora</span>
+    <h2>Entra al personal invitado</h2>
+    <span class="who">Cuidadora Rosita</span>
+  </div>
+
+  <!-- 8 -->
+  <div class="step">
+    <div class="step-num">08</div>
+    <div class="step-body">
+      <div class="step-cap">Rosita recibe el código <b>268882</b> (por el canal que sea — WhatsApp, papel) y completa su propio registro. Todavía no sabe a quién va a atender — eso lo decide la asignación del paso 7, no este formulario.</div>
+      <div class="frame staff">
+        <div class="frame-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">raizcare.cl/app · usar código</div></div>
+        <div class="rz" style="display:block;padding:22px 26px;">
+          <div style="font-size:16px;font-weight:800;margin-bottom:3px;">Completa tu registro</div>
+          <div style="font-size:10.5px;color:var(--ink3);margin-bottom:6px;">Invitada como <b style="color:var(--amber)">🩺 Cuidadora</b></div>
+          <div class="rz-code" style="font-size:18px;padding:8px;margin-bottom:14px;">Código 268882 ✓ válido</div>
+          <div class="rz-field"><div class="rz-flbl">Tu nombre</div><div class="rz-fin filled">Cuidadora Rosita</div></div>
+          <div class="rz-field"><div class="rz-flbl">Email</div><div class="rz-fin filled">rosita@gmail.com</div></div>
+          <div class="rz-field"><div class="rz-flbl">Contraseña</div><div class="rz-fin filled">••••••••••</div></div>
+          <div class="rz-btn" style="max-width:200px;">Crear mi cuenta</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9 -->
+  <div class="step">
+    <div class="step-num">09</div>
+    <div class="step-body">
+      <div class="step-cap">Su propio Home — nota que el menú ya <b>no</b> tiene «Residentes» ni «Invitar personas»: esas pantallas son solo del admin. Su cuidado activo parte en el residente que le asignaron.</div>
+      <div class="frame staff">
+        <div class="frame-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">raizcare.cl/app · inicio (cuidadora)</div></div>
+        <div class="rz">
+          <div class="rz-sb">
+            <div class="rz-logo"><span class="rz-logo-ico">🌱</span><span class="rz-logo-name">Raíz</span></div>
+            <div class="rz-sw">
+              <div class="rz-sw-lbl">Cuidado activo</div>
+              <div class="rz-sw-am"><div class="rz-sw-ava">R1</div><div><div class="rz-sw-name">Residente Uno</div><div class="rz-sw-meta">81 años</div></div></div>
+            </div>
+            <div class="rz-nav">
+              <div class="rz-item on"><span class="rz-item-ico">🏠</span>Inicio</div>
+              <div class="rz-item"><span class="rz-item-ico">📋</span>Registrar turno</div>
+              <div class="rz-item"><span class="rz-item-ico">💊</span>Salud</div>
+              <div class="rz-item"><span class="rz-item-ico">🍽️</span>Alimentación</div>
+            </div>
+            <div class="rz-foot"><div class="rz-foot-ava" style="background:var(--amber)">CR</div><div><div class="rz-foot-name">Cuidadora Rosita</div><div class="rz-foot-rol">Cuidadora</div></div></div>
+          </div>
+          <div class="rz-main">
+            <div class="rz-hdr-title">Hola, Cuidadora 👋</div>
+            <div class="rz-hdr-sub">lunes, 7 de septiembre</div>
+            <div class="rz-card">
+              <div class="name">Residente Uno · 81 años</div>
+              <div class="meta">Cuidadora: por confirmar · turno mañana</div>
+              <span class="rz-pill">⇄ Cambiar residente (2)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 -->
+  <div class="step">
+    <div class="step-num">10</div>
+    <div class="step-body">
+      <div class="step-cap">Su switcher muestra <b>solo los residentes que le asignaron</b> — dos de los tres, con turno. Residente Tres no aparece: nunca se lo asignaron a ella, y ni la pantalla ni el servidor se lo dejan ver.</div>
+      <div class="frame staff">
+        <div class="frame-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">raizcare.cl/app · cambiar residente (cuidadora)</div></div>
+        <div class="rz" style="display:block;padding:20px 24px;">
+          <div style="font-size:13.5px;font-weight:800;margin-bottom:12px;">Cambiar residente activo</div>
+          <div class="rz-switcher-item active"><div class="rz-ava">R1</div><div><div class="rz-list-name">Residente Uno</div><div class="rz-list-meta">81 años · Turno mañana</div></div><span class="check">✓</span></div>
+          <div class="rz-switcher-item"><div class="rz-ava" style="background:var(--blue)">R2</div><div><div class="rz-list-name">Residente Dos</div><div class="rz-list-meta">76 años · Turno tarde</div></div></div>
+          <div class="rz-switcher-item" style="opacity:.4;border-style:dashed;"><div class="rz-ava" style="background:var(--ink3)">R3</div><div><div class="rz-list-name rz-strike">Residente Tres</div><div class="rz-list-meta">no asignado — no aparece</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fin-note">
+    Las diez pantallas ya funcionan así en producción — probadas de punta a punta, con cuentas reales, incluyendo el bloqueo de acceso del paso 10 verificado también <b>del lado del servidor</b>, no solo aquí en la interfaz. Lo único que falta para un piloto real es compartir el link del paso 1 con la primera institución.
+  </div>
+
+</div>
+</body>
+</html>
