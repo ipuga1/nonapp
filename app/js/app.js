@@ -2305,7 +2305,16 @@ window._raizOnAuth = async (firebaseUser) => {
     // Siempre cargar datos frescos de Firestore al detectar sesión de Firebase
     // (cubre: primer login en móvil, recargar página, cambio de dispositivo)
     const uData = await _fsGet('usuarios/' + firebaseUser.uid);
-    if(!uData) return;
+    if(!uData){
+      // Antes esto hacía return silencioso, dejando al usuario congelado en
+      // la pantalla donde estuviera (típicamente el splash) sin ningún aviso
+      // — indistinguible de "la app no funciona". Si la lectura falló por
+      // algo transitorio (red, reglas, token), mostrar el splash con sus
+      // botones le da una salida real en vez de dejarlo varado en silencio.
+      navTo('s-splash');
+      toast('No pudimos cargar tu cuenta. Intenta iniciar sesión de nuevo.', 'err', 6000);
+      return;
+    }
     const adminId = uData.adminId || firebaseUser.uid;
 
     // Cargar todos los datos del hogar desde Firestore al caché
@@ -2344,6 +2353,10 @@ window._raizOnAuth = async (firebaseUser) => {
     irAlHome();
   } catch(e) {
     console.warn('Error restaurando sesión:', e.message);
+    // Mismo motivo que arriba: sin esto el usuario queda congelado sin
+    // ningún aviso si algo revienta a mitad de la restauración de sesión.
+    navTo('s-splash');
+    toast('Ocurrió un problema al cargar tu sesión. Intenta iniciar sesión de nuevo.', 'err', 6000);
   }
 };
 
