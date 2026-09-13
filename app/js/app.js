@@ -917,12 +917,14 @@ function hacerLogin(){
     return;
   }
 
+  _flujoAuthPropio=true;
   fb.signInWithEmailAndPassword(fb.auth, email, pass)
     .then(async (cred)=>{
       setLoading('login-spinner','login-btn-txt',false);
       const uid=cred.user.uid;
       const uData=await _fsGet('usuarios/'+uid);
       if(!uData){
+        _flujoAuthPropio=false;
         $('login-general-err').style.display='block';
         $('login-general-err').textContent='Perfil no encontrado. Contacta al administrador.';
         return;
@@ -936,9 +938,10 @@ function hacerLogin(){
       // Mostrar feedback de éxito antes de navegar
       if($('login-ok')) $('login-ok').style.display='block';
       renderSidebar();
-      setTimeout(()=>{ irAlHome(); }, 800);
+      setTimeout(()=>{ irAlHome(); _flujoAuthPropio=false; }, 800);
     })
     .catch((err)=>{
+      _flujoAuthPropio=false;
       setLoading('login-spinner','login-btn-txt',false);
       const msgs={'auth/invalid-credential':'Email o contraseña incorrectos','auth/wrong-password':'Email o contraseña incorrectos','auth/user-not-found':'Email o contraseña incorrectos','auth/too-many-requests':'Demasiados intentos. Espera unos minutos.'};
       const msg=msgs[err.code]||'Error al iniciar sesión. Intenta de nuevo.';
@@ -993,6 +996,17 @@ function enviarRecuperarPass(){
 }
 
 
+// Crear o iniciar sesión en una cuenta de Firebase Auth dispara
+// onAuthStateChanged casi al mismo tiempo que se resuelve la promesa de
+// createUserWithEmailAndPassword/signInWithEmailAndPassword — eso hace que
+// _raizOnAuth corra EN PARALELO con el resto del flujo de registro/invitación,
+// que ya arma su propia sesión/caché y navega a la pantalla correcta. Según
+// qué termine primero, _raizOnAuth podía pisar esa navegación con la suya
+// propia (p.ej. mandar a Home en vez de al onboarding recién creado). Mientras
+// este flag esté activo, _raizOnAuth no hace nada — el flujo que lo puso en
+// true es responsable de dejar la sesión y la navegación en el estado final.
+let _flujoAuthPropio=false;
+
 // Registro admin
 function validarPass(){ const v=$('reg-pass').value; v&&v.length<6?showErr('reg-pass-err','Mínimo 6 caracteres'):hideErr('reg-pass-err'); }
 function validarPass2(){ const p=$('reg-pass').value,p2=$('reg-pass2').value; p2&&p!==p2?showErr('reg-pass2-err','Las contraseñas no coinciden'):hideErr('reg-pass2-err'); }
@@ -1011,6 +1025,7 @@ function registrarAdmin(){
   if(!fb){ toast('Conectando... intenta en un momento','ok'); return; }
 
   setLoading('reg-spinner','reg-btn-txt',true);
+  _flujoAuthPropio=true;
 
   fb.createUserWithEmailAndPassword(fb.auth, email, pass)
     .then(async (cred)=>{
@@ -1051,9 +1066,11 @@ function registrarAdmin(){
       const ns=$('onb-nombre-salud'); if(ns) ns.textContent=nombre.split(' ')[0];
       const sa=$('onb-am-saludo'); if(sa) sa.textContent='Hola, '+nombre.split(' ')[0]+' 👋';
       navTo('s-onb-am');
+      _flujoAuthPropio=false;
     })
     .catch((err)=>{
       setLoading('reg-spinner','reg-btn-txt',false);
+      _flujoAuthPropio=false;
       const msgs={'auth/email-already-in-use':'Este email ya tiene una cuenta','auth/weak-password':'La contraseña es muy débil'};
       showErr('reg-email-err', msgs[err.code]||'Error al crear cuenta. Intenta de nuevo.');
     });
@@ -1087,6 +1104,7 @@ function registrarInstitucion(){
   if(!fb){ toast('Conectando... intenta en un momento','ok'); return; }
 
   setLoading('reg-spinner','reg-btn-txt',true);
+  _flujoAuthPropio=true;
 
   fb.createUserWithEmailAndPassword(fb.auth, email, pass)
     .then(async (cred)=>{
@@ -1112,9 +1130,11 @@ function registrarInstitucion(){
       // botón para agregar residentes cuando quiera (ver renderResidentes()).
       renderSidebar();
       navTo('s-residentes');
+      _flujoAuthPropio=false;
     })
     .catch((err)=>{
       setLoading('reg-spinner','reg-btn-txt',false);
+      _flujoAuthPropio=false;
       const msgs={'auth/email-already-in-use':'Este email ya tiene una cuenta','auth/weak-password':'La contraseña es muy débil'};
       showErr('reg-email-err', msgs[err.code]||'Error al crear cuenta. Intenta de nuevo.');
     });
@@ -1230,11 +1250,13 @@ function registrarInvitado(){
   if(!fb){ toast('Conectando...','ok'); return; }
 
   setLoading('inv-spinner','inv-btn-txt',true);
+  _flujoAuthPropio=true;
 
   fb.createUserWithEmailAndPassword(fb.auth, email, pass)
     .then(async(cred)=>{
       setLoading('inv-spinner','inv-btn-txt',false);
       await _completarRegistroInvitado(cred.user.uid, nombre, email);
+      _flujoAuthPropio=false;
     })
     .catch(async(err)=>{
       // "Email ya en uso" casi siempre significa que un intento anterior creó
@@ -1258,12 +1280,15 @@ function registrarInvitado(){
           } else {
             await _completarRegistroInvitado(uid, nombre, email);
           }
+          _flujoAuthPropio=false;
         }catch(e2){
+          _flujoAuthPropio=false;
           setLoading('inv-spinner','inv-btn-txt',false);
           toast('Este email ya tiene una cuenta con otra contraseña. Ve a "Iniciar sesión" y usa "¿Olvidaste tu contraseña?"','err',6000);
         }
         return;
       }
+      _flujoAuthPropio=false;
       setLoading('inv-spinner','inv-btn-txt',false);
       toast('Error al registrarse','err');
     });
@@ -2301,6 +2326,10 @@ document.addEventListener('keydown',e=>{
 /* ════ INIT ════ */
 // Callback de Firebase cuando detecta sesión activa (al recargar la página)
 window._raizOnAuth = async (firebaseUser) => {
+  // Un flujo de registro/invitación ya en curso arma su propia sesión, caché
+  // y navegación — dejar que además corra esto sería una carrera contra esa
+  // misma navegación (ver nota junto a _flujoAuthPropio).
+  if(_flujoAuthPropio) return;
   try {
     // Siempre cargar datos frescos de Firestore al detectar sesión de Firebase
     // (cubre: primer login en móvil, recargar página, cambio de dispositivo)
