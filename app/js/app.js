@@ -336,6 +336,19 @@ const DB = {
   setHabitaciones(lista){
     this.saveAjustes({...(this.getAjustes()||{}), habitaciones:lista});
   },
+  /* Turnos en que opera la institución (solo B2B). Por defecto los tres; el
+     admin puede desactivar los que no use. Solo habilita/deshabilita — no
+     define horarios. Un turno desactivado no se ofrece al asignar, no se
+     muestra en la grilla ni cuenta como hueco de cobertura. */
+  getTurnosActivos(){
+    const todos=TURNOS_OPCIONES.map(t=>t.v);
+    const guardado=this.getAjustes()?.turnos;
+    const activos=Array.isArray(guardado)?guardado.filter(v=>todos.includes(v)):[];
+    return activos.length?todos.filter(v=>activos.includes(v)):todos;
+  },
+  setTurnosActivos(lista){
+    this.saveAjustes({...(this.getAjustes()||{}), turnos:lista});
+  },
 
   /* Alias de conveniencia para M5 — Alimentación */
   getAlim(){
@@ -730,7 +743,10 @@ function restablecerPermisosRol(){
 }
 
 function guardarPermisos(){
-  DB.saveAjustes(ST.permisos.datos);
+  // Mezclar con lo ya guardado: ajustes/{adminId} también guarda el catálogo
+  // de habitaciones y los turnos activos (B2B) — reemplazar el documento
+  // entero los borraba.
+  DB.saveAjustes({...(DB.getAjustes()||{}), ...ST.permisos.datos});
   toast('✓ Permisos actualizados para '+(ROL_LABEL[ST.permisos.rolActual]||ST.permisos.rolActual),'ok');
   // Por si el rol de la sesión activa coincide con el que se acaba de editar
   // (ej. probando con otra cuenta en otra pestaña), refrescar nav/tabbar.
@@ -793,12 +809,35 @@ const SCREENS_AUTH = ['s-home-admin','s-home-familiar','s-home-observador','s-ho
   's-salud-hub','s-ocr-receta','s-ficha-editar','s-alim-hub',
   's-gastos','s-agenda','s-invitaciones','s-onb-am','s-onb-salud','s-activacion'];
 
+// Textos y bloques que cambian según el tipo de cuenta, declarados en el HTML:
+//   data-b2b="texto"  → reemplaza el textContent en cuentas de institución
+//   data-solo-d2c / data-solo-b2b → muestra el bloque solo en esa modalidad
+// El original se guarda en data-d2c / data-dsp, así que se aplica en ambos
+// sentidos (no se arrastra el estado de una cuenta a otra en la misma pestaña).
+function aplicarTextosCuenta(){
+  const b2b=DB.getTipoCuenta()==='b2b';
+  document.querySelectorAll('[data-b2b]').forEach(el=>{
+    if(el.dataset.d2c===undefined) el.dataset.d2c=el.textContent;
+    el.textContent=b2b?el.dataset.b2b:el.dataset.d2c;
+  });
+  document.querySelectorAll('[data-solo-d2c],[data-solo-b2b]').forEach(el=>{
+    if(el.dataset.dsp===undefined) el.dataset.dsp=el.style.display;
+    const visible=b2b?el.hasAttribute('data-solo-b2b'):el.hasAttribute('data-solo-d2c');
+    el.style.display=visible?el.dataset.dsp:'none';
+  });
+}
+
 function navTo(id){
   // Redirigir al splash si no hay sesión y la pantalla requiere auth
   if(SCREENS_AUTH.includes(id) && !DB.getSesion()){
     id='s-splash';
   }
+  // B2B: invitar y gestionar accesos vive dentro de Equipo (vista Personas),
+  // no en una pantalla aparte.
+  if(id==='s-invitaciones' && DB.getTipoCuenta()==='b2b' && DB.getSesion()?.rol==='admin'){ _equipoVista='personas'; id='s-equipo-hub'; }
+  else if(id==='s-equipo-hub' && DB.getTipoCuenta()==='b2b') _equipoVista='turnos';
   cerrarConfirm();
+  aplicarTextosCuenta();
   // Salir de modo edición de bitácora si se navega a cualquier pantalla que no sea el formulario.
   // try/catch: navTo() se invoca durante el bootstrap inicial (IIFE init()), antes de que
   // "const ST" (declarado más abajo en el archivo) exista todavía.
@@ -920,6 +959,9 @@ function continuarRegistro(){
     // ?accion=institucion y termine creando una cuenta B2B por error.
     _esRegistroInstitucion=false;
     const t=$('reg-titulo'); if(t) t.textContent='Crear cuenta de administrador';
+    const rs=$('reg-sub'); if(rs) rs.textContent='Podrás invitar a familiares y cuidadoras después.';
+    const rl=$('reg-nombre-lbl'); if(rl) rl.textContent='Tu nombre completo';
+    const rn=$('reg-nombre'); if(rn) rn.placeholder='Ej: Valentina Rodríguez';
     navTo('s-registro-admin');
   }
   else navTo('s-ingresar-codigo');
@@ -952,6 +994,13 @@ function hacerLogin(){
         _flujoAuthPropio=false;
         $('login-general-err').style.display='block';
         $('login-general-err').textContent='Perfil no encontrado. Contacta al administrador.';
+        return;
+      }
+      if(uData.revocado || uData.rol==='revocado'){
+        _flujoAuthPropio=false;
+        try{ await fb.signOut(fb.auth); }catch(e){}
+        $('login-general-err').style.display='block';
+        $('login-general-err').textContent='Tu acceso fue revocado por el administrador.';
         return;
       }
       const adminId=uData.adminId||uid;
@@ -1405,11 +1454,11 @@ function formatearRut(input){
 /* Eliminar un Cuidado del admin (no el activo) */
 function eliminarCuidado(cid){
   const s=DB.getSesion(); if(!s||s.rol!=='admin') return;
-  if(cid===s.cuidadoId){ toast('No puedes eliminar el cuidado activo','err'); return; }
+  if(cid===s.cuidadoId){ toast(DB.getTipoCuenta()==='b2b'?'No puedes eliminar al residente activo — cambia a otro primero':'No puedes eliminar el cuidado activo','err'); return; }
   const c=DB.getCuidadoById(cid);
   const nombre=c?.am?.nombre||'esta persona';
   confirmar(
-    `¿Eliminar el cuidado de ${nombre}?`,
+    DB.getTipoCuenta()==='b2b'?`¿Eliminar a ${nombre}?`:`¿Eliminar el cuidado de ${nombre}?`,
     'Se eliminarán todos sus datos: bitácora, medicamentos e informes. Esta acción no se puede deshacer.',
     ()=>{
       const cuidados=DB.getCuidados().filter(x=>x.id!==cid);
@@ -1435,7 +1484,7 @@ function eliminarCuidado(cid){
 /* ════ MÓDULO 2 — ONBOARDING ════ */
 async function guardarOnbAM(){
   const nombre=$('onb-nombre').value.trim();
-  if(!nombre){ toast('Escribe el nombre de la persona cuidada','err'); return; }
+  if(!nombre){ toast(DB.getTipoCuenta()==='b2b'?'Escribe el nombre del residente':'Escribe el nombre de la persona cuidada','err'); return; }
   const fnac=$('onb-fnac').value;
   const edad=calcularEdad(fnac);
   const s=DB.getSesion(); if(!s) return;
@@ -1467,7 +1516,8 @@ async function guardarOnbAM(){
     fechaNacimiento: fnac||'',
     edad: edad||0,
     rut: $('onb-rut').value.trim(),
-    relacion: $('onb-relacion').value,
+    // En una institución no hay "relación" (mamá, papá…) con quien administra.
+    relacion: DB.getTipoCuenta()==='b2b' ? 'Residente' : $('onb-relacion').value,
     // Solo aplica a instituciones — el campo queda oculto y vacío para D2C.
     habitacion: DB.getTipoCuenta()==='b2b' ? ($('onb-habitacion')?.value||'') : (c.am?.habitacion||''),
   };
@@ -1505,8 +1555,11 @@ async function guardarOnbSalud(){
   c.am={...c.am,medico:$('onb-medico').value.trim(),condiciones:[...document.querySelectorAll('#s-onb-salud .chip.on')].map(ch=>ch.textContent.trim())};
 
   // Leer lista de cuidadoras (filtrar vacías)
-  const cuidadoras=_onbCuidadoras.map(n=>n.trim()).filter(Boolean);
-  if(!cuidadoras.length){ toast('Agrega al menos una cuidadora','err'); return; }
+  // En una institución no se piden cuidadoras acá: el personal sale de las
+  // asignaciones (Equipo / Residentes), no de un nombre escrito a mano.
+  const b2b=DB.getTipoCuenta()==='b2b';
+  const cuidadoras=b2b?[]:_onbCuidadoras.map(n=>n.trim()).filter(Boolean);
+  if(!b2b&&!cuidadoras.length){ toast('Agrega al menos una cuidadora','err'); return; }
 
   // Guardar cuidadoras en el equipo compartido del hogar
   const comp=DB.getCompartido();
@@ -1531,7 +1584,8 @@ async function guardarOnbSalud(){
   let syncOk=true;
   if(s){
     const ok1=await _fsSet('cuidados/'+c.id, c);
-    const ok2=await _fsSet('compartido/'+s.userId, comp);
+    // En B2B compartido es por residente, no por admin (ver DB._compartidoId).
+    const ok2=await _fsSet('compartido/'+DB._compartidoId(), comp);
     syncOk=ok1&&ok2;
   }
   DB.saveCuidado(c);
@@ -1541,7 +1595,7 @@ async function guardarOnbSalud(){
   $('act-nombre').textContent=c.am.nombre||'la persona cuidada';
   $('act-meds').textContent=c.meds.length||0;
   $('act-cond').textContent=c.am.condiciones?.length||0;
-  $('act-cuid').textContent=cuidadoras.length||1;
+  $('act-cuid').textContent=b2b?(_habLabel(c.am?.habitacion)||'—'):(cuidadoras.length||1);
   navTo('s-activacion');
 }
 
@@ -1620,7 +1674,12 @@ function renderHome(rol){
   const misAsignaciones=_esStaff(rol)?DB.getAsignacionesPorStaff(s.userId):[];
   const hero=`<div class="hero-card" onclick="navTo('s-perfil')">
     <div class="hc-name">${escapeHtml(am.nombre)||'la persona cuidada'} · ${am.edad||'—'} años</div>
-    <div class="hc-meta">Cuidadora: ${escapeHtml(nombreCuidadoraPrincipal(c))||'Por configurar'} · turno activo</div>
+    <div class="hc-meta">${DB.getTipoCuenta()==='b2b'
+      // Una familia no puede leer las asignaciones de personal (regla de
+      // Firestore, a propósito): mostrar "Atiende: …" ahí daría un
+      // "sin personal asignado" falso. Solo la habitación.
+      ? escapeHtml(_habLabel(am.habitacion)||'Residente')
+      : `Cuidadora: ${escapeHtml(nombreCuidadoraPrincipal(c))||'Por configurar'} · turno activo`}</div>
     <div class="hc-pills">
       <div class="hc-pill"><div class="hc-dot" style="background:${bitaHoy?'#A8F0D8':'#FFD97D'}"></div>${bitaHoy?'Bitácora registrada':'Sin bitácora hoy'}</div>
       <div class="hc-pill"><div class="hc-dot" style="background:${medsHoy.length===0&&meds.length>0?'#A8F0D8':'#FFD97D'}"></div>${medsHoy.length===0&&meds.length>0?'Meds al día ✓':medsHoy.length+' meds pendientes'}</div>
@@ -1810,7 +1869,7 @@ function _navItemsRol(s,c){
       {ico:'🍽️',lbl:'Alimentación',screen:'s-alim-hub'},
       {ico:'📅',lbl:'Agenda',screen:'s-agenda'},
       {ico:'🧾',lbl:'Gastos',screen:'s-gastos'},
-      {ico:'👥',lbl:'Invitar personas',screen:'s-invitaciones'},
+      {ico:'👥',lbl:'Invitar personas',screen:'s-invitaciones',soloD2C:true},
       {ico:'👥',lbl:'Equipo',screen:'s-equipo-hub'},
       {ico:'🏠',lbl:'Hogar e insumos',screen:'s-hogar-hub'},
       {ico:'📊',lbl:'Informe mensual',screen:'s-informe-hub'},
@@ -1831,7 +1890,7 @@ function _navItemsRol(s,c){
     // "Residentes" (gestión de personal por institución) solo existe para
     // cuentas B2B — para D2C la lista de navegación queda idéntica a hoy.
     if(DB.getTipoCuenta()==='b2b'){
-      return [items[0], {ico:'🏨',lbl:'Residentes',screen:'s-residentes'}, ...items.slice(1)];
+      return [items[0], {ico:'🏨',lbl:'Residentes',screen:'s-residentes'}, ...items.slice(1).filter(it=>!it.soloD2C)];
     }
     return items;
   }
@@ -1869,6 +1928,7 @@ function renderSidebar(){
   // uno solo, no hay nada que cambiar).
   const puedeSwitchStaff=_esStaff(s.rol)&&DB.getAsignacionesPorStaff(s.userId).length>1;
   const sw=$('sb-switcher'); if(sw) sw.style.display=(c&&(s.rol==='admin'||puedeSwitchStaff))?'block':'none';
+  const lblSw0=document.querySelector('.sb-sw-label'); if(lblSw0) lblSw0.textContent=DB.getTipoCuenta()==='b2b'?'Residente activo':'Cuidado activo';
   if(c){
     $('sb-sw-ava').textContent=initials(c.am?.nombre||'M');
     $('sb-sw-name').textContent=`${c.am?.nombre||'—'} · ${calcularEdad(c.am?.fechaNacimiento)||c.am?.edad||'—'} años`;
@@ -1949,11 +2009,14 @@ function abrirSwitcher(){
     const a=asignaciones.find(x=>x.cuidadoId===cid);
     return a?.turno?` · Turno ${a.turno}`:'';
   };
-  $('switcher-titulo').textContent=esAdmin?'Cambiar cuidado activo':'Cambiar residente activo';
+  const b2b=DB.getTipoCuenta()==='b2b';
+  $('switcher-titulo').textContent=(esAdmin&&!b2b)?'Cambiar cuidado activo':'Cambiar residente activo';
+  const btnAgregar=$('switcher-agregar-txt'); if(btnAgregar) btnAgregar.textContent=b2b?'Agregar residente':'Agregar otra persona cuidada';
+  const lblSw=document.querySelector('.sb-sw-label'); if(lblSw) lblSw.textContent=b2b?'Residente activo':'Cuidado activo';
   $('switcher-lista').innerHTML=cuidados.map(c=>`
     <div class="mc-item${c.id===s.cuidadoId?' active':''}" onclick="selCuidado('${c.id}')">
       <div class="mc-ava" style="background:var(--sage)">${escapeHtml(initials(c.am?.nombre||'?'))}</div>
-      <div><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años${esAdmin?' · '+(escapeHtml(nombreCuidadoraPrincipal(c))||'Sin cuidadora'):turnoDe(c.id)}</div></div>
+      <div><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años${esAdmin?(b2b?(c.am?.habitacion?' · '+escapeHtml(_habLabel(c.am.habitacion)):''):' · '+(escapeHtml(nombreCuidadoraPrincipal(c))||'Sin cuidadora')):turnoDe(c.id)}</div></div>
       ${c.id===s.cuidadoId?'<div class="mc-check">✓</div>':''}
     </div>`).join('');
   // El botón "+Agregar" es solo para admin — ocultar el contenedor completo
@@ -2198,6 +2261,7 @@ function abrirAccionesResidente(cid){
   const mods=_MODULOS_RESIDENTE.filter(m=>tienePermiso(m.mod));
   let html=mods.map(m=>`<button class="b2b-acc" onclick="abrirModuloResidente('${cid}','${m.screen}')"><span style="font-size:18px">${m.ico}</span>${m.lbl}</button>`).join('');
   if(s.rol==='admin'){
+    html+=`<button class="b2b-acc" onclick="abrirModuloResidente('${cid}','s-perfil')"><span style="font-size:18px">✏️</span>Datos y habitación</button>`;
     html+=`<button class="b2b-acc" onclick="cerrarSheet('ov-res-acciones');abrirSheetAsignarStaff('${cid}')"><span style="font-size:18px">🧑‍⚕️</span>Asignar personal</button>`;
     html+=`<button class="b2b-acc" onclick="cerrarSheet('ov-res-acciones');invitarFamiliarResidente('${cid}')"><span style="font-size:18px">👨‍👩‍👧</span>Invitar familiar</button>`;
   }
@@ -2304,6 +2368,7 @@ let _asigCuidadoActual=null;
 function abrirSheetAsignarStaff(cuidadoId){
   const s=DB.getSesion(); if(!s||s.rol!=='admin') return;
   _asigCuidadoActual=cuidadoId;
+  _poblarSelectTurno('asig-turno-select');
   const c=DB.getCuidadoById(cuidadoId);
   $('asig-titulo').textContent='Asignar personal — '+(c?.am?.nombre||'residente');
   // Staff disponible: usuarios de esta institución ya invitados con rol
@@ -2386,22 +2451,71 @@ function renderEquipoB2B(){
   if($('equipo-sub-d')) $('equipo-sub-d').textContent=sub;
   const deskBtn=(label,fn)=>`<button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="${fn}">${label}</button>`;
   if($('equipo-hdr-action')) $('equipo-hdr-action').innerHTML=`<button class="hdr-action" onclick="abrirSheetInvitacion()">+ Invitar</button>`;
-  if($('equipo-hdr-action-d')) $('equipo-hdr-action-d').innerHTML=deskBtn('+ Invitar personal','abrirSheetInvitacion()');
+  if($('equipo-hdr-action-d')) $('equipo-hdr-action-d').innerHTML=deskBtn('+ Invitar persona','abrirSheetInvitacion()');
   const content=$('equipo-content'); if(!content) return;
-  if(!staff.length){
+  const hayInvs=DB.getInvs().some(i=>i.adminId===s.userId&&i.estado==='pendiente')
+    ||DB.getUsuarios().some(u=>u.adminId===s.userId&&u.id!==s.userId&&!u.revocado&&(u.rol==='familiar'||u.rol==='observador'));
+  if(!staff.length&&!hayInvs){
     content.innerHTML=`<div class="empty"><div class="empty-ico">🧑‍⚕️</div><div class="empty-title">Sin personal todavía</div><div class="empty-txt">Invita a tu primer integrante (cuidadora, enfermera o profesional) con el botón de arriba.</div></div>`;
     return;
   }
-  const seg=`<div class="b2b-seg"><button class="${_equipoVista==='turnos'?'on':''}" onclick="_setEquipoVista('turnos')">Turnos</button><button class="${_equipoVista==='personas'?'on':''}" onclick="_setEquipoVista('personas')">Personas</button></div>`;
-  if(_equipoVista==='turnos'){ content.innerHTML=seg+_htmlTurnosEquipo(staff); return; }
-  content.innerHTML=seg+staff.map(u=>{
-    const n=DB.getAsignacionesPorStaff(u.id).length;
-    const badge=n===0?`<span class="badge b-err">Sin residentes</span>`:`<span class="badge b-ok">${n} residente${n===1?'':'s'}</span>`;
-    return `<div class="res-row" style="cursor:pointer" onclick="abrirSheetPerfilStaff('${u.id}')">
-      <div class="mc-ava" style="background:${ROL_COLOR[u.rol]||'var(--amber)'}">${escapeHtml(initials(u.nombre))}</div>
-      <div><div class="mc-name">${escapeHtml(u.nombre)}</div><div class="mc-meta">${escapeHtml(rolDeUsuario(u))} · ${badge}</div></div>
-    </div>`;
-  }).join('');
+  // Sin personal todavía no hay nada que mostrar en la grilla de turnos.
+  const vista=staff.length?_equipoVista:'personas';
+  const seg=`<div class="b2b-seg"><button class="${vista==='turnos'?'on':''}" onclick="_setEquipoVista('turnos')">Turnos</button><button class="${vista==='personas'?'on':''}" onclick="_setEquipoVista('personas')">Personas</button></div>`;
+  if(vista==='turnos'){ content.innerHTML=seg+_htmlTurnosEquipo(staff); return; }
+  content.innerHTML=seg+_htmlPersonasEquipo(staff);
+}
+
+// Vista "Personas e invitaciones" (Equipo B2B): reemplaza a la pantalla
+// "Invitar personas" — personal, familias con acceso e invitaciones
+// pendientes en un solo lugar. Usa los mismos manejadores de siempre
+// (revocarAcceso, reenviarInvitacion, cancelarInvitacion).
+function _htmlPersonasEquipo(staff){
+  const s=DB.getSesion();
+  const usuarios=DB.getUsuarios();
+  const cuidados=DB.getCuidadosAdmin();
+  const nomRes=id=>cuidados.find(c=>c.id===id)?.am?.nombre||'';
+  const familias=usuarios.filter(u=>u.adminId===s.userId&&u.id!==s.userId&&!u.revocado&&(u.rol==='familiar'||u.rol==='observador'));
+  const pend=DB.getInvs().filter(i=>i.adminId===s.userId&&i.estado==='pendiente');
+  let h='';
+  if(staff.length){
+    h+=`<div class="slbl">Personal</div>`+staff.map(u=>{
+      const n=DB.getAsignacionesPorStaff(u.id).length;
+      const badge=n===0?`<span class="badge b-err">Sin residentes</span>`:`<span class="badge b-ok">${n} residente${n===1?'':'s'}</span>`;
+      return `<div class="res-row" style="cursor:pointer" onclick="abrirSheetPerfilStaff('${u.id}')">
+        <div class="mc-ava" style="background:${ROL_COLOR[u.rol]||'var(--amber)'}">${escapeHtml(initials(u.nombre))}</div>
+        <div><div class="mc-name">${escapeHtml(u.nombre)}</div><div class="mc-meta">${escapeHtml(rolDeUsuario(u))} · ${badge}</div></div>
+      </div>`;
+    }).join('');
+  }
+  if(familias.length){
+    h+=`<div class="slbl">Familias con acceso</div>`+familias.map(u=>`<div class="res-row">
+        <div class="mc-ava" style="background:${ROL_COLOR[u.rol]||'var(--blue)'}">${escapeHtml(initials(u.nombre))}</div>
+        <div style="flex:1;min-width:0"><div class="mc-name">${escapeHtml(u.nombre)}</div><div class="mc-meta">${escapeHtml(ROL_LABEL[u.rol]||u.rol)}${nomRes(u.cuidadoId)?' · de '+escapeHtml(nomRes(u.cuidadoId)):''}</div></div>
+        <button class="b2b-mini red" onclick="revocarAcceso('${u.id}')">Revocar</button>
+      </div>`).join('');
+  }
+  if(pend.length){
+    h+=`<div class="slbl">Invitaciones pendientes</div>`+pend.map(inv=>{
+      const dias=Math.max(0,Math.ceil((new Date(inv.expira+'T12:00')-new Date())/(1000*60*60*24)));
+      const esFam=inv.rol==='familiar'||inv.rol==='observador';
+      return `<div class="res-row" style="background:var(--sage-lt)">
+        <div class="mc-ava" style="background:rgba(0,0,0,.08);color:var(--ink)">⏳</div>
+        <div style="flex:1;min-width:0"><div class="mc-name">${escapeHtml(inv.nombreInv)}</div>
+          <div class="mc-meta">${escapeHtml(rolDeUsuario(inv))}${esFam&&nomRes(inv.cuidadoId)?' · de '+escapeHtml(nomRes(inv.cuidadoId)):''} · Código <b style="font-family:monospace;letter-spacing:1px;color:var(--sage)">${escapeHtml(inv.codigo)}</b></div>
+          <div class="mc-meta" style="color:${dias<=1?'var(--red)':'var(--ink3)'}">${dias>0?`Expira en ${dias} día${dias===1?'':'s'}`:'⚠ Expirado'}</div></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><button class="b2b-mini" onclick="reenviarInvitacion('${inv.codigo}')">Reenviar</button><button class="b2b-mini red" onclick="cancelarInvitacion('${inv.id}')">Cancelar</button></div>
+      </div>`;
+    }).join('');
+  }
+  return h||`<div class="empty"><div class="empty-ico">🧑‍⚕️</div><div class="empty-title">Nadie todavía</div><div class="empty-txt">Invita a tu equipo o a las familias con el botón de arriba.</div></div>`;
+}
+
+function revocarDesdePerfilStaff(){
+  if(!_staffPerfilActual) return;
+  const uid=_staffPerfilActual;
+  cerrarSheet('ov-perfil-staff');
+  revocarAcceso(uid);
 }
 
 /* ── Vista de turnos (Equipo B2B): quién atiende a cada residente en cada
@@ -2413,6 +2527,16 @@ let _equipoVista='turnos';
 let _turnosSoloHuecos=false;
 function _setEquipoVista(v){ _equipoVista=v; renderEquipoB2B(); }
 function _toggleSoloHuecos(){ _turnosSoloHuecos=!_turnosSoloHuecos; renderEquipoB2B(); }
+function _turnosActivosOpc(){ const a=DB.getTurnosActivos(); return TURNOS_OPCIONES.filter(t=>a.includes(t.v)); }
+// Rellena un <select> de turno solo con los turnos activos, conservando la
+// selección previa si sigue siendo válida.
+function _poblarSelectTurno(id){
+  const sel=$(id); if(!sel) return;
+  const previo=sel.value;
+  const opc=_turnosActivosOpc();
+  sel.innerHTML=opc.map(t=>`<option value="${t.v}">${t.l}</option>`).join('');
+  if(opc.some(t=>t.v===previo)) sel.value=previo;
+}
 function _cubreTurno(u){ return u.rol==='cuidadora'||u.rol==='enfermera'; }
 
 // Turnos sin cobertura entre residentes que ya tienen alguien asignado
@@ -2425,7 +2549,7 @@ function _huecosCobertura(){
   DB.getCuidadosAdmin().forEach(cx=>{
     const propias=asigs.filter(a=>a.cuidadoId===cx.id);
     if(!propias.length) return;
-    TURNOS_OPCIONES.forEach(t=>{
+    _turnosActivosOpc().forEach(t=>{
       const cubierto=propias.some(a=>a.turno===t.v&&_cubreTurno(usuarios.find(u=>u.id===a.staffUid)||{}));
       if(!cubierto) huecos.push({cx,turno:t.v});
     });
@@ -2439,10 +2563,12 @@ function _htmlTurnosEquipo(staff){
     ||(a.am?.nombre||'').localeCompare(b.am?.nombre||''));
   if(!cuidados.length) return `<div class="empty"><div class="empty-ico">🏨</div><div class="empty-title">Sin residentes todavía</div><div class="empty-txt">Agrega residentes para organizar quién los atiende en cada turno.</div></div>`;
   const usuarios=DB.getUsuarios();
+  const turnosOpc=_turnosActivosOpc();
+  const nTurnos=turnosOpc.length;
   const asigs=DB.getAsignacionesPorCuidado;
   const filas=cuidados.map(cx=>{
     const propias=asigs.call(DB,cx.id);
-    const celdas=TURNOS_OPCIONES.map(t=>{
+    const celdas=turnosOpc.map(t=>{
       const personas=propias.filter(a=>a.turno===t.v).map(a=>usuarios.find(u=>u.id===a.staffUid)).filter(Boolean);
       return {t,personas,hueco:!personas.some(_cubreTurno)};
     });
@@ -2453,7 +2579,7 @@ function _htmlTurnosEquipo(staff){
   const visibles=_turnosSoloHuecos?conHuecos:filas;
 
   const resumen=totalHuecos===0
-    ? `<div class="b2b-ok">✓ Todos los residentes tienen cobertura en los tres turnos.</div>`
+    ? `<div class="b2b-ok">✓ Todos los residentes tienen cobertura ${nTurnos===1?'en el turno activo':`en los ${nTurnos} turnos activos`}.</div>`
     : `<div class="turnos-sum"><div><b>${totalHuecos} turno${totalHuecos===1?'':'s'} sin cobertura</b> en ${conHuecos.length} residente${conHuecos.length===1?'':'s'}.</div><button class="chip ${_turnosSoloHuecos?'on':''}" onclick="_toggleSoloHuecos()">Solo con huecos</button></div>`;
 
   const persona=(u)=>`<button class="turnos-person" onclick="abrirSheetPerfilStaff('${u.id}')"><span class="turnos-pava" style="background:${ROL_COLOR[u.rol]||'var(--amber)'}">${escapeHtml(initials(u.nombre))}</span><span><span class="turnos-pn">${escapeHtml((u.nombre||'').split(' ')[0])}</span><span class="turnos-pr">${escapeHtml(rolDeUsuario(u))}</span></span></button>`;
@@ -2470,10 +2596,40 @@ function _htmlTurnosEquipo(staff){
   const pie=ociosos.length
     ? `<div class="turnos-foot"><span>Sin residentes asignados:</span>${ociosos.map(u=>`<button class="b2b-tag amber" style="border:0;cursor:pointer" onclick="abrirSheetPerfilStaff('${u.id}')">${escapeHtml(u.nombre.split(' ')[0])} · ${escapeHtml(rolDeUsuario(u))}</button>`).join('')}</div>`
     : '';
-  return `<div class="turnos-wrap">${resumen}
-    <div class="turnos-grid"><div class="turnos-head"><div>Residente</div>${TURNOS_OPCIONES.map(t=>`<div>${t.l}</div>`).join('')}</div>${grid}</div>
+  const fuera=DB.getAsignaciones().filter(a=>a.activo!==false&&!turnosOpc.some(t=>t.v===a.turno)).length;
+  const avisoFuera=fuera?`<div class="turnos-sum">Hay ${fuera} ${fuera===1?'asignación':'asignaciones'} en turnos desactivados que no se muestran aquí. Vuelve a activar el turno para verlas.</div>`:'';
+  const top=`<div class="turnos-top"><span>Turnos activos: <b>${turnosOpc.map(t=>t.l).join(' · ')}</b></span><button class="b2b-mini" onclick="abrirConfigTurnos()">Configurar turnos</button></div>`;
+  return `<div class="turnos-wrap">${top}${resumen}${avisoFuera}
+    <div class="turnos-grid" style="--n:${nTurnos}"><div class="turnos-head"><div>Residente</div>${turnosOpc.map(t=>`<div>${t.l}</div>`).join('')}</div>${grid}</div>
     ${pie}
     <div class="turnos-hint">La cobertura cuenta cuidadoras y enfermeras. Los profesionales se muestran, pero no cubren un turno.</div></div>`;
+}
+
+// Activar/desactivar turnos de la institución. Solo habilita o deshabilita:
+// no se editan horarios. Siempre debe quedar al menos uno activo.
+function abrirConfigTurnos(){
+  if(DB.getSesion()?.rol!=='admin') return;
+  _renderConfigTurnos();
+  $('ov-turnos-config').classList.add('open');
+}
+function _renderConfigTurnos(){
+  const el=$('turnos-config-lista'); if(!el) return;
+  const activos=DB.getTurnosActivos();
+  const asigs=DB.getAsignaciones().filter(a=>a.activo!==false);
+  el.innerHTML=TURNOS_OPCIONES.map(t=>{
+    const on=activos.includes(t.v);
+    const n=asigs.filter(a=>a.turno===t.v).length;
+    return `<div class="turno-cfg-row"><div><div class="turno-cfg-n">${t.l}</div><div class="turno-cfg-s">${n?`${n} ${n===1?'asignación':'asignaciones'}`:'Sin asignaciones'}</div></div><button class="sw ${on?'on':''}" aria-label="${on?'Desactivar':'Activar'} ${escapeHtml(t.l)}" onclick="toggleTurnoActivo('${t.v}')"></button></div>`;
+  }).join('');
+}
+function toggleTurnoActivo(v){
+  if(DB.getSesion()?.rol!=='admin') return;
+  const act=DB.getTurnosActivos();
+  const nuevo=act.includes(v)?act.filter(x=>x!==v):[...act,v];
+  if(!nuevo.length){ toast('Debe haber al menos un turno activo','err'); return; }
+  DB.setTurnosActivos(TURNOS_OPCIONES.map(t=>t.v).filter(x=>nuevo.includes(x)));
+  _renderConfigTurnos();
+  _refrescarEquipoSiActivo();
 }
 
 function abrirAsignarEnTurno(cid,turno){
@@ -2494,6 +2650,7 @@ function abrirSheetPerfilStaff(staffUid){
   const u=DB.getUsuarios().find(x=>x.id===staffUid); if(!u) return;
   _staffPerfilActual=staffUid;
   _asigStaffSeleccion={};
+  _poblarSelectTurno('perfil-staff-turno-default');
   $('perfil-staff-titulo').textContent=u.nombre;
   $('perfil-staff-rol').textContent=`${ROL_EMOJI[u.rol]||''} ${rolDeUsuario(u)}`;
   $('perfil-staff-busqueda').value='';
@@ -2543,7 +2700,7 @@ function _renderBuscadorResidentesStaff(){
     return `<div class="staff-mini-row">
       <input type="checkbox" ${marcado?'checked':''} onchange="toggleSeleccionResidenteStaff('${c.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--sage)">
       <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--ink)">${escapeHtml(c.am?.nombre)||'Residente'}</div><div style="font-size:11px;color:var(--ink3)">${c.am?.edad||'—'} años${habitacion}</div></div>
-      ${marcado?`<select class="fin" style="width:112px;font-size:12px;padding:6px" onchange="_asigStaffSeleccion['${c.id}']=this.value">${TURNOS_OPCIONES.map(t=>`<option value="${t.v}" ${turnoActual===t.v?'selected':''}>${t.l}</option>`).join('')}</select>`:''}
+      ${marcado?`<select class="fin" style="width:112px;font-size:12px;padding:6px" onchange="_asigStaffSeleccion['${c.id}']=this.value">${_turnosActivosOpc().map(t=>`<option value="${t.v}" ${turnoActual===t.v?'selected':''}>${t.l}</option>`).join('')}</select>`:''}
     </div>`;
   }).join('');
 }
@@ -2601,6 +2758,28 @@ function renderPerfil(){
   if(amSec){
     amSec.style.display=s.rol==='admin'&&c?'block':'none';
     if(s.rol==='admin'&&c){
+      const b2b=DB.getTipoCuenta()==='b2b';
+      // Textos y campos que solo aplican a una de las dos modalidades — se
+      // fijan en cada render (ambos sentidos) para no arrastrar el estado de
+      // una cuenta a otra en la misma pestaña.
+      const txt=(id,v)=>{ const e=$(id); if(e) e.textContent=v; };
+      txt('pf-sec-activa',b2b?'Residente activo':'Persona cuidada activa');
+      txt('pf-sec-todas',b2b?'Todos los residentes':'Todas las personas cuidadas');
+      txt('pf-btn-agregar-txt',b2b?'Agregar residente':'Agregar otra persona cuidada');
+      const show=(id,v)=>{ const e=$(id); if(e) e.style.display=v?'':'none'; };
+      show('pf-relacion-wrap',!b2b);
+      show('pf-cuidadora-wrap',!b2b);
+      show('pf-habitacion-wrap',b2b);
+      if(b2b){
+        const sel=$('pf-habitacion');
+        const catalogo=DB.getHabitaciones();
+        const actual=c.am?.habitacion||'';
+        // Una habitación ya guardada que no está (o ya no está) en el catálogo
+        // se conserva como opción, para no borrarla al guardar sin querer.
+        const opciones=[...new Set([...catalogo,...(actual?[actual]:[])])];
+        sel.innerHTML=`<option value="">Sin habitación</option>`+opciones.map(h=>`<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+        sel.value=actual;
+      }
       $('pf-am-nombre').value=c.am?.nombre||'';
       $('pf-am-fnac').value=c.am?.fechaNacimiento||'';
       $('pf-am-rut').value=c.am?.rut||'';
@@ -2616,7 +2795,9 @@ function renderPerfil(){
         lista.innerHTML=todosLosCuidados.map(cx=>{
           const esActivo=cx.id===s.cuidadoId;
           const nombre=cx.am?.nombre||'Sin nombre';
-          const meta=`${calcularEdad(cx.am?.fechaNacimiento)||cx.am?.edad||'—'} años · ${escapeHtml(cx.am?.relacion)||'—'}`;
+          const meta=DB.getTipoCuenta()==='b2b'
+            ? `${calcularEdad(cx.am?.fechaNacimiento)||cx.am?.edad||'—'} años · ${escapeHtml(_habLabel(cx.am?.habitacion))||'Sin habitación'}`
+            : `${calcularEdad(cx.am?.fechaNacimiento)||cx.am?.edad||'—'} años · ${escapeHtml(cx.am?.relacion)||'—'}`;
           const rut=cx.am?.rut?` · ${escapeHtml(cx.am.rut)}`:'';
           return `
             <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);${esActivo?'background:var(--sage-lt)':''}">
@@ -2643,15 +2824,19 @@ function guardarPerfil(){
     if(!nombre){ toast('El nombre no puede estar vacío','err'); return; }
     const fnac=$('pf-am-fnac').value;
     const edad=calcularEdad(fnac)||c.am?.edad||0;
+    const b2b=DB.getTipoCuenta()==='b2b';
     c.am={...c.am,
       nombre,
       fechaNacimiento: fnac||c.am?.fechaNacimiento||'',
       edad,
       rut: $('pf-am-rut').value.trim()||c.am?.rut||'',
-      relacion: $('pf-am-relacion').value,
+      // En una institución "Relación" y "Cuidadora principal" no se editan
+      // acá (la cobertura sale de las asignaciones): se conservan tal cual.
+      relacion: b2b ? (c.am?.relacion||'') : $('pf-am-relacion').value,
       medico: $('pf-medico').value.trim(),
     };
-    c.cuidadora=$('pf-cuidadora').value.trim();
+    if(b2b) c.am.habitacion=$('pf-habitacion').value;
+    else c.cuidadora=$('pf-cuidadora').value.trim();
     const gpComp=DB.getCompartido(); gpComp.presupuesto=parseInt(_soloDigitos($('pf-presupuesto').value))||150000; DB.saveCompartido(gpComp);
     DB.saveCuidado(c);
     $('sb-sw-name').textContent=`${c.am.nombre} · ${edad} años`;
@@ -2704,6 +2889,15 @@ window._raizOnAuth = async (firebaseUser) => {
       // botones le da una salida real en vez de dejarlo varado en silencio.
       navTo('s-splash');
       toast('No pudimos cargar tu cuenta. Intenta iniciar sesión de nuevo.', 'err', 6000);
+      return;
+    }
+    if(uData.revocado || uData.rol==='revocado'){
+      // Acceso revocado por el admin: cerrar la sesión en vez de dejarlo
+      // entrar a una pantalla con un rol que ya no existe.
+      try{ await window._fb.signOut(window._fb.auth); }catch(e){}
+      DB.clearSesion();
+      navTo('s-splash');
+      toast('Tu acceso fue revocado por el administrador.', 'err', 6000);
       return;
     }
     const adminId = uData.adminId || firebaseUser.uid;
@@ -2767,6 +2961,9 @@ function irSegunAccionSinSesion(){
   else if(accion==='institucion'){
     _esRegistroInstitucion=true;
     const t=$('reg-titulo'); if(t) t.textContent='Crear cuenta de institución';
+    const rs=$('reg-sub'); if(rs) rs.textContent='Podrás invitar a tu equipo y a las familias después.';
+    const rl=$('reg-nombre-lbl'); if(rl) rl.textContent='Nombre de la institución';
+    const rn=$('reg-nombre'); if(rn) rn.placeholder='Ej: Residencia Los Aromos';
     navTo('s-registro-admin');
   }
   else navTo('s-splash');
@@ -3484,7 +3681,7 @@ function generarResumenIA(b, nombre){
   if(alertas.length) resumen+=' '+alertas.join(' ');
 
   // Nota del cuidador
-  if(b.nota) resumen+=` Nota de la cuidadora: "${b.nota}"`;
+  if(b.nota) resumen+=` ${DB.getTipoCuenta()==='b2b'?'Nota del turno':'Nota de la cuidadora'}: "${b.nota}"`;
 
   return resumen;
 }
@@ -7740,7 +7937,13 @@ function abrirSheetInvitacion(){
 
 function _toggleEspecialidadInv(){
   const w=$('inv-especialidad-wrap'); if(!w) return;
-  w.style.display=$('inv-rol-select').value==='profesional'?'block':'none';
+  const rol=$('inv-rol-select').value;
+  w.style.display=rol==='profesional'?'block':'none';
+  const lbl=$('inv-cuidado-lbl');
+  if(lbl){
+    if(DB.getTipoCuenta()!=='b2b') lbl.textContent='¿A qué persona cuidada da acceso?';
+    else lbl.textContent=(rol==='familiar'||rol==='observador')?'¿De qué residente es familiar?':'Residente inicial (después asignas el resto en Equipo)';
+  }
 }
 
 /* Crear la invitación y mostrar el código */
@@ -7787,6 +7990,7 @@ async function crearInvitacion(){
   };
 
   DB.setInvs([...invs, nuevaInv]);
+  _refrescarEquipoSiActivo();
   // Guardar código en Firestore para que sea validable desde cualquier dispositivo
   const ok = await _fsSet('codigos_inv/'+codigo, nuevaInv);
   _invCodigoActual = codigo;
@@ -7805,22 +8009,35 @@ async function crearInvitacion(){
   }
 }
 
+// Frase "para ___" del mensaje de invitación. D2C: coordinar el cuidado de la
+// persona activa. Institución: el personal se invita al equipo; las familias,
+// a acompañar a su residente (no al residente que esté activo en pantalla).
+function _motivoInvitacion(inv){
+  if(DB.getTipoCuenta()==='b2b'){
+    const esFam = inv?.rol==='familiar' || inv?.rol==='observador';
+    const res = esFam ? DB.getCuidadoById(inv.cuidadoId) : null;
+    return esFam && res?.am?.nombre
+      ? `acompañar el cuidado de ${res.am.nombre}`
+      : `trabajar con el equipo de ${DB.getSesion()?.nombre||'nuestra institución'}`;
+  }
+  const c = DB.getCuidado();
+  return `coordinar el cuidado de ${c?.am?.nombre || 'la persona cuidada'}`;
+}
+
 /* Copiar el código al portapapeles */
 function copiarCodigoInv(){
   if(!_invCodigoActual) return;
-  const c = DB.getCuidado();
-  const nombre = c?.am?.nombre || 'la persona cuidada';
-  const texto = `Te invito a usar Raíz para coordinar el cuidado de ${nombre}.\n\nCódigo de acceso: ${_invCodigoActual}\n\nDescarga la app en raizcare.cl e ingresa este código para unirte.`;
+  const motivo = _motivoInvitacion(DB.getInvs().find(i=>i.codigo===_invCodigoActual));
+  const texto = `Te invito a usar Raíz para ${motivo}.\n\nCódigo de acceso: ${_invCodigoActual}\n\nDescarga la app en raizcare.cl e ingresa este código para unirte.`;
   navigator.clipboard.writeText(texto).then(() => toast('✓ Código copiado','ok'));
 }
 
 /* Compartir por WhatsApp */
 function compartirCodigoInv(){
   if(!_invCodigoActual) return;
-  const c = DB.getCuidado();
-  const nombre = c?.am?.nombre || 'la persona cuidada';
+  const motivo = _motivoInvitacion(DB.getInvs().find(i=>i.codigo===_invCodigoActual));
   const texto = encodeURIComponent(
-    `Te invito a usar Raíz para coordinar el cuidado de ${nombre}.\n\nCódigo de acceso: *${_invCodigoActual}*\n\nDescarga la app en raizcare.cl e ingresa este código.`
+    `Te invito a usar Raíz para ${motivo}.\n\nCódigo de acceso: *${_invCodigoActual}*\n\nDescarga la app en raizcare.cl e ingresa este código.`
   );
   window.open(`https://wa.me/?text=${texto}`, '_blank');
 }
@@ -7947,6 +8164,7 @@ function revocarAcceso(uid){
       DB.getAsignacionesPorStaff(uid).forEach(a=>DB.eliminarAsignacion(a.id));
       toast(`✓ Acceso de ${u.nombre} revocado`, 'ok');
       renderInvitaciones();
+      _refrescarEquipoSiActivo();
     }
   );
 }
@@ -7973,6 +8191,7 @@ function cancelarInvitacion(invId){
         toast('⚠ Se canceló localmente, pero el código sigue activo para quien ya lo tenga — reintenta', 'err');
       }
       renderInvitaciones();
+      _refrescarEquipoSiActivo();
     }
   );
 }
@@ -7982,10 +8201,9 @@ function reenviarInvitacion(codigo){
   _invCodigoActual = codigo;
   const inv = DB.getInvs().find(i=>i.codigo===codigo);
   const nombre = inv?.nombreInv || 'ahí';
-  const c = DB.getCuidado();
-  const nombreAM = c?.am?.nombre || 'la persona cuidada';
+  const motivo = _motivoInvitacion(inv);
   const texto = encodeURIComponent(
-    `Hola ${nombre}, te invito a usar Raíz para coordinar el cuidado de ${nombreAM}.\n\nTu código de acceso es: *${codigo}*\n\nDescarga la app en raizcare.cl e ingresa este código.`
+    `Hola ${nombre}, te invito a usar Raíz para ${motivo}.\n\nTu código de acceso es: *${codigo}*\n\nDescarga la app en raizcare.cl e ingresa este código.`
   );
   window.open(`https://wa.me/?text=${texto}`, '_blank');
 }

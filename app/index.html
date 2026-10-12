@@ -118,10 +118,10 @@
   <div class="auth-hdr">
     <button class="back-btn" onclick="navTo('s-registro-tipo')">‹ Volver</button>
     <div class="auth-title" id="reg-titulo">Crear cuenta de administrador</div>
-    <div class="auth-sub">Podrás invitar a familiares y cuidadoras después.</div>
+    <div class="auth-sub" id="reg-sub">Podrás invitar a familiares y cuidadoras después.</div>
   </div>
   <div class="scroll" style="padding:16px 22px">
-    <div class="field"><div class="flbl">Tu nombre completo</div><input class="fin" id="reg-nombre" placeholder="Ej: Valentina Rodríguez" autocomplete="name"><div class="ferr" id="reg-nombre-err">Ingresa tu nombre</div></div>
+    <div class="field"><div class="flbl" id="reg-nombre-lbl">Tu nombre completo</div><input class="fin" id="reg-nombre" placeholder="Ej: Valentina Rodríguez" autocomplete="name"><div class="ferr" id="reg-nombre-err">Ingresa tu nombre</div></div>
     <div class="field"><div class="flbl">Email</div><input class="fin" id="reg-email" type="email" placeholder="tu@email.com" inputmode="email" autocomplete="email"><div class="ferr" id="reg-email-err">Email inválido</div></div>
     <div class="field"><div class="flbl">Contraseña</div><input class="fin" id="reg-pass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" oninput="validarPass()"><div class="ferr" id="reg-pass-err">Mínimo 6 caracteres</div></div>
     <div class="field"><div class="flbl">Confirmar contraseña</div><input class="fin" id="reg-pass2" type="password" placeholder="Repite la contraseña" autocomplete="new-password" oninput="validarPass2()"><div class="ferr" id="reg-pass2-err">Las contraseñas no coinciden</div></div>
@@ -187,16 +187,16 @@
   <div class="onb-hero">
     <div class="oh-logo">🌿</div>
     <div class="oh-title" id="onb-am-saludo">Hola 👋</div>
-    <div class="oh-sub">Cuéntanos sobre la persona que cuidas.</div>
+    <div class="oh-sub" data-b2b="Datos del residente.">Cuéntanos sobre la persona que cuidas.</div>
   </div>
   <div class="scroll" style="padding:0 20px">
     <div style="height:16px"></div>
-    <div class="prog"><div class="prog-track"><div class="prog-fill" style="width:33%"></div></div><div class="prog-meta"><span>Paso 1 de 3</span><span>Perfil de la persona cuidada</span></div></div>
+    <div class="prog"><div class="prog-track"><div class="prog-fill" style="width:33%"></div></div><div class="prog-meta"><span>Paso 1 de 3</span><span data-b2b="Perfil del residente">Perfil de la persona cuidada</span></div></div>
     <div style="height:16px"></div>
-    <div class="field"><div class="flbl">Nombre persona cuidada</div><input class="fin" id="onb-nombre" placeholder="Ej: Marta"></div>
+    <div class="field"><div class="flbl" data-b2b="Nombre del residente">Nombre persona cuidada</div><input class="fin" id="onb-nombre" placeholder="Ej: Marta"></div>
     <div class="g2">
       <div class="field"><div class="flbl">Fecha de nacimiento</div><input class="fin" id="onb-fnac" type="date" placeholder="DD/MM/AAAA"></div>
-      <div class="field"><div class="flbl">Relación</div><select class="fin" id="onb-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro familiar</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
+      <div class="field" data-solo-d2c><div class="flbl">Relación</div><select class="fin" id="onb-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro familiar</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
     </div>
     <div class="field"><div class="flbl">RUT</div><input class="fin" id="onb-rut" placeholder="Ej: 12.345.678-9" oninput="formatearRut(this)"><div class="fhint">Con puntos y guión</div></div>
     <!-- Solo instituciones B2B — crearNuevoCuidado() la muestra y la llena -->
@@ -205,7 +205,7 @@
       <select class="fin" id="onb-habitacion"></select>
       <div class="fhint">Configura las habitaciones de la institución desde Residentes → 🚪 Habitaciones.</div>
     </div>
-    <div class="field"><div class="flbl">Tu mayor preocupación</div>
+    <div class="field" data-solo-d2c><div class="flbl">Tu mayor preocupación</div>
       <div class="chips" style="margin-top:6px">
         <div class="chip on" onclick="this.classList.toggle('on')">Medicamentos</div>
         <div class="chip" onclick="this.classList.toggle('on')">Alimentación</div>
@@ -213,7 +213,7 @@
         <div class="chip" onclick="this.classList.toggle('on')">Gastos</div>
       </div>
     </div>
-    <div class="ia"><div class="ia-ico">✦</div><div>Puedes agregar más personas cuidadas después desde el panel principal. Cada una tiene su propia bitácora, medicamentos y gastos.</div></div>
+    <div class="ia"><div class="ia-ico">✦</div><div data-b2b="Puedes agregar más residentes desde Residentes. Cada uno tiene su propia bitácora, medicamentos y gastos.">Puedes agregar más personas cuidadas después desde el panel principal. Cada una tiene su propia bitácora, medicamentos y gastos.</div></div>
   </div>
   <div class="btns"><button class="btn btn-p" onclick="guardarOnbAM()">Continuar →</button></div>
 </div>
@@ -243,8 +243,8 @@
     </div>
     <div class="field"><div class="flbl">Médico de cabecera</div><input class="fin" id="onb-medico" placeholder="Ej: Dr. Hernán Muñoz"></div>
 
-    <!-- Cuidadoras: lista dinámica 1 a N -->
-    <div class="field">
+    <!-- Cuidadoras: lista dinámica 1 a N (solo D2C: en una institución el personal sale de las asignaciones) -->
+    <div class="field" data-solo-d2c>
       <div class="flbl">Cuidadoras del equipo</div>
       <div id="onb-cuidadoras-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
         <!-- Se genera dinámicamente -->
@@ -272,15 +272,16 @@
     <div class="act-stats">
       <div><div class="as-n" id="act-meds">0</div><div class="as-l">Medicamentos</div></div>
       <div><div class="as-n" id="act-cond">0</div><div class="as-l">Condiciones</div></div>
-      <div><div class="as-n" id="act-cuid">1</div><div class="as-l">Cuidadora</div></div>
+      <div><div class="as-n" id="act-cuid">1</div><div class="as-l" data-b2b="Habitación">Cuidadora</div></div>
     </div>
   </div>
   <div class="btns" style="background:var(--white)">
     <button class="btn btn-p" onclick="irAlHome()">Ir al panel →</button>
-    <button class="btn btn-s" onclick="crearNuevoCuidado()">＋ Agregar otra persona cuidada</button>
+    <button class="btn btn-s" onclick="crearNuevoCuidado()" data-b2b="＋ Agregar otro residente">＋ Agregar otra persona cuidada</button>
   </div>
   <div style="padding:0 18px 20px">
-    <div class="ia"><div class="ia-ico">✦</div><div><strong>Próximos pasos:</strong> Agrega los medicamentos en el módulo de Salud, registra la primera bitácora del día e invita a familiares desde el menú.</div></div>
+    <div class="ia" data-solo-d2c><div class="ia-ico">✦</div><div><strong>Próximos pasos:</strong> Agrega los medicamentos en el módulo de Salud, registra la primera bitácora del día e invita a familiares desde el menú.</div></div>
+    <div class="ia" data-solo-b2b><div class="ia-ico">✦</div><div><strong>Próximos pasos:</strong> Asigna personal al residente, agrega sus medicamentos en Salud, registra la primera bitácora e invita a su familia desde Residentes.</div></div>
   </div>
 </div>
 
@@ -378,16 +379,17 @@
   <div class="scroll">
     <div class="pf-hero" id="perfil-hero"></div>
     <div id="perfil-am-section" style="display:none">
-      <div class="slbl">Persona cuidada activa</div>
+      <div class="slbl" id="pf-sec-activa">Persona cuidada activa</div>
       <div style="padding:0 18px 14px;background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
         <div style="display:flex;flex-direction:column;gap:12px;padding-top:14px">
           <div class="field" style="margin:0"><div class="flbl">Nombre</div><input class="fin" id="pf-am-nombre" placeholder="Nombre de la persona cuidada"></div>
           <div class="g2">
             <div class="field" style="margin:0"><div class="flbl">Fecha de nacimiento</div><input class="fin" id="pf-am-fnac" type="date"></div>
-            <div class="field" style="margin:0"><div class="flbl">Relación</div><select class="fin" id="pf-am-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
+            <div class="field" style="margin:0" id="pf-relacion-wrap"><div class="flbl">Relación</div><select class="fin" id="pf-am-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
           </div>
           <div class="field" style="margin:0"><div class="flbl">RUT</div><input class="fin" id="pf-am-rut" placeholder="Ej: 12.345.678-9" oninput="formatearRut(this)"><div class="fhint">Con puntos y guión</div></div>
-          <div class="field" style="margin:0"><div class="flbl">Cuidadora principal</div><input class="fin" id="pf-cuidadora" placeholder="Ej: Carmen Fuentes"></div>
+          <div class="field" style="margin:0" id="pf-cuidadora-wrap"><div class="flbl">Cuidadora principal</div><input class="fin" id="pf-cuidadora" placeholder="Ej: Carmen Fuentes"></div>
+          <div class="field" style="margin:0;display:none" id="pf-habitacion-wrap"><div class="flbl">Habitación</div><select class="fin" id="pf-habitacion"></select><div class="fhint">Se elige del catálogo (Residentes → 🚪 Habitaciones).</div></div>
           <div class="field" style="margin:0"><div class="flbl">Médico de cabecera</div><input class="fin" id="pf-medico" placeholder="Ej: Dr. Hernán Muñoz"></div>
           <div class="field" style="margin:0;margin-bottom:4px">
             <div class="flbl">Presupuesto mensual</div>
@@ -397,13 +399,13 @@
       </div>
 
       <!-- Lista de todas las personas cuidadas -->
-      <div class="slbl">Todas las personas cuidadas</div>
+      <div class="slbl" id="pf-sec-todas">Todas las personas cuidadas</div>
       <div id="pf-cuidados-lista" style="background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
         <!-- Se rellena dinámicamente -->
       </div>
       <div style="padding:12px 18px">
         <button onclick="crearNuevoCuidado()" style="display:flex;align-items:center;gap:8px;background:var(--sage-lt);border:1.5px dashed var(--sage-md);border-radius:var(--rs);padding:12px 16px;font-size:13px;font-weight:600;color:var(--sage);cursor:pointer;font-family:inherit;width:100%">
-          <span style="font-size:18px">＋</span> Agregar otra persona cuidada
+          <span style="font-size:18px">＋</span> <span id="pf-btn-agregar-txt">Agregar otra persona cuidada</span>
         </button>
       </div>
 
@@ -1160,11 +1162,23 @@
     <div class="btns">
       <button class="btn btn-p" onclick="confirmarAsignacionesStaffPerfil()">Confirmar asignaciones</button>
       <button class="btn btn-s" onclick="cerrarSheet('ov-perfil-staff')">Cerrar</button>
+      <button class="btn btn-danger" onclick="revocarDesdePerfilStaff()">Revocar acceso</button>
     </div>
   </div>
 </div>
 
 <!-- Sheet: asignar personal a un residente (solo B2B) -->
+<!-- Sheet: activar/desactivar turnos de la institución (B2B) -->
+<div class="overlay" id="ov-turnos-config" onclick="if(event.target===this)cerrarSheet('ov-turnos-config')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">Turnos de la institución</div>
+    <div style="padding:0 18px 6px;font-size:12px;color:var(--ink3)">Activa solo los turnos en los que opera tu residencia. Un turno desactivado no se ofrece al asignar, no aparece en la grilla ni cuenta como hueco de cobertura.</div>
+    <div id="turnos-config-lista"></div>
+    <div class="btns"><button class="btn btn-p" onclick="cerrarSheet('ov-turnos-config')">Listo</button></div>
+  </div>
+</div>
+
 <!-- Sheet: acciones rápidas por residente (Inicio B2B) -->
 <div class="overlay" id="ov-res-acciones" onclick="if(event.target===this)cerrarSheet('ov-res-acciones')">
   <div class="sheet">
@@ -1321,7 +1335,7 @@
     <div id="switcher-lista"></div>
     <div id="switcher-agregar-wrap" style="padding:12px 18px;border-top:1px solid var(--line)">
       <button onclick="crearNuevoCuidado();cerrarSheet('ov-switcher')" style="display:flex;align-items:center;gap:8px;background:var(--sage-lt);border:1.5px dashed var(--sage-md);border-radius:var(--rs);padding:11px 14px;font-size:13px;font-weight:600;color:var(--sage);cursor:pointer;font-family:inherit;width:100%">
-        <span style="font-size:18px">＋</span> Agregar otra persona cuidada
+        <span style="font-size:18px">＋</span> <span id="switcher-agregar-txt">Agregar otra persona cuidada</span>
       </button>
     </div>
     <div style="padding:0 18px 14px"><button class="btn btn-s" onclick="cerrarSheet('ov-switcher')">Cerrar</button></div>
@@ -2079,7 +2093,7 @@
       </div>
       <!-- Selector de Cuidado si hay más de uno -->
       <div class="field" style="margin:0" id="inv-selector-cuidado">
-        <div class="flbl">¿A qué persona cuidada da acceso?</div>
+        <div class="flbl" id="inv-cuidado-lbl">¿A qué persona cuidada da acceso?</div>
         <select class="fin" id="inv-cuidado-select"></select>
       </div>
       <!-- Preview del código generado -->
@@ -2096,7 +2110,7 @@
       <button onclick="crearInvitacion()" style="flex:2;padding:13px;background:var(--sage);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Generar código</button>
     </div>
     <div style="padding:0 18px 16px;display:none" id="inv-btns-listo">
-      <button onclick="cerrarSheet('ov-invitacion');renderInvitaciones();" style="width:100%;padding:13px;background:var(--sage);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✓ Listo</button>
+      <button onclick="cerrarSheet('ov-invitacion');renderInvitaciones();_refrescarEquipoSiActivo();" style="width:100%;padding:13px;background:var(--sage);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✓ Listo</button>
     </div>
   </div>
 </div>
