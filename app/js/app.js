@@ -2362,9 +2362,12 @@ function abrirSheetHabitaciones(){
 async function guardarHabitaciones(){
   const ta=$('habitaciones-textarea'); if(!ta) return;
   const lista=[...new Set(ta.value.split('\n').map(x=>x.trim()).filter(Boolean))];
+  // El gris del recuadro es solo un ejemplo: si no escribió nada, no hay
+  // nada que guardar (antes igual decía "actualizadas" y dejaba el catálogo vacío).
+  if(!lista.length && !DB.getHabitaciones().length){ toast('Escribe al menos una habitación (una por línea)','err'); return; }
   DB.setHabitaciones(lista);
   cerrarSheet('ov-habitaciones');
-  toast('✓ Habitaciones actualizadas','ok');
+  toast(lista.length?`✓ ${lista.length} ${lista.length===1?'habitación guardada':'habitaciones guardadas'}`:'Catálogo de habitaciones vaciado','ok');
   renderResidentes();
 }
 
