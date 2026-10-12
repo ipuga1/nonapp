@@ -292,7 +292,7 @@
   </div>
   <div class="desk-hdr">
     <div><div class="dh-title" id="home-admin-saludo-d">Hola 👋</div><div class="dh-sub" id="home-admin-fecha-d"></div></div>
-    <button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="navTo('s-bita-new')">+ Nueva bitácora</button>
+    <button id="home-admin-cta" style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="navTo('s-bita-new')">+ Nueva bitácora</button>
   </div>
   <div class="scroll" id="home-admin-body"></div>
   <div class="tabbar">
@@ -352,7 +352,7 @@
   </div>
   <div class="desk-hdr">
     <div><div class="dh-title" id="home-cui-saludo-d">Hola 👋</div><div class="dh-sub" id="home-cui-fecha-d"></div></div>
-    <button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="navTo('s-bita-new')">Registrar turno</button>
+    <button id="home-cui-cta" style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="navTo('s-bita-new')">Registrar turno</button>
   </div>
   <div class="scroll" id="home-cui-body"></div>
   <div class="tabbar">
@@ -1165,6 +1165,17 @@
 </div>
 
 <!-- Sheet: asignar personal a un residente (solo B2B) -->
+<!-- Sheet: acciones rápidas por residente (Inicio B2B) -->
+<div class="overlay" id="ov-res-acciones" onclick="if(event.target===this)cerrarSheet('ov-res-acciones')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="res-acc-titulo">Residente</div>
+    <div id="res-acc-sub" style="padding:0 18px 4px;font-size:12px;color:var(--ink3)"></div>
+    <div id="res-acc-lista" class="b2b-acc-grid"></div>
+    <div class="btns"><button class="btn btn-s" onclick="cerrarSheet('ov-res-acciones')">Cerrar</button></div>
+  </div>
+</div>
+
 <div class="overlay" id="ov-asignar-staff" onclick="if(event.target===this)cerrarSheet('ov-asignar-staff')">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -1173,7 +1184,7 @@
       <div class="field">
         <div class="flbl">Persona del staff</div>
         <select class="fin" id="asig-staff-select"></select>
-        <div class="fhint">Solo aparecen cuidadoras/enfermeras ya invitadas a esta institución.</div>
+        <div class="fhint">Solo aparece el personal (cuidadoras, enfermeras y profesionales) ya invitado a esta institución.</div>
       </div>
       <div class="field">
         <div class="flbl">Turno <span style="color:var(--ink3);font-weight:400">(informativo, no restringe el acceso)</span></div>
@@ -2049,12 +2060,22 @@
       </div>
       <div class="field" style="margin:0">
         <div class="flbl">Rol de acceso</div>
-        <select class="fin" id="inv-rol-select">
+        <select class="fin" id="inv-rol-select" onchange="_toggleEspecialidadInv()">
           <option value="familiar">👨‍👩‍👧 Familiar activo — ve todo, puede registrar</option>
           <option value="cuidadora">👩‍⚕️ Cuidadora — registra turnos y meds</option>
           <option value="enfermera">🩺 Enfermera — acceso clínico ampliado</option>
+          <option value="profesional" hidden disabled>🧑‍⚕️ Profesional — kinesiólogo, terapeuta, médico…</option>
           <option value="observador">👁 Observador — solo lectura</option>
         </select>
+      </div>
+      <div class="field" style="margin:0;display:none" id="inv-especialidad-wrap">
+        <div class="flbl">Especialidad</div>
+        <input class="fin" id="inv-especialidad-input" list="lista-especialidades" placeholder="Ej: Kinesiólogo/a" maxlength="40" autocomplete="off">
+        <datalist id="lista-especialidades">
+          <option value="Kinesiólogo/a"><option value="Terapeuta ocupacional"><option value="Fonoaudiólogo/a">
+          <option value="Médico/a"><option value="Nutricionista"><option value="Psicólogo/a"><option value="Podólogo/a">
+        </datalist>
+        <div class="fhint">Se muestra junto a su nombre. Atiende solo a los residentes que le asignes.</div>
       </div>
       <!-- Selector de Cuidado si hay más de uno -->
       <div class="field" style="margin:0" id="inv-selector-cuidado">
