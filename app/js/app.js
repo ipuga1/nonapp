@@ -2320,12 +2320,16 @@ function renderResidentes(){
       : n===1
       ? `<span class="badge b-warn">1 asignado</span>`
       : `<span class="badge b-ok">${n} asignados</span>`;
-    const habitacion=c.am?.habitacion?` · Hab. ${escapeHtml(c.am.habitacion)}`:'';
+    // Sin habitación: etiqueta que lleva directo a editarla (antes no había
+    // ningún camino desde esta lista, y "Asignar" es para personal).
+    const habitacion=c.am?.habitacion
+      ? ` · ${escapeHtml(_habLabel(c.am.habitacion))}`
+      : ` · <span class="badge b-warn" style="cursor:pointer" onclick="event.stopPropagation();abrirModuloResidente('${c.id}','s-perfil')">Sin habitación · asignar</span>`;
     return `<div class="res-row">
-      <div class="mc-ava" style="background:var(--sage)">${escapeHtml(initials(c.am?.nombre||'?'))}</div>
-      <div><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años${habitacion} · ${badge}</div></div>
+      <div class="mc-ava" style="background:var(--sage);cursor:pointer" onclick="abrirAccionesResidente('${c.id}')">${escapeHtml(initials(c.am?.nombre||'?'))}</div>
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="abrirAccionesResidente('${c.id}')"><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años${habitacion} · ${badge}</div></div>
       <button class="res-accion" style="background:none;color:var(--sage);border:none;font-size:12px;font-weight:700;cursor:pointer;padding:6px 8px" onclick="invitarFamiliarResidente('${c.id}')" title="Invitar familiar de este residente">👨‍👩‍👧</button>
-      <button class="res-accion" onclick="abrirSheetAsignarStaff('${c.id}')">Asignar</button>
+      <button class="res-accion" onclick="abrirSheetAsignarStaff('${c.id}')">Asignar personal</button>
     </div>`;
   }).join('');
 }
