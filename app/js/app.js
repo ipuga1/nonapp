@@ -3422,6 +3422,7 @@ function initFormulario(){
   if($('v-sato'))    $('v-sato').value=f.sato;
   if($('v-fc'))      $('v-fc').value=f.fc;
   if($('nota-libre')) $('nota-libre').value=f.nota;
+  _initDictado();
   ['v-presion','v-temp','v-sato','v-fc'].forEach(id=>$(id)?.classList.remove('warn','ok'));
   ['presion-msg','temp-msg','sato-msg','fc-msg'].forEach(id=>{ const el=$(id); if(el) el.style.display='none'; });
 
@@ -3541,6 +3542,7 @@ function validarFc(inp){
 
 /* ════ GUARDAR BITÁCORA ════ */
 function guardarBitacora(){
+  _initDictado();
   const sesion=DB.getSesion(); if(!sesion) return;
   const cuidado=DB.getCuidado(); if(!cuidado) return;
   const editId=ST.bitacora.bitaEditandoId;
@@ -3616,6 +3618,71 @@ function guardarBitacora(){
       mostrarResumenIA(registro);
     }
   }, 600);
+}
+
+/* ── Dictado por voz para la nota de bitácora ──────────────────────
+   Usa el reconocimiento de voz nativo del navegador (Web Speech API):
+   no sube audio a ningún lado, solo queda el texto transcrito en
+   nota-libre. Donde el navegador no lo soporta (Safari/iOS es
+   irregular) el botón de micrófono no aparece y se sigue escribiendo
+   a mano — es una mejora progresiva, no un reemplazo del campo. */
+let _recog=null, _dictando=false, _dictadoBase='';
+
+function _speechRecognitionCtor(){
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+// Detiene cualquier dictado activo y muestra/oculta el botón según soporte
+// del navegador. Se llama al entrar a la pantalla, al guardar y al cancelar.
+function _initDictado(){
+  if(_recog){ try{ _recog.onend=null; _recog.onerror=null; _recog.abort(); }catch(e){} _recog=null; }
+  _dictando=false;
+  const btn=$('btn-dictar');
+  if(btn){ btn.style.display=_speechRecognitionCtor()?'flex':'none'; btn.classList.remove('on'); }
+  if($('dictado-aviso')) $('dictado-aviso').style.display='none';
+}
+
+function _actualizarUiDictado(activo){
+  _dictando=activo;
+  if($('btn-dictar')) $('btn-dictar').classList.toggle('on',activo);
+  if($('dictado-aviso')) $('dictado-aviso').style.display=activo?'flex':'none';
+}
+
+function toggleDictado(){
+  if(_dictando){ try{ _recog?.stop(); }catch(e){} return; }
+
+  const Ctor=_speechRecognitionCtor();
+  if(!Ctor){ toast('Tu navegador no permite dictar por voz','err'); return; }
+  const area=$('nota-libre');
+  if(!area) return;
+
+  _dictadoBase=area.value.trim() ? area.value.trim()+' ' : '';
+  _recog=new Ctor();
+  _recog.lang='es-CL';
+  _recog.continuous=true;
+  _recog.interimResults=true;
+
+  _recog.onresult=(e)=>{
+    let final='', interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const txt=e.results[i][0].transcript;
+      if(e.results[i].isFinal) final+=txt+' '; else interim+=txt;
+    }
+    if(final) _dictadoBase+=final;
+    area.value=_dictadoBase+interim;
+  };
+  _recog.onerror=(e)=>{
+    const msgs={
+      'not-allowed':'Activa el permiso de micrófono en tu navegador para dictar',
+      'no-speech':'No se detectó voz. Toca el micrófono para intentar de nuevo',
+      'audio-capture':'No se encontró un micrófono disponible',
+    };
+    toast(msgs[e.error]||'No se pudo dictar. Intenta de nuevo.','err');
+  };
+  _recog.onend=()=>_actualizarUiDictado(false);
+
+  try{ _recog.start(); _actualizarUiDictado(true); }
+  catch(e){ toast('No se pudo iniciar el dictado','err'); }
 }
 
 /* ── GENERADOR DE RESUMEN IA ── */
