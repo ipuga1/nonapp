@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2E5C52">
 <title>Raíz · Cuidado familiar</title>
-<link rel="stylesheet" href="css/styles.css?v=cd49b6e3">
+<link rel="stylesheet" href="css/styles.css?v=6b6cd4ba">
 <script type="module" src="js/firebase-config.js?v=ad755e0e"></script>
 </head>
 <body>
@@ -370,45 +370,18 @@
 <div class="screen" id="s-perfil">
   <div class="mob-hdr">
     <div><div class="mob-hdr-title">Perfil y ajustes</div></div>
-    <div><button style="font-size:13px;color:var(--sage);font-weight:700;background:none;border:none;cursor:pointer;font-family:inherit" onclick="guardarPerfil()">Guardar</button></div>
   </div>
   <div class="desk-hdr">
     <div><div class="dh-title">Perfil y ajustes</div></div>
-    <button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="guardarPerfil()">Guardar cambios</button>
   </div>
   <div class="scroll">
     <div class="pf-hero" id="perfil-hero"></div>
-    <div id="perfil-am-section" style="display:none">
-      <div class="slbl" id="pf-sec-activa">Persona cuidada activa</div>
-      <div style="padding:0 18px 14px;background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
-        <div style="display:flex;flex-direction:column;gap:12px;padding-top:14px">
-          <div class="field" style="margin:0"><div class="flbl">Nombre</div><input class="fin" id="pf-am-nombre" placeholder="Nombre de la persona cuidada"></div>
-          <div class="g2">
-            <div class="field" style="margin:0"><div class="flbl">Fecha de nacimiento</div><input class="fin" id="pf-am-fnac" type="date"></div>
-            <div class="field" style="margin:0" id="pf-relacion-wrap"><div class="flbl">Relación</div><select class="fin" id="pf-am-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
-          </div>
-          <div class="field" style="margin:0"><div class="flbl">RUT</div><input class="fin" id="pf-am-rut" placeholder="Ej: 12.345.678-9" oninput="formatearRut(this)"><div class="fhint">Con puntos y guión</div></div>
-          <div class="field" style="margin:0" id="pf-cuidadora-wrap"><div class="flbl">Cuidadora principal</div><input class="fin" id="pf-cuidadora" placeholder="Ej: Carmen Fuentes"></div>
-          <div class="field" style="margin:0;display:none" id="pf-habitacion-wrap"><div class="flbl">Habitación</div><select class="fin" id="pf-habitacion"></select><div class="fhint">Se elige del catálogo (Residentes → 🚪 Habitaciones).</div></div>
-          <div class="field" style="margin:0"><div class="flbl">Médico de cabecera</div><input class="fin" id="pf-medico" placeholder="Ej: Dr. Hernán Muñoz"></div>
-          <div class="field" style="margin:0;margin-bottom:4px">
-            <div class="flbl">Presupuesto mensual</div>
-            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:700;color:var(--ink3)">$</span><input class="fin" id="pf-presupuesto" type="text" inputmode="numeric" placeholder="150.000" oninput="formatearMontoInput(this)" style="flex:1"></div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Lista de todas las personas cuidadas -->
-      <div class="slbl" id="pf-sec-todas">Todas las personas cuidadas</div>
-      <div id="pf-cuidados-lista" style="background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
-        <!-- Se rellena dinámicamente -->
-      </div>
-      <div style="padding:12px 18px">
-        <button onclick="crearNuevoCuidado()" style="display:flex;align-items:center;gap:8px;background:var(--sage-lt);border:1.5px dashed var(--sage-md);border-radius:var(--rs);padding:12px 16px;font-size:13px;font-weight:600;color:var(--sage);cursor:pointer;font-family:inherit;width:100%">
-          <span style="font-size:18px">＋</span> <span id="pf-btn-agregar-txt">Agregar otra persona cuidada</span>
-        </button>
-      </div>
-
+    <!-- Configuración de la cuenta — nada específico de una persona cuidada.
+         Para editar los datos de un residente/persona, se hace desde el
+         selector "Cuidado activo" (D2C) o desde Residentes (B2B), que abren
+         s-residente-editar. Ver renderPerfil()/renderResidenteEditar(). -->
+    <div id="perfil-config-section" style="display:none">
       <div class="slbl">Acceso y permisos</div>
       <div onclick="navTo('s-permisos')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--white);cursor:pointer">
         <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">🔐</div>
@@ -417,6 +390,37 @@
           <div style="font-size:12px;color:var(--ink3);margin-top:1px">Qué puede ver y hacer cada perfil</div>
         </div>
         <div style="color:var(--ink3);font-size:16px">›</div>
+      </div>
+
+      <!-- Módulos de uso ocasional, embebidos acá para no saturar el menú
+           principal. Equipo/Invitar personas solo aplica en D2C — en B2B
+           "Equipo" es la grilla de turnos, de uso diario, y se queda arriba. -->
+      <div class="slbl">Más módulos</div>
+      <div style="background:var(--white);border-top:1px solid var(--line)">
+        <div id="pf-row-equipo" onclick="navTo('s-equipo-hub')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer">
+          <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">👥</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600;color:var(--ink)">Equipo</div>
+            <div style="font-size:12px;color:var(--ink3);margin-top:1px">Familiares y cuidadoras con acceso, invitaciones</div>
+          </div>
+          <div style="color:var(--ink3);font-size:16px">›</div>
+        </div>
+        <div onclick="navTo('s-hogar-hub')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer">
+          <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">🏠</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600;color:var(--ink)">Hogar e insumos</div>
+            <div style="font-size:12px;color:var(--ink3);margin-top:1px">Inventario y proveedores</div>
+          </div>
+          <div style="color:var(--ink3);font-size:16px">›</div>
+        </div>
+        <div onclick="navTo('s-informe-hub')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer">
+          <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">📊</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600;color:var(--ink)">Informe mensual</div>
+            <div style="font-size:12px;color:var(--ink3);margin-top:1px">Resumen y presupuesto del mes</div>
+          </div>
+          <div style="color:var(--ink3);font-size:16px">›</div>
+        </div>
       </div>
     </div>
     <div class="slbl">Cuenta</div>
@@ -431,6 +435,40 @@
     <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
     <div class="tab on"><div class="tab-ico">⚙️</div>Perfil</div>
     <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+  </div>
+</div>
+
+<!-- Datos de una persona cuidada / residente puntual — se llega acá desde el
+     selector "Cuidado activo" (D2C) o desde Residentes (B2B), nunca desde la
+     navegación principal. Ver renderResidenteEditar()/guardarDatosResidente(). -->
+<div class="screen" id="s-residente-editar">
+  <div class="mob-hdr">
+    <button class="back-btn" id="rd-back-mob">‹ Volver</button>
+    <div><div class="mob-hdr-title" id="rd-titulo" style="margin-top:4px">Editar datos</div></div>
+    <div><button style="font-size:13px;color:var(--sage);font-weight:700;background:none;border:none;cursor:pointer;font-family:inherit" onclick="guardarDatosResidente()">Guardar</button></div>
+  </div>
+  <div class="desk-hdr">
+    <div><div class="dh-title" id="rd-titulo-d">Editar datos</div></div>
+    <button style="background:var(--sage);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="guardarDatosResidente()">Guardar cambios</button>
+  </div>
+  <div class="scroll">
+    <div style="padding:14px 18px 14px;background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="field" style="margin:0"><div class="flbl">Nombre</div><input class="fin" id="pf-am-nombre" placeholder="Nombre de la persona cuidada"></div>
+        <div class="g2">
+          <div class="field" style="margin:0"><div class="flbl">Fecha de nacimiento</div><input class="fin" id="pf-am-fnac" type="date"></div>
+          <div class="field" style="margin:0" id="pf-relacion-wrap"><div class="flbl">Relación</div><select class="fin" id="pf-am-relacion"><option>Mamá</option><option>Papá</option><option>Abuela</option><option>Abuelo</option><option>Otro</option><option>Administrador/a del cuidado (no familiar)</option></select></div>
+        </div>
+        <div class="field" style="margin:0"><div class="flbl">RUT</div><input class="fin" id="pf-am-rut" placeholder="Ej: 12.345.678-9" oninput="formatearRut(this)"><div class="fhint">Con puntos y guión</div></div>
+        <div class="field" style="margin:0" id="pf-cuidadora-wrap"><div class="flbl">Cuidadora principal</div><input class="fin" id="pf-cuidadora" placeholder="Ej: Carmen Fuentes"></div>
+        <div class="field" style="margin:0;display:none" id="pf-habitacion-wrap"><div class="flbl">Habitación</div><select class="fin" id="pf-habitacion"></select><div class="fhint">Se elige del catálogo (Residentes → 🚪 Habitaciones).</div></div>
+        <div class="field" style="margin:0"><div class="flbl">Médico de cabecera</div><input class="fin" id="pf-medico" placeholder="Ej: Dr. Hernán Muñoz"></div>
+        <div class="field" style="margin:0;margin-bottom:4px">
+          <div class="flbl">Presupuesto mensual</div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:700;color:var(--ink3)">$</span><input class="fin" id="pf-presupuesto" type="text" inputmode="numeric" placeholder="150.000" oninput="formatearMontoInput(this)" style="flex:1"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2159,6 +2197,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/app.js?v=00ea7ff9"></script>
+<script src="js/app.js?v=bbc7df9d"></script>
 </body>
 </html>

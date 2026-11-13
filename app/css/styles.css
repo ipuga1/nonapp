@@ -168,6 +168,10 @@ input,select,textarea{font-size:16px!important}
 /* ════ HOME ESPECÍFICO ════ */
 .hero-card{background:linear-gradient(135deg,var(--sage-dk),var(--sage));padding:18px;margin:14px 16px;border-radius:var(--r);cursor:pointer;user-select:none}
 @media(min-width:768px){.hero-card{margin:20px 24px}}
+/* Mismo fondo que .hero-card — bug preexistente: nunca tuvo regla propia,
+   así que el texto blanco de adentro quedaba invisible sobre blanco. */
+.pf-hero{background:linear-gradient(135deg,var(--sage-dk),var(--sage));padding:18px;margin:14px 16px;border-radius:var(--r)}
+@media(min-width:768px){.pf-hero{margin:20px 24px}}
 .hc-name{font-size:20px;font-weight:800;color:#fff;margin-bottom:2px;letter-spacing:-.3px}
 .hc-meta{font-size:13px;color:rgba(255,255,255,.72);margin-bottom:12px}
 .hc-pills{display:flex;gap:8px;flex-wrap:wrap}
