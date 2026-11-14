@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2E5C52">
 <title>Raíz · Cuidado familiar</title>
-<link rel="stylesheet" href="css/styles.css?v=192d69c5">
+<link rel="stylesheet" href="css/styles.css?v=8ebcd955">
 <script type="module" src="js/firebase-config.js?v=ad755e0e"></script>
 </head>
 <body>
@@ -79,8 +79,8 @@
           <span style="font-size:12.5px;color:var(--sage);font-weight:600;cursor:pointer" onclick="abrirRecuperarPass()" tabindex="0" role="button" onkeydown="if(event.key==='Enter')abrirRecuperarPass()">¿Olvidaste tu contraseña?</span>
         </div>
       </div>
-      <div id="login-general-err" style="display:none;background:var(--red-lt);border:1px solid var(--red);border-radius:var(--rs);padding:12px 14px;font-size:13px;color:var(--red);font-weight:500;line-height:1.4;text-align:center"></div>
-      <div id="login-ok" style="display:none;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--rs);padding:12px 14px;font-size:13px;color:var(--sage);font-weight:600;text-align:center">✓ Sesión iniciada correctamente</div>
+      <div id="login-general-err" aria-live="polite" style="display:none;background:var(--red-lt);border:1px solid var(--red);border-radius:var(--rs);padding:12px 14px;font-size:13px;color:var(--red);font-weight:500;line-height:1.4;text-align:center"></div>
+      <div id="login-ok" aria-live="polite" style="display:none;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--rs);padding:12px 14px;font-size:13px;color:var(--sage);font-weight:600;text-align:center">✓ Sesión iniciada correctamente</div>
     </div>
     <div style="padding:0 22px 8px;display:flex;flex-direction:column;gap:10px;">
       <button class="btn btn-p" onclick="hacerLogin()"><div class="spinner" id="login-spinner"></div><span id="login-btn-txt">Iniciar sesión</span></button>
@@ -687,7 +687,7 @@
           </svg>
         </button>
       </div>
-      <div class="dictado-aviso" id="dictado-aviso" style="display:none">● Escuchando… toca el micrófono para detener</div>
+      <div class="dictado-aviso" id="dictado-aviso" aria-live="polite" style="display:none">● Escuchando… toca el micrófono para detener</div>
       <div class="ia" style="margin-top:8px"><div class="ia-ico">✦</div><div>La IA usa esta nota para generar el resumen diario que se envía a la familia.</div></div>
     </div>
 
@@ -1161,7 +1161,7 @@
 </div>
 
 <!-- Sheet: catálogo de habitaciones de la institución (solo B2B) -->
-<div class="overlay" id="ov-habitaciones" onclick="if(event.target===this)cerrarSheet('ov-habitaciones')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-habitaciones" onclick="if(event.target===this)cerrarSheet('ov-habitaciones')">
   <div class="sheet">
     <div class="sh-handle"></div>
     <div class="sh-title">Habitaciones de la institución</div>
@@ -1181,7 +1181,7 @@
 
 <!-- Sheet: perfil de una persona del staff — segunda vía de asignación,
      desde el staff hacia el residente (solo B2B) -->
-<div class="overlay" id="ov-perfil-staff" onclick="if(event.target===this)cerrarSheet('ov-perfil-staff')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-perfil-staff" onclick="if(event.target===this)cerrarSheet('ov-perfil-staff')">
   <div class="sheet">
     <div class="sh-handle"></div>
     <div class="sh-title" id="perfil-staff-titulo">Cuidadora</div>
@@ -1216,7 +1216,7 @@
 
 <!-- Sheet: asignar personal a un residente (solo B2B) -->
 <!-- Sheet: activar/desactivar turnos de la institución (B2B) -->
-<div class="overlay" id="ov-turnos-config" onclick="if(event.target===this)cerrarSheet('ov-turnos-config')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-turnos-config" onclick="if(event.target===this)cerrarSheet('ov-turnos-config')">
   <div class="sheet">
     <div class="sh-handle"></div>
     <div class="sh-title">Turnos de la institución</div>
@@ -1227,7 +1227,7 @@
 </div>
 
 <!-- Sheet: acciones rápidas por residente (Inicio B2B) -->
-<div class="overlay" id="ov-res-acciones" onclick="if(event.target===this)cerrarSheet('ov-res-acciones')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-res-acciones" onclick="if(event.target===this)cerrarSheet('ov-res-acciones')">
   <div class="sheet">
     <div class="sh-handle"></div>
     <div class="sh-title" id="res-acc-titulo">Residente</div>
@@ -1237,7 +1237,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-asignar-staff" onclick="if(event.target===this)cerrarSheet('ov-asignar-staff')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-asignar-staff" onclick="if(event.target===this)cerrarSheet('ov-asignar-staff')">
   <div class="sheet">
     <div class="sh-handle"></div>
     <div class="sh-title" id="asig-titulo">Asignar personal</div>
@@ -1375,7 +1375,7 @@
 </div><!-- /app -->
 
 <!-- Sheet multi-cuidado -->
-<div class="overlay" id="ov-switcher" onclick="cerrarSheet('ov-switcher')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-switcher" onclick="cerrarSheet('ov-switcher')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title" id="switcher-titulo">Cambiar cuidado activo</div>
@@ -1390,7 +1390,7 @@
 </div>
 
 <!-- Sheet "Mas" -- todos los modulos (equivalente mobile del sidebar) -->
-<div class="overlay" id="ov-mas" onclick="cerrarSheet('ov-mas')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-mas" onclick="cerrarSheet('ov-mas')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title">Todos los módulos</div>
@@ -1400,7 +1400,7 @@
 </div>
 
 <!-- Overlays M4 — Salud -->
-<div class="overlay" id="ov-add-med" onclick="cerrarSheet('ov-add-med')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-add-med" onclick="cerrarSheet('ov-add-med')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title" id="sh-med-titulo">Agregar medicamento</div>
@@ -1479,7 +1479,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-add-doc" onclick="cerrarSheet('ov-add-doc')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-add-doc" onclick="cerrarSheet('ov-add-doc')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title">Agregar documento médico</div>
@@ -1543,7 +1543,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-edit-stock" onclick="cerrarSheet('ov-edit-stock')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-edit-stock" onclick="cerrarSheet('ov-edit-stock')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title" id="stock-med-nombre">Gestionar stock</div>
@@ -1590,7 +1590,7 @@
 </div>
 
 <!-- Overlays M5 — Alimentación -->
-<div class="overlay" id="ov-add-comida" onclick="cerrarSheet('ov-add-comida')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-add-comida" onclick="cerrarSheet('ov-add-comida')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title" id="sh-comida-titulo">Agregar comida</div>
@@ -1617,7 +1617,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-add-rest" onclick="cerrarSheet('ov-add-rest')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-add-rest" onclick="cerrarSheet('ov-add-rest')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title">Nueva restricción alimentaria</div>
@@ -1644,7 +1644,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-add-compra" onclick="cerrarSheet('ov-add-compra')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-add-compra" onclick="cerrarSheet('ov-add-compra')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title">Agregar a la lista</div>
@@ -1672,7 +1672,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-sel-dia" onclick="cerrarSheet('ov-sel-dia')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-sel-dia" onclick="cerrarSheet('ov-sel-dia')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title">Seleccionar día</div>
@@ -1681,7 +1681,7 @@
 </div>
 
 <!-- Overlays M6-M10 -->
-<div class="overlay" id="ov-add-cuidadora" onclick="cerrarSheet('ov-add-cuidadora')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-add-cuidadora" onclick="cerrarSheet('ov-add-cuidadora')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title" id="sh-cuidadora-title">Agregar cuidadora</div>
@@ -1731,7 +1731,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-edit-cuidadora" onclick="cerrarSheet('ov-edit-cuidadora')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-edit-cuidadora" onclick="cerrarSheet('ov-edit-cuidadora')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title">Editar cuidadora</div>
@@ -1776,7 +1776,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-add-esp" onclick="cerrarSheet('ov-add-esp')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-add-esp" onclick="cerrarSheet('ov-add-esp')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title">Agregar especialista</div>
@@ -1823,7 +1823,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-evento" onclick="cerrarSheet('ov-evento')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-evento" onclick="cerrarSheet('ov-evento')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title" id="sh-evento-titulo">Nuevo evento</div>
@@ -1904,7 +1904,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-insumo" onclick="cerrarSheet('ov-insumo')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-insumo" onclick="cerrarSheet('ov-insumo')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title" id="sh-insumo-titulo">Agregar insumo</div>
@@ -1960,7 +1960,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-proveedor" onclick="cerrarSheet('ov-proveedor')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-proveedor" onclick="cerrarSheet('ov-proveedor')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title" id="sh-prov-titulo">Agregar proveedor / servicio</div>
@@ -2006,7 +2006,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-gasto" onclick="cerrarSheet('ov-gasto')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-gasto" onclick="cerrarSheet('ov-gasto')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title" id="sh-gasto-titulo">Registrar gasto</div>
@@ -2085,7 +2085,7 @@
   </div>
 </div>
 
-<div class="overlay" id="ov-presupuesto" onclick="cerrarSheet('ov-presupuesto')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-presupuesto" onclick="cerrarSheet('ov-presupuesto')">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sh-handle"></div>
     <div class="sh-title">Editar presupuesto mensual</div>
@@ -2104,7 +2104,7 @@
 
 
 <!-- Overlay — Nueva invitación -->
-<div class="overlay" id="ov-invitacion" onclick="if(event.target===this)cerrarSheet('ov-invitacion')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-invitacion" onclick="if(event.target===this)cerrarSheet('ov-invitacion')">
   <div class="sheet">
     <div class="sh-hdr">
       <div class="sh-title" id="sh-inv-titulo">Invitar persona</div>
@@ -2163,7 +2163,7 @@
 </div>
 
 <!-- Recuperar contraseña -->
-<div class="overlay" id="ov-recuperar-pass" onclick="if(event.target===this)cerrarSheet('ov-recuperar-pass')">
+<div class="overlay" role="dialog" aria-modal="true" id="ov-recuperar-pass" onclick="if(event.target===this)cerrarSheet('ov-recuperar-pass')">
   <div class="sheet">
     <div class="sh-hdr">
       <div class="sh-title">Recuperar contraseña</div>
@@ -2185,7 +2185,7 @@
 </div>
 
 <!-- Confirm -->
-<div class="confirm-ov" id="confirm-ov">
+<div class="confirm-ov" role="alertdialog" aria-modal="true" id="confirm-ov">
   <div class="confirm-box">
     <div class="cb-title" id="cb-title">¿Estás seguro?</div>
     <div class="cb-text"  id="cb-text">Esta acción no se puede deshacer.</div>
@@ -2197,6 +2197,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/app.js?v=bbc7df9d"></script>
+<script src="js/app.js?v=f890eab8"></script>
 </body>
 </html>

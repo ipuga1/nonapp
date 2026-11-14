@@ -787,7 +787,18 @@ function toast(msg,type='',dur=2800){
   const t=$('toast'); t.textContent=msg; t.className='toast show'+(type?' '+type:'');
   clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),dur);
 }
-function showErr(id,msg){ const e=$(id); e.textContent=msg||e.textContent; e.classList.add('show'); }
+// El id siempre es "{campo}-err" (ej. "reg-pass-err" para el input "reg-pass")
+// — de ahí se deriva el campo para moverle el foco. Si no existe un input con
+// ese id derivado (ej. "code-err", que no sigue el patrón), simplemente no
+// mueve el foco; nunca lanza error.
+function showErr(id,msg){
+  const e=$(id); e.textContent=msg||e.textContent; e.classList.add('show');
+  e.setAttribute('aria-live','polite');
+  if(id.endsWith('-err')){
+    const campo=$(id.slice(0,-4));
+    if(campo && typeof campo.focus==='function') campo.focus();
+  }
+}
 function hideErr(id){ $(id)?.classList.remove('show'); }
 function setLoading(sid,bid,v){ $(sid).style.display=v?'inline-block':'none'; $(bid).style.opacity=v?'.7':'1'; }
 function initials(n){ if(!n)return'?'; return n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2); }
