@@ -1995,10 +1995,16 @@ button,.btn,.tab,.sb-item,.qa{min-height:44px}
 .mob-only-title{display:block}
 @media(min-width:768px){.mob-only-title{display:none}}
 
-.rolsel{display:flex;gap:6px;padding:14px 18px 4px;flex-shrink:0}
-.rolpill{flex:1;text-align:center;padding:9px 4px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);color:var(--ink3);background:var(--white);transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px}
+/* Mobile: con flex:1 los 5 pills no cabían en ~375px y el último ("Observador")
+   quedaba cortado sin forma de alcanzarlo (ni la página ni la fila hacían
+   scroll). Se deja desplazable, igual que .tab-hub en esta misma app, y en
+   desktop se restaura el llenado parejo de siempre (ver media query abajo). */
+.rolsel{display:flex;gap:6px;padding:14px 18px 4px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.rolsel::-webkit-scrollbar{display:none}
+.rolpill{flex:0 0 auto;min-width:72px;text-align:center;padding:9px 4px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);color:var(--ink3);background:var(--white);transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px}
 .rolpill .remoji{font-size:15px}
 .rolpill.on{border-color:var(--sage);background:var(--sage-lt);color:var(--sage-dk)}
+@media(min-width:768px){ .rolpill{flex:1 1 0} }
 
 .rolnota{margin:10px 18px 4px;background:var(--sage-lt);border:1px solid var(--sage-md);border-radius:var(--rs);padding:10px 12px;font-size:12px;color:var(--sage-dk);line-height:1.5;display:flex;gap:8px}
 
