@@ -1,0 +1,133 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ¿La cuenta de quien pregunta fue revocada por su admin? (rol 'revocado'
+    // o flag revocado). El rol no lo puede cambiar el propio usuario (ver
+    // regla de update de /usuarios).
+    function esRevocado() {
+      let u = get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+      return u.rol == 'revocado' || u.get('revocado', false) == true;
+    }
+
+    // Función auxiliar: uid del admin del hogar al que pertenece quien pregunta.
+    // Una cuenta revocada no pertenece a ningún hogar.
+    function getAdminId() {
+      return esRevocado() ? 'revocado' :
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.adminId;
+    }
+
+    // Cuidado propio de quien pregunta (fijo para admin D2C y para un
+    // familiar B2B ligado a un solo residente; el switcher no aplica a ellos).
+    // Una cuenta revocada no tiene cuidado propio.
+    function getCuidadoIdPropio() {
+      return esRevocado() ? '' :
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.cuidadoId;
+    }
+
+    // ¿Existe una asignación activa de quien pregunta (staff) hacia este
+    // residente? El id de asignaciones es determinístico ({staffUid}_{cuidadoId})
+    // exactamente para que esto se pueda verificar con un exists()/get()
+    // puntual — las reglas de Firestore no pueden hacer un WHERE.
+    function tieneAsignacionActiva(cid) {
+      return exists(/databases/$(database)/documents/asignaciones/$(request.auth.uid + '_' + cid)) &&
+        get(/databases/$(database)/documents/asignaciones/$(request.auth.uid + '_' + cid)).data.activo != false;
+    }
+
+    // Roles que un admin puede asignarle a OTRO miembro de su hogar al
+    // editarlo (ej. "cambiar rol" en Acceso y seguridad). 'admin' queda
+    // afuera a propósito: así nadie puede quedar con dos administradores
+    // en el mismo hogar escribiendo directo a Firestore, aunque la app
+    // tampoco ofrezca esa opción en la UI.
+    function rolAsignableAOtro(rol) {
+      return rol in ['familiar','cuidadora','enfermera','profesional','observador','revocado'];
+    }
+
+    match /usuarios/{userId} {
+      allow read: if request.auth != null &&
+        (request.auth.uid == userId ||
+         resource.data.adminId == request.auth.uid ||
+         getAdminId() == resource.data.adminId);
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (
+        (request.auth.uid == userId &&
+         request.resource.data.adminId == resource.data.adminId &&
+         request.resource.data.rol == resource.data.rol &&
+         request.resource.data.tipoCuenta == resource.data.tipoCuenta)
+        ||
+        (request.auth.uid != userId && resource.data.adminId == request.auth.uid &&
+         rolAsignableAOtro(request.resource.data.rol))  // ← NUEVO: nunca 'admin'
+      );
+      allow delete: if request.auth != null &&
+        (request.auth.uid == userId ||
+         resource.data.adminId == request.auth.uid);
+    }
+
+    match /cuidados/{cuidadoId} {
+      allow create: if request.auth != null &&
+        request.resource.data.adminId == request.auth.uid &&
+        cuidadoId.matches('c-' + request.auth.uid + '-.*');
+      allow read, update, delete: if request.auth != null &&
+        (resource.data.adminId == request.auth.uid ||
+         (getAdminId() == resource.data.adminId &&
+          (getCuidadoIdPropio() == cuidadoId || tieneAsignacionActiva(cuidadoId))));
+    }
+
+    match /compartido/{compId} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == compId ||
+        getAdminId() == compId ||
+        (exists(/databases/$(database)/documents/cuidados/$(compId)) &&
+         (get(/databases/$(database)/documents/cuidados/$(compId)).data.adminId == request.auth.uid ||
+          (get(/databases/$(database)/documents/cuidados/$(compId)).data.adminId == getAdminId() &&
+           (getCuidadoIdPropio() == compId || tieneAsignacionActiva(compId)))))
+      );
+    }
+
+    match /codigos_inv/{codigo} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if request.auth != null &&
+        request.resource.data.adminId == request.auth.uid;
+      allow update: if request.auth != null && (
+        (resource.data.adminId == request.auth.uid &&
+         request.resource.data.adminId == resource.data.adminId &&
+         request.resource.data.rol == resource.data.rol &&
+         request.resource.data.cuidadoId == resource.data.cuidadoId)
+        ||
+        (resource.data.estado == 'pendiente' &&
+         request.resource.data.adminId == resource.data.adminId &&
+         request.resource.data.rol == resource.data.rol &&
+         request.resource.data.cuidadoId == resource.data.cuidadoId &&
+         request.resource.data.estado == 'usado' &&
+         request.resource.data.usadoPor == request.auth.uid)
+      );
+      allow delete: if request.auth != null && resource.data.adminId == request.auth.uid;
+    }
+
+    match /invitaciones_hogar/{adminId} {
+      allow read, write: if request.auth != null &&
+        request.auth.uid == adminId;
+    }
+
+    match /ajustes/{adminId} {
+      allow read: if request.auth != null &&
+        (request.auth.uid == adminId ||
+         getAdminId() == adminId);
+      allow write: if request.auth != null && request.auth.uid == adminId;
+    }
+
+    match /asignaciones/{asigId} {
+      allow read: if request.auth != null &&
+        (resource.data.adminId == request.auth.uid ||
+         resource.data.staffUid == request.auth.uid);
+      allow create: if request.auth != null &&
+        request.resource.data.adminId == request.auth.uid &&
+        asigId == request.resource.data.staffUid + '_' + request.resource.data.cuidadoId &&
+        exists(/databases/$(database)/documents/cuidados/$(request.resource.data.cuidadoId)) &&
+        get(/databases/$(database)/documents/cuidados/$(request.resource.data.cuidadoId)).data.adminId == request.auth.uid;
+      allow update, delete: if request.auth != null &&
+        resource.data.adminId == request.auth.uid;
+    }
+  }
+}

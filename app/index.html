@@ -391,6 +391,14 @@
         </div>
         <div style="color:var(--ink3);font-size:16px">›</div>
       </div>
+      <div class="nav-row" tabindex="0" role="button" onclick="navTo('s-accesos')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:var(--white);cursor:pointer">
+        <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">🛡️</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600;color:var(--ink)">Acceso y seguridad</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:1px">Quién tiene acceso, qué rol tiene, revocar</div>
+        </div>
+        <div style="color:var(--ink3);font-size:16px">›</div>
+      </div>
 
       <!-- Módulos de uso ocasional, embebidos acá para no saturar el menú
            principal. Equipo/Invitar personas solo aplica en D2C — en B2B
@@ -495,6 +503,27 @@
   <div class="fixedbar">
     <button class="btn btn-ghost" onclick="restablecerPermisosRol()">Restablecer</button>
     <button class="btn btn-p" onclick="guardarPermisos()">Guardar cambios</button>
+  </div>
+</div>
+
+<div class="screen" id="s-accesos">
+  <div class="mob-hdr">
+    <button class="back-btn" onclick="navTo('s-perfil')">‹ Perfil</button>
+  </div>
+  <div class="desk-hdr">
+    <div><div class="dh-title">Acceso y seguridad</div><div class="dh-sub">Quién puede ver y usar esta cuenta, y qué rol tiene</div></div>
+  </div>
+  <div style="padding:2px 18px 0" class="mob-only-title">
+    <div class="mob-hdr-title" style="margin-top:6px">Acceso y seguridad</div>
+    <div class="mob-hdr-sub">Quién puede ver y usar esta cuenta, y qué rol tiene</div>
+  </div>
+  <div id="acc-toolbar" style="display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line)">
+    <input class="b2b-search" id="acc-buscar" type="search" placeholder="Buscar por nombre o email…" aria-label="Buscar persona con acceso" oninput="_accesosFiltroCambio()" autocomplete="off" style="flex:2 1 180px">
+    <select class="fin" id="acc-filtro-rol" aria-label="Filtrar por rol" onchange="_accesosFiltroCambio()" style="flex:1 1 130px;padding:9px 8px;font-size:12.5px"></select>
+    <select class="fin" id="acc-orden" aria-label="Ordenar por" onchange="_accesosFiltroCambio()" style="flex:1 1 130px;padding:9px 8px;font-size:12.5px"></select>
+  </div>
+  <div class="scroll">
+    <div id="acc-lista"></div>
   </div>
 </div>
 
@@ -2197,6 +2226,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/app.js?v=6b909300"></script>
+<script src="js/app.js?v=259c03e6"></script>
 </body>
 </html>

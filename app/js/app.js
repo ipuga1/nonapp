@@ -933,6 +933,7 @@ function navTo(id){
   if(id==='s-residentes')   setTimeout(renderResidentes,0);
   if(id==='s-agenda')       setTimeout(renderAgenda,0);
   if(id==='s-permisos')     setTimeout(renderPermisos,0);
+  if(id==='s-accesos')      setTimeout(renderAccesos,0);
   if(['s-home-admin','s-home-familiar','s-home-observador','s-home-cuidadora'].includes(id)){
     const rol=id.replace('s-home-','');
     renderHome(rol==='admin'?'admin':rol==='familiar'?'familiar':rol==='observador'?'observador':'cuidadora');
@@ -2797,6 +2798,179 @@ function renderPerfil(){
   }
 }
 
+/* ── PANTALLA: Acceso y seguridad (Perfil → quién tiene acceso, cambiar rol, revocar) ──
+   Unifica lo que hoy está repartido en Invitaciones (D2C) y Equipo/Residentes
+   (B2B): una sola lista con el rol de cada persona, editable, para que el
+   admin tenga trazabilidad real de quién puede ver y hacer qué. */
+function _rolesAsignables(){
+  // "Profesional" solo existe en instituciones B2B (igual que en Invitar persona).
+  const b2b=DB.getTipoCuenta()==='b2b';
+  return ROLES_PERMISOS.filter(r=>r.id!=='profesional'||b2b);
+}
+
+// Caché de la última lista calculada desde DB (no filtrada) — separada del
+// pintado de #acc-lista para que escribir en el buscador no dispare un
+// recálculo completo ni destruya el <input> mientras el admin está tipeando.
+let _accEntradasCache=[];
+
+function renderAccesos(){
+  const s=DB.getSesion(); if(!s||s.rol!=='admin') return;
+  const b2b=DB.getTipoCuenta()==='b2b';
+  const usuarios=DB.getUsuarios();
+  const cuidados=DB.getCuidadosAdmin();
+
+  let entradas;
+  if(b2b){
+    // En B2B el vínculo persona↔residente no vive en el usuario: familiares/
+    // observadores lo tienen por cuidadoId, el staff por sus asignaciones
+    // (puede tener varias, una por residente).
+    const porId={};
+    usuarios.forEach(u=>{
+      if(u.id===s.userId||u.revocado||_esStaff(u.rol)) return;
+      const res=cuidados.find(c=>c.id===u.cuidadoId);
+      if(res) porId[u.id]={usuario:u,residentes:[res.am?.nombre||'—']};
+    });
+    cuidados.forEach(res=>{
+      DB.getAsignacionesPorCuidado(res.id).forEach(a=>{
+        const u=usuarios.find(x=>x.id===a.staffUid);
+        if(!u||u.revocado) return;
+        if(!porId[u.id]) porId[u.id]={usuario:u,residentes:[]};
+        porId[u.id].residentes.push(res.am?.nombre||'—');
+      });
+    });
+    entradas=Object.values(porId);
+  } else {
+    entradas=usuarios
+      .filter(u=>u.id!==s.userId&&!u.revocado&&(u.adminId===s.userId||u.cuidadoId===s.cuidadoId))
+      .map(u=>({usuario:u,residentes:[]}));
+  }
+  _accEntradasCache=entradas;
+
+  // Opciones de rol/orden dependen del tipo de cuenta (fijo por cuenta, no
+  // cambia en la sesión) — se reconstruyen acá, no en cada tecleo del buscador.
+  const roles=_rolesAsignables();
+  const selRol=$('acc-filtro-rol');
+  if(selRol){
+    selRol.innerHTML=`<option value="todos">Todos los roles</option>`+
+      roles.map(r=>`<option value="${r.id}">${r.emoji} ${r.label}</option>`).join('');
+    selRol.value=ST.accesos.rol;
+  }
+  const selOrden=$('acc-orden');
+  if(selOrden){
+    if(ST.accesos.orden==='residente'&&!b2b) ST.accesos.orden='nombre';
+    selOrden.innerHTML=`<option value="nombre">Nombre (A-Z)</option><option value="rol">Rol</option>`+
+      (b2b?`<option value="residente">Residencia</option>`:'');
+    selOrden.value=ST.accesos.orden;
+  }
+  const buscar=$('acc-buscar'); if(buscar) buscar.value=ST.accesos.q;
+  const toolbar=$('acc-toolbar'); if(toolbar) toolbar.style.display=entradas.length?'flex':'none';
+
+  _renderAccesosLista();
+}
+
+/* Repinta #acc-lista aplicando búsqueda/filtro/orden sobre la caché ya
+   calculada — se llama en cada tecleo, sin tocar DB ni el resto del DOM. */
+function _renderAccesosLista(){
+  const lista=$('acc-lista'); if(!lista) return;
+
+  if(!_accEntradasCache.length){
+    lista.innerHTML=`<div class="empty" style="padding:24px 18px">
+      <div style="font-size:32px;margin-bottom:8px">👥</div>
+      <div style="font-size:13px;color:var(--ink3)">Todavía nadie más tiene acceso a esta cuenta.</div>
+    </div>`;
+    return;
+  }
+
+  const q=(ST.accesos.q||'').trim().toLowerCase();
+  const rolF=ST.accesos.rol||'todos';
+  const orden=ST.accesos.orden||'nombre';
+
+  let entradas=_accEntradasCache.filter(({usuario:u,residentes})=>{
+    if(rolF!=='todos'&&u.rol!==rolF) return false;
+    if(q){
+      const texto=`${u.nombre} ${u.email||''} ${residentes.join(' ')}`.toLowerCase();
+      if(!texto.includes(q)) return false;
+    }
+    return true;
+  });
+
+  entradas=entradas.slice().sort((a,b)=>{
+    if(orden==='rol'){
+      const la=ROL_LABEL[a.usuario.rol]||a.usuario.rol, lb=ROL_LABEL[b.usuario.rol]||b.usuario.rol;
+      return la.localeCompare(lb)||a.usuario.nombre.localeCompare(b.usuario.nombre);
+    }
+    if(orden==='residente'){
+      const ra=a.residentes[0]||'', rb=b.residentes[0]||'';
+      return ra.localeCompare(rb)||a.usuario.nombre.localeCompare(b.usuario.nombre);
+    }
+    return (a.usuario.nombre||'').localeCompare(b.usuario.nombre||'');
+  });
+
+  if(!entradas.length){
+    lista.innerHTML=`<div class="empty" style="padding:24px 18px">
+      <div style="font-size:32px;margin-bottom:8px">🔍</div>
+      <div style="font-size:13px;color:var(--ink3)">Nadie coincide con esa búsqueda o filtro.</div>
+    </div>`;
+    return;
+  }
+
+  const roles=_rolesAsignables();
+  lista.innerHTML=entradas.map(({usuario:u,residentes})=>`
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:13px 18px;border-bottom:1px solid var(--line)">
+      <div style="width:40px;height:40px;border-radius:50%;background:${ROL_COLOR[u.rol]||'var(--sage)'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${ROL_EMOJI[u.rol]||'👤'}</div>
+      <div style="flex:1;min-width:150px">
+        <div style="font-size:14px;font-weight:700;color:var(--ink)">${escapeHtml(u.nombre)}</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:2px">${escapeHtml(u.email||'')}</div>
+        ${residentes.length?`<div style="font-size:11px;color:var(--sage);margin-top:2px">🏷 ${residentes.map(r=>escapeHtml(r)).join(', ')}</div>`:''}
+      </div>
+      <label style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--ink3)">Rol</span>
+        <select aria-label="Cambiar rol de ${escapeHtml(u.nombre)}" onchange="cambiarRolUsuario('${u.id}',this.value)"
+          style="padding:7px 8px;border-radius:var(--rs);border:1.5px solid var(--line);font-size:12.5px;font-family:inherit;color:var(--ink);background:var(--white)">
+          ${roles.map(r=>`<option value="${r.id}" ${r.id===u.rol?'selected':''}>${r.emoji} ${r.label}</option>`).join('')}
+        </select>
+      </label>
+      <button onclick="revocarAcceso('${u.id}')"
+        style="padding:7px 12px;border-radius:var(--rs);background:var(--red-lt);border:1px solid var(--red);color:var(--red);font-size:12px;cursor:pointer;font-family:inherit">
+        Revocar
+      </button>
+    </div>
+  `).join('');
+}
+
+/* Buscador + filtro de rol + orden (Acceso y seguridad) */
+function _accesosFiltroCambio(){
+  ST.accesos.q=$('acc-buscar')?.value||'';
+  ST.accesos.rol=$('acc-filtro-rol')?.value||'todos';
+  ST.accesos.orden=$('acc-orden')?.value||'nombre';
+  _renderAccesosLista();
+}
+
+/* Cambiar el rol de una persona con acceso (nunca a administrador) */
+function cambiarRolUsuario(uid,nuevoRol){
+  const s=DB.getSesion();
+  if(!s||s.rol!=='admin'||uid===s.userId) return renderAccesos();
+  const u=DB.getUsuarios().find(x=>x.id===uid);
+  if(!u||u.rol===nuevoRol) return;
+  const rolAnterior=rolDeUsuario(u);
+  confirmar(
+    `¿Cambiar el rol de ${u.nombre}?`,
+    `Pasa de ${rolAnterior} a ${ROL_LABEL[nuevoRol]||nuevoRol}. Esto cambia lo que puede ver y hacer en la app.`,
+    ()=>{
+      const usuarios=DB.getUsuarios().map(x=>
+        x.id===uid?{...x,rol:nuevoRol,especialidad:nuevoRol==='profesional'?x.especialidad:undefined}:x
+      );
+      DB.setUsuarios(usuarios);
+      toast(`✓ Rol de ${u.nombre} actualizado a ${ROL_LABEL[nuevoRol]||nuevoRol}`,'ok');
+      renderAccesos();
+    }
+  );
+  // El <select> ya quedó mostrando nuevoRol en el DOM — si el admin cancela,
+  // hay que volver a pintar con el rol real (si no, quedaría visualmente
+  // "cambiado" aunque DB.setUsuarios nunca se llamó).
+  renderAccesos();
+}
+
 // Datos de UNA persona cuidada/residente puntual (nombre, habitación, RUT,
 // médico, presupuesto) — pantalla aparte de Perfil, se llega acá desde el
 // selector "Cuidado activo" (editarDatosResidente) o desde Residentes en
@@ -3047,6 +3221,10 @@ const ST = {
     rolActual: 'familiar',
     moduloAbierto: null,
     datos: null, // copia de trabajo mientras el admin edita, antes de guardar
+  },
+  // Acceso y seguridad (Perfil → Acceso y seguridad)
+  accesos: {
+    q: '', rol: 'todos', orden: 'nombre',
   },
   // M3 Bitácora
   bitacora: {
@@ -8253,7 +8431,7 @@ function renderInvitaciones(){
 
 /* Revocar acceso a un usuario */
 function revocarAcceso(uid){
-  const s = DB.getSesion(); if(!s || s.rol !== 'admin') return;
+  const s = DB.getSesion(); if(!s || s.rol !== 'admin' || uid === s.userId) return;
   const u = DB.getUsuarios().find(x => x.id === uid);
   if(!u) return;
   confirmar(
@@ -8272,6 +8450,7 @@ function revocarAcceso(uid){
       DB.getAsignacionesPorStaff(uid).forEach(a=>DB.eliminarAsignacion(a.id));
       toast(`✓ Acceso de ${u.nombre} revocado`, 'ok');
       renderInvitaciones();
+      renderAccesos();
       _refrescarEquipoSiActivo();
     }
   );
