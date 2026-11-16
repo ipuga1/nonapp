@@ -2898,7 +2898,7 @@ document.addEventListener('keydown',e=>{
 // tabindex (ver _KEYBOARD_CLICK_CLASSES) para que se puedan recorrer con
 // Tab — este listener delegado es lo que hace que Enter/Espacio los activen,
 // igual que un <button> real, sin tener que repetir onkeydown en cada uno.
-const _KEYBOARD_CLICK_CLASSES=['tab','th','chip','cat-btn','fpill','dfpill','pcb','vtab','rolpill','tipo-btn','vaso','mes-pill','mc-item','cal-day','chk-item','rol-card','nav-row'];
+const _KEYBOARD_CLICK_CLASSES=['tab','th','chip','cat-btn','fpill','dfpill','pcb','vtab','rolpill','tipo-btn','vaso','mes-pill','mc-item','cal-day','chk-item','rol-card','nav-row','upload-zone'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Enter' && e.key!==' ') return;
   const el=e.target;

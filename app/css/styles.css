@@ -2144,3 +2144,8 @@ button,.btn,.tab,.sb-item,.qa{min-height:44px}
 .b2b-search:focus-visible{
   box-shadow:0 0 0 3px var(--sage-md);
 }
+
+/* .flbl pasó de <div> a <label for="..."> para asociarlo con su campo
+   (Web Interface Guidelines) — <label> es inline por defecto, a diferencia
+   de <div>, así que hay que fijar el mismo display:block que ya tenía. */
+label.flbl{ display:block; cursor:pointer; }
