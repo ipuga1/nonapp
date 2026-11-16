@@ -656,7 +656,7 @@ function renderPermisos(){
 function _renderRolSelectorPermisos(){
   const el=$('perm-rolsel'); if(!el) return;
   el.innerHTML=ROLES_PERMISOS.map(r=>`
-    <div class="rolpill ${r.id===ST.permisos.rolActual?'on':''}" onclick="seleccionarRolPermisos('${r.id}')">
+    <div class="rolpill ${r.id===ST.permisos.rolActual?'on':''}" tabindex="0" role="button" onclick="seleccionarRolPermisos('${r.id}')">
       <div class="remoji">${r.emoji}</div>
       <div>${r.label}</div>
     </div>`).join('');
@@ -1857,7 +1857,7 @@ function renderHome(rol){
         </div>
         <div style="height:5px;background:var(--line)"><div style="height:100%;background:var(--sage);width:${total?Math.round(done/total*100):0}%;transition:width .5s"></div></div>
         ${filasChecklist.map((f,i)=>`
-        <div class="chk-item" onclick="${f.onclick}" style="${i===filasChecklist.length-1?'border:none':''}">
+        <div class="chk-item" tabindex="0" role="button" onclick="${f.onclick}" style="${i===filasChecklist.length-1?'border:none':''}">
           <div class="chkbox${f.hecho?' on':''}">${f.hecho?'✓':''}</div>
           <div class="chk-lbl${f.hecho?' done':''}">${f.lbl}</div>
           <div class="chk-tag">${f.tag}</div>
@@ -2038,7 +2038,7 @@ function abrirSwitcher(){
       ${!activo?`<button onclick="event.stopPropagation();eliminarCuidado('${c.id}')" style="width:30px;height:30px;border-radius:50%;background:var(--red-lt);border:1px solid var(--red);color:var(--red);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit" title="Eliminar">×</button>`:''}
     `:'';
     return `
-    <div class="mc-item${activo?' active':''}" onclick="selCuidado('${c.id}')">
+    <div class="mc-item${activo?' active':''}" tabindex="0" role="button" onclick="selCuidado('${c.id}')">
       <div class="mc-ava" style="background:var(--sage)">${escapeHtml(initials(c.am?.nombre||'?'))}</div>
       <div style="flex:1;min-width:0"><div class="mc-name">${escapeHtml(c.am?.nombre)||'Sin nombre'}</div><div class="mc-meta">${c.am?.edad||'—'} años${esAdmin?(b2b?(c.am?.habitacion?' · '+escapeHtml(_habLabel(c.am.habitacion)):''):' · '+(escapeHtml(nombreCuidadoraPrincipal(c))||'Sin cuidadora')):turnoDe(c.id)}</div></div>
       <div style="margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0">
@@ -2894,6 +2894,19 @@ document.addEventListener('keydown',e=>{
   if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
   else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
 });
+// Tabbar, sub-tabs de hubs y chips de selección son <div onclick> con
+// tabindex (ver _KEYBOARD_CLICK_CLASSES) para que se puedan recorrer con
+// Tab — este listener delegado es lo que hace que Enter/Espacio los activen,
+// igual que un <button> real, sin tener que repetir onkeydown en cada uno.
+const _KEYBOARD_CLICK_CLASSES=['tab','th','chip','cat-btn','fpill','dfpill','pcb','vtab','rolpill','tipo-btn','vaso','mes-pill','mc-item','cal-day','chk-item','rol-card','nav-row'];
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter' && e.key!==' ') return;
+  const el=e.target;
+  if(!(el instanceof HTMLElement)) return;
+  if(!_KEYBOARD_CLICK_CLASSES.some(c=>el.classList.contains(c))) return;
+  e.preventDefault();
+  el.click();
+});
 
 /* ════ INIT ════ */
 // Callback de Firebase cuando detecta sesión activa (al recargar la página)
@@ -3446,9 +3459,10 @@ function initFormulario(){
 
   // Checkboxes
   ['bano','hidra','activ','visita'].forEach(k=>{
-    const cb=$('cb-'+k), cl=$('cl-'+k);
+    const cb=$('cb-'+k), cl=$('cl-'+k), item=$('chki-'+k);
     if(cb){ cb.classList.toggle('on',f[k]); cb.textContent=f[k]?'✓':''; }
     if(cl){ cl.classList.toggle('done',f[k]); }
+    if(item) item.setAttribute('aria-checked',String(!!f[k]));
   });
 
   // Porciones (desayuno/almuerzo/cena) — el valor real está en el onclick, no en el texto del botón
@@ -3489,9 +3503,10 @@ function selPorcion(comida, val, btn){
 
 function togChk(k){
   ST.bitacora.form[k]=!ST.bitacora.form[k];
-  const cb=$('cb-'+k), cl=$('cl-'+k);
+  const cb=$('cb-'+k), cl=$('cl-'+k), item=$('chki-'+k);
   if(cb){ cb.classList.toggle('on',ST.bitacora.form[k]); cb.textContent=ST.bitacora.form[k]?'✓':''; }
   if(cl){ cl.classList.toggle('done',ST.bitacora.form[k]); }
+  if(item) item.setAttribute('aria-checked',String(ST.bitacora.form[k]));
 }
 
 function selAnimo(val, btn){
@@ -6288,6 +6303,7 @@ function renderCalendarioAgenda(){
     }).join('');
     html+=`
       <div class="cal-day${esHoy?' hoy':''}${esSel&&!esHoy?' seleccionado':''}${evDia.length?' tiene-eventos':''}"
+           tabindex="0" role="button" aria-label="${d} de ${MESES[m]}${esHoy?' · hoy':''}${evDia.length?` · ${evDia.length} evento${evDia.length>1?'s':''}`:''}"
            onclick="selDia('${dateStr}')">
         <div class="cal-day-num">${d}</div>
         ${dotsHtml?`<div class="cal-dots">${dotsHtml}</div>`:''}

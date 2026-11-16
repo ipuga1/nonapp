@@ -98,12 +98,12 @@
     <div class="auth-sub">El rol se define al registrarse y no puede cambiarse sin autorización.</div>
   </div>
   <div class="scroll" style="padding:16px 22px">
-    <div class="rol-card sel" id="tipo-admin" onclick="selTipoRegistro('admin')">
+    <div class="rol-card sel" id="tipo-admin" tabindex="0" role="button" onclick="selTipoRegistro('admin')">
       <div class="rol-ico">👩‍💼</div>
       <div style="flex:1"><div class="rol-name">Soy el administrador del cuidado</div><div class="rol-desc">Gestiono el día a día. Quiero crear una cuenta nueva para la persona que cuido.</div></div>
       <div class="rol-chk on" id="tipo-chk-admin">✓</div>
     </div>
-    <div class="rol-card" id="tipo-invitado" onclick="selTipoRegistro('invitado')">
+    <div class="rol-card" id="tipo-invitado" tabindex="0" role="button" onclick="selTipoRegistro('invitado')">
       <div class="rol-ico">👨‍👩‍👧</div>
       <div style="flex:1"><div class="rol-name">Me invitaron a un cuidado</div><div class="rol-desc">Soy familiar o cuidadora. Tengo un código de invitación.</div><div class="rol-lock">🔒 Requiere código del administrador</div></div>
       <div class="rol-chk" id="tipo-chk-invitado"></div>
@@ -207,10 +207,10 @@
     </div>
     <div class="field" data-solo-d2c><div class="flbl">Tu mayor preocupación</div>
       <div class="chips" style="margin-top:6px">
-        <div class="chip on" onclick="this.classList.toggle('on')">Medicamentos</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Alimentación</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Coordinación</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Gastos</div>
+        <div class="chip on" tabindex="0" role="button" onclick="this.classList.toggle('on')">Medicamentos</div>
+        <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Alimentación</div>
+        <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Coordinación</div>
+        <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Gastos</div>
       </div>
     </div>
     <div class="ia"><div class="ia-ico">✦</div><div data-b2b="Puedes agregar más residentes desde Residentes. Cada uno tiene su propia bitácora, medicamentos y gastos.">Puedes agregar más personas cuidadas después desde el panel principal. Cada una tiene su propia bitácora, medicamentos y gastos.</div></div>
@@ -231,14 +231,14 @@
     <div style="height:16px"></div>
     <div class="field"><div class="flbl">Condiciones crónicas</div>
       <div class="chips" style="margin-top:6px">
-        <div class="chip on" onclick="this.classList.toggle('on')">Hipertensión</div>
-        <div class="chip on" onclick="this.classList.toggle('on')">Diabetes T2</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Hipotiroidismo</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Parkinson</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Demencia</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Osteoporosis</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Post-ACV</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Depresión</div>
+        <div class="chip on" tabindex="0" role="button" onclick="this.classList.toggle('on')">Hipertensión</div>
+        <div class="chip on" tabindex="0" role="button" onclick="this.classList.toggle('on')">Diabetes T2</div>
+        <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Hipotiroidismo</div>
+        <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Parkinson</div>
+        <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Demencia</div>
+        <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Osteoporosis</div>
+        <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Post-ACV</div>
+        <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Depresión</div>
       </div>
     </div>
     <div class="field"><div class="flbl">Médico de cabecera</div><input class="fin" id="onb-medico" placeholder="Ej: Dr. Hernán Muñoz"></div>
@@ -289,7 +289,7 @@
 <div class="screen" id="s-home-admin">
   <div class="mob-hdr">
     <div><div class="mob-hdr-title" id="home-admin-saludo">Hola 👋</div><div class="mob-hdr-sub" id="home-admin-fecha"></div></div>
-    <div><div id="home-admin-ava" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--sage);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
+    <div><div id="home-admin-ava" tabindex="0" role="button" aria-label="Perfil y ajustes" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--sage);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
   </div>
   <div class="desk-hdr">
     <div><div class="dh-title" id="home-admin-saludo-d">Hola 👋</div><div class="dh-sub" id="home-admin-fecha-d"></div></div>
@@ -297,12 +297,12 @@
   </div>
   <div class="scroll" id="home-admin-body"></div>
   <div class="tabbar">
-    <div class="tab on" onclick="navTo('s-home-admin')"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud<div class="tab-dot" id="tab-meds-dot"></div></div>
-    <div class="tab" data-mod="alim" onclick="navTo('s-alim-hub')"><div class="tab-ico">🍽️</div>Alim.</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab on" tabindex="0" role="button" onclick="navTo('s-home-admin')"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud<div class="tab-dot" id="tab-meds-dot"></div></div>
+    <div class="tab" tabindex="0" role="button" data-mod="alim" onclick="navTo('s-alim-hub')"><div class="tab-ico">🍽️</div>Alim.</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -310,19 +310,19 @@
 <div class="screen" id="s-home-familiar">
   <div class="mob-hdr">
     <div><div class="mob-hdr-title" id="home-fam-saludo">Hola 👋</div><div class="mob-hdr-sub" id="home-fam-fecha"></div></div>
-    <div><div id="home-fam-ava" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
+    <div><div id="home-fam-ava" tabindex="0" role="button" aria-label="Perfil y ajustes" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
   </div>
   <div class="desk-hdr">
     <div><div class="dh-title" id="home-fam-saludo-d">Hola 👋</div><div class="dh-sub" id="home-fam-fecha-d"></div></div>
   </div>
   <div class="scroll" id="home-fam-body"></div>
   <div class="tabbar">
-    <div class="tab on" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-new')"><div class="tab-ico">📋</div>Registrar</div>
-    <div class="tab" data-mod="agenda" onclick="navTo('s-agenda')"><div class="tab-ico">📅</div>Agenda</div>
-    <div class="tab" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab on" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-new')"><div class="tab-ico">📋</div>Registrar</div>
+    <div class="tab" tabindex="0" role="button" data-mod="agenda" onclick="navTo('s-agenda')"><div class="tab-ico">📅</div>Agenda</div>
+    <div class="tab" tabindex="0" role="button" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -330,18 +330,18 @@
 <div class="screen" id="s-home-observador">
   <div class="mob-hdr">
     <div><div class="mob-hdr-title" id="home-obs-saludo">Hola 👋</div><div class="mob-hdr-sub" id="home-obs-fecha"></div></div>
-    <div><div id="home-obs-ava" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
+    <div><div id="home-obs-ava" tabindex="0" role="button" aria-label="Perfil y ajustes" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
   </div>
   <div class="desk-hdr">
     <div><div class="dh-title" id="home-obs-saludo-d">Hola 👋</div><div class="dh-sub" id="home-obs-fecha-d"></div></div>
   </div>
   <div class="scroll" id="home-obs-body"></div>
   <div class="tabbar">
-    <div class="tab on" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Historial</div>
-    <div class="tab" data-mod="informe" onclick="navTo('s-informe-hub')"><div class="tab-ico">📊</div>Informe</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab on" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Historial</div>
+    <div class="tab" tabindex="0" role="button" data-mod="informe" onclick="navTo('s-informe-hub')"><div class="tab-ico">📊</div>Informe</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -349,7 +349,7 @@
 <div class="screen" id="s-home-cuidadora">
   <div class="mob-hdr">
     <div><div class="mob-hdr-title" id="home-cui-saludo">Hola 👋</div><div class="mob-hdr-sub" id="home-cui-fecha"></div></div>
-    <div><div id="home-cui-ava" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
+    <div><div id="home-cui-ava" tabindex="0" role="button" aria-label="Perfil y ajustes" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" onclick="navTo('s-perfil')" style="width:36px;height:36px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer"></div></div>
   </div>
   <div class="desk-hdr">
     <div><div class="dh-title" id="home-cui-saludo-d">Hola 👋</div><div class="dh-sub" id="home-cui-fecha-d"></div></div>
@@ -357,12 +357,12 @@
   </div>
   <div class="scroll" id="home-cui-body"></div>
   <div class="tabbar">
-    <div class="tab on" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-new')"><div class="tab-ico">📋</div>Registrar</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab" data-mod="alim" onclick="navTo('s-alim-hub')"><div class="tab-ico">🍽️</div>Alim.</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab on" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-new')"><div class="tab-ico">📋</div>Registrar</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" data-mod="alim" onclick="navTo('s-alim-hub')"><div class="tab-ico">🍽️</div>Alim.</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -383,7 +383,7 @@
          s-residente-editar. Ver renderPerfil()/renderResidenteEditar(). -->
     <div id="perfil-config-section" style="display:none">
       <div class="slbl">Acceso y permisos</div>
-      <div onclick="navTo('s-permisos')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--white);cursor:pointer">
+      <div class="nav-row" tabindex="0" role="button" onclick="navTo('s-permisos')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--white);cursor:pointer">
         <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">🔐</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;font-weight:600;color:var(--ink)">Permisos por rol</div>
@@ -397,7 +397,7 @@
            "Equipo" es la grilla de turnos, de uso diario, y se queda arriba. -->
       <div class="slbl">Más módulos</div>
       <div style="background:var(--white);border-top:1px solid var(--line)">
-        <div id="pf-row-equipo" onclick="navTo('s-equipo-hub')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer">
+        <div id="pf-row-equipo" class="nav-row" tabindex="0" role="button" onclick="navTo('s-equipo-hub')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer">
           <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">👥</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:600;color:var(--ink)">Equipo</div>
@@ -405,7 +405,7 @@
           </div>
           <div style="color:var(--ink3);font-size:16px">›</div>
         </div>
-        <div onclick="navTo('s-hogar-hub')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer">
+        <div class="nav-row" tabindex="0" role="button" onclick="navTo('s-hogar-hub')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer">
           <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">🏠</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:600;color:var(--ink)">Hogar e insumos</div>
@@ -413,7 +413,7 @@
           </div>
           <div style="color:var(--ink3);font-size:16px">›</div>
         </div>
-        <div onclick="navTo('s-informe-hub')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer">
+        <div class="nav-row" tabindex="0" role="button" onclick="navTo('s-informe-hub')" style="display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer">
           <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">📊</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:600;color:var(--ink)">Informe mensual</div>
@@ -430,11 +430,11 @@
     </div>
   </div>
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
     <div class="tab on"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -519,10 +519,10 @@
 
   <!-- Filtros -->
   <div class="filter-bar">
-    <div class="fpill on" onclick="setFiltro('todos',this)">Todos</div>
-    <div class="fpill" onclick="setFiltro('hoy',this)">Hoy</div>
-    <div class="fpill" onclick="setFiltro('semana',this)">Esta semana</div>
-    <div class="fpill" onclick="setFiltro('mes',this)">Este mes</div>
+    <div class="fpill on" tabindex="0" role="button" onclick="setFiltro('todos',this)">Todos</div>
+    <div class="fpill" tabindex="0" role="button" onclick="setFiltro('hoy',this)">Hoy</div>
+    <div class="fpill" tabindex="0" role="button" onclick="setFiltro('semana',this)">Esta semana</div>
+    <div class="fpill" tabindex="0" role="button" onclick="setFiltro('mes',this)">Este mes</div>
   </div>
 
   <!-- Aviso solo lectura para familiar/observador -->
@@ -545,12 +545,12 @@
   <button class="fab" id="bita-fab" onclick="navTo('s-bita-new')" title="Nuevo registro">＋</button>
 
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
     <div class="tab on" data-mod="bitacora" data-screen="s-bita-list"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 <div class="screen" id="s-bita-new">
@@ -645,19 +645,19 @@
     <!-- Checklist -->
     <div class="slbl">Otros controles</div>
     <div style="background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
-      <div class="chk-item" onclick="togChk('bano')">
+      <div class="chk-item" id="chki-bano" role="checkbox" aria-checked="false" tabindex="0" onclick="togChk('bano')">
         <div class="chkbox" id="cb-bano"></div>
         <div class="chk-lbl" id="cl-bano">Fue al baño (deposición)</div>
       </div>
-      <div class="chk-item" onclick="togChk('hidra')">
+      <div class="chk-item" id="chki-hidra" role="checkbox" aria-checked="false" tabindex="0" onclick="togChk('hidra')">
         <div class="chkbox" id="cb-hidra"></div>
         <div class="chk-lbl" id="cl-hidra">Buena hidratación (~1.5L agua)</div>
       </div>
-      <div class="chk-item" onclick="togChk('activ')">
+      <div class="chk-item" id="chki-activ" role="checkbox" aria-checked="false" tabindex="0" onclick="togChk('activ')">
         <div class="chkbox" id="cb-activ"></div>
         <div class="chk-lbl" id="cl-activ">Realizó actividad física o kinesiología</div>
       </div>
-      <div class="chk-item" style="border:none" onclick="togChk('visita')">
+      <div class="chk-item" id="chki-visita" role="checkbox" aria-checked="false" tabindex="0" style="border:none" onclick="togChk('visita')">
         <div class="chkbox" id="cb-visita"></div>
         <div class="chk-lbl" id="cl-visita">Recibió visita médica o familiar</div>
       </div>
@@ -714,10 +714,10 @@
 
   <!-- Tabs del hub -->
   <div class="tab-hub" id="tab-hub">
-    <div class="th on" onclick="setTab('meds',this)">💊 Medicamentos</div>
-    <div class="th" onclick="setTab('ficha',this)">📋 Ficha clínica</div>
-    <div class="th" onclick="setTab('docs',this)">📄 Documentos</div>
-    <div class="th" onclick="setTab('historial',this)">📅 Historial</div>
+    <div class="th on" tabindex="0" role="button" onclick="setTab('meds',this)">💊 Medicamentos</div>
+    <div class="th" tabindex="0" role="button" onclick="setTab('ficha',this)">📋 Ficha clínica</div>
+    <div class="th" tabindex="0" role="button" onclick="setTab('docs',this)">📄 Documentos</div>
+    <div class="th" tabindex="0" role="button" onclick="setTab('historial',this)">📅 Historial</div>
   </div>
 
   <!-- Contenido del tab activo -->
@@ -729,12 +729,12 @@
   <button class="fab" id="salud-fab" onclick="fabAction()" title="Agregar">＋</button>
 
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
     <div class="tab on" data-mod="salud"><div class="tab-ico">💊</div>Salud<div class="tab-dot" id="tab-salud-dot"></div></div>
-    <div class="tab" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 <div class="screen" id="s-gastos">
@@ -751,21 +751,21 @@
   </div>
 
   <div class="tab-hub">
-    <div class="th on" onclick="setTabGastos('registro',this)">📝 Registro</div>
-    <div class="th"    onclick="setTabGastos('presupuesto',this)">📊 Presupuesto</div>
-    <div class="th"    onclick="setTabGastos('rendicion',this)">📋 Rendición</div>
+    <div class="th on" tabindex="0" role="button" onclick="setTabGastos('registro',this)">📝 Registro</div>
+    <div class="th" tabindex="0" role="button"    onclick="setTabGastos('presupuesto',this)">📊 Presupuesto</div>
+    <div class="th" tabindex="0" role="button"    onclick="setTabGastos('rendicion',this)">📋 Rendición</div>
   </div>
 
   <div class="scroll" id="gastos-content"></div>
   <button class="fab" id="gastos-fab" onclick="fabActionGastos()" style="display:none">＋</button>
 
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
     <div class="tab on" data-mod="gastos"><div class="tab-ico">🧾</div>Gastos</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 <div class="screen" id="s-agenda">
@@ -818,12 +818,12 @@
   <button class="fab" id="agenda-fab" onclick="abrirSheetEvento()" title="Nuevo evento">＋</button>
 
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
     <div class="tab on" data-mod="agenda"><div class="tab-ico">📅</div>Agenda</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 <div class="screen" id="s-invitaciones">
@@ -862,12 +862,12 @@
   </div>
 
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
     <div class="tab on"><div class="tab-ico">👥</div>Personas</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -955,16 +955,16 @@
     </div>
     <div class="slbl" style="padding:8px 0 8px">Condiciones crónicas</div>
     <div class="chips" id="ficha-condiciones-chips" style="margin-bottom:14px">
-      <div class="chip" onclick="this.classList.toggle('on')">Hipertensión</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Diabetes T2</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Hipotiroidismo</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Parkinson</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Demencia</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Osteoporosis</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Post-ACV</div>
-      <div class="chip" onclick="this.classList.toggle('on')">EPOC</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Depresión</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Insuficiencia cardíaca</div>
+      <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Hipertensión</div>
+      <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Diabetes T2</div>
+      <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Hipotiroidismo</div>
+      <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Parkinson</div>
+      <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Demencia</div>
+      <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Osteoporosis</div>
+      <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Post-ACV</div>
+      <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">EPOC</div>
+      <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Depresión</div>
+      <div class="chip" tabindex="0" role="button" onclick="this.classList.toggle('on')">Insuficiencia cardíaca</div>
     </div>
     <div class="field">
       <div class="flbl">Alergias (separadas por coma)</div>
@@ -1003,22 +1003,22 @@
   </div>
 
   <div class="tab-hub">
-    <div class="th on"  onclick="setTabAlim('plan',this)">📅 Plan semanal</div>
-    <div class="th"     onclick="setTabAlim('restricciones',this)">🚫 Restricciones</div>
-    <div class="th"     onclick="setTabAlim('diario',this)">📝 Registro del día</div>
-    <div class="th"     onclick="setTabAlim('compras',this)">🛒 Lista de compras</div>
+    <div class="th on" tabindex="0" role="button"  onclick="setTabAlim('plan',this)">📅 Plan semanal</div>
+    <div class="th" tabindex="0" role="button"     onclick="setTabAlim('restricciones',this)">🚫 Restricciones</div>
+    <div class="th" tabindex="0" role="button"     onclick="setTabAlim('diario',this)">📝 Registro del día</div>
+    <div class="th" tabindex="0" role="button"     onclick="setTabAlim('compras',this)">🛒 Lista de compras</div>
   </div>
 
   <div class="scroll" id="alim-content"></div>
   <button class="fab" id="alim-fab" onclick="fabActionAlim()" style="display:none">＋</button>
 
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
     <div class="tab on" data-mod="alim"><div class="tab-ico">🍽️</div>Comida</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -1094,12 +1094,12 @@
   </div>
 
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
     <div class="tab on" data-mod="bitacora"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" data-mod="gastos" onclick="navTo('s-gastos')"><div class="tab-ico">🧾</div>Gastos</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -1119,21 +1119,21 @@
   </div>
 
   <div class="tab-hub">
-    <div class="th on"  onclick="setTabEquip('cuidadoras',this)">🧑‍⚕️ Cuidadoras</div>
-    <div class="th"     onclick="setTabEquip('especialistas',this)">👨‍⚕️ Especialistas</div>
-    <div class="th"     onclick="setTabEquip('turnos',this)">📅 Calendario de turnos</div>
+    <div class="th on" tabindex="0" role="button"  onclick="setTabEquip('cuidadoras',this)">🧑‍⚕️ Cuidadoras</div>
+    <div class="th" tabindex="0" role="button"     onclick="setTabEquip('especialistas',this)">👨‍⚕️ Especialistas</div>
+    <div class="th" tabindex="0" role="button"     onclick="setTabEquip('turnos',this)">📅 Calendario de turnos</div>
   </div>
 
   <div class="scroll" id="equipo-content"></div>
   <button class="fab" id="equipo-fab" onclick="fabActionEquip()" style="display:none">＋</button>
 
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
     <div class="tab on" data-mod="equipo"><div class="tab-ico">👥</div>Equipo</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -1152,11 +1152,11 @@
   </div>
   <div class="scroll" id="residentes-content"></div>
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -1280,20 +1280,20 @@
   </div>
 
   <div class="tab-hub">
-    <div class="th on"  onclick="setTabHogar('insumos',this)">📦 Insumos y stock</div>
-    <div class="th"     onclick="setTabHogar('proveedores',this)">📋 Proveedores</div>
+    <div class="th on" tabindex="0" role="button"  onclick="setTabHogar('insumos',this)">📦 Insumos y stock</div>
+    <div class="th" tabindex="0" role="button"     onclick="setTabHogar('proveedores',this)">📋 Proveedores</div>
   </div>
 
   <div class="scroll" id="hogar-content"></div>
   <button class="fab" id="hogar-fab" onclick="fabActionHogar()" style="display:none">＋</button>
 
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
     <div class="tab on" data-mod="hogar"><div class="tab-ico">🏠</div>Hogar</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -1314,12 +1314,12 @@
     <!-- Se rellena dinámicamente -->
   </div>
   <div class="tabbar">
-    <div class="tab" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
-    <div class="tab" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
-    <div class="tab" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
+    <div class="tab" tabindex="0" role="button" onclick="irAlHome()"><div class="tab-ico">🏠</div>Inicio</div>
+    <div class="tab" tabindex="0" role="button" data-mod="bitacora" onclick="navTo('s-bita-list')"><div class="tab-ico">📋</div>Bitácora</div>
+    <div class="tab" tabindex="0" role="button" data-mod="salud" onclick="navTo('s-salud-hub')"><div class="tab-ico">💊</div>Salud</div>
     <div class="tab on" data-mod="informe"><div class="tab-ico">📊</div>Informe</div>
-    <div class="tab" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
-    <div class="tab" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
+    <div class="tab" tabindex="0" role="button" onclick="navTo('s-perfil')"><div class="tab-ico">⚙️</div>Perfil</div>
+    <div class="tab" tabindex="0" role="button" onclick="abrirMas()"><div class="tab-ico">⋯</div>Más</div>
   </div>
 </div>
 
@@ -1356,8 +1356,8 @@
 
   <!-- Selector versión -->
   <div class="version-tabs">
-    <div class="vtab on"  id="vtab-familiar"  onclick="selVersion('familiar')">👨‍👩‍👧 Para la familia</div>
-    <div class="vtab"     id="vtab-clinico"   onclick="selVersion('clinico')">🩺 Versión clínica</div>
+    <div class="vtab on" tabindex="0" role="button"  id="vtab-familiar"  onclick="selVersion('familiar')">👨‍👩‍👧 Para la familia</div>
+    <div class="vtab" tabindex="0" role="button"     id="vtab-clinico"   onclick="selVersion('clinico')">🩺 Versión clínica</div>
   </div>
 
   <!-- Contenido del informe -->
@@ -1649,14 +1649,14 @@
     <div class="sh-handle"></div>
     <div class="sh-title">Agregar a la lista</div>
     <div class="cat-grid" id="cat-grid-compra">
-      <div class="cat-btn on" data-cat="verduras" onclick="selCatCompra(this)"><div class="cat-ico">🥦</div><div class="cat-lbl">Verduras</div></div>
-      <div class="cat-btn" data-cat="frutas"   onclick="selCatCompra(this)"><div class="cat-ico">🍎</div><div class="cat-lbl">Frutas</div></div>
-      <div class="cat-btn" data-cat="proteina" onclick="selCatCompra(this)"><div class="cat-ico">🍗</div><div class="cat-lbl">Proteína</div></div>
-      <div class="cat-btn" data-cat="lacteo"   onclick="selCatCompra(this)"><div class="cat-ico">🥛</div><div class="cat-lbl">Lácteos</div></div>
-      <div class="cat-btn" data-cat="cereal"   onclick="selCatCompra(this)"><div class="cat-ico">🌾</div><div class="cat-lbl">Cereales</div></div>
-      <div class="cat-btn" data-cat="insumo"   onclick="selCatCompra(this)"><div class="cat-ico">🧴</div><div class="cat-lbl">Insumos</div></div>
-      <div class="cat-btn" data-cat="bebida"   onclick="selCatCompra(this)"><div class="cat-ico">💧</div><div class="cat-lbl">Bebidas</div></div>
-      <div class="cat-btn" data-cat="otro"     onclick="selCatCompra(this)"><div class="cat-ico">📦</div><div class="cat-lbl">Otro</div></div>
+      <div class="cat-btn on" tabindex="0" role="button" data-cat="verduras" onclick="selCatCompra(this)"><div class="cat-ico">🥦</div><div class="cat-lbl">Verduras</div></div>
+      <div class="cat-btn" tabindex="0" role="button" data-cat="frutas"   onclick="selCatCompra(this)"><div class="cat-ico">🍎</div><div class="cat-lbl">Frutas</div></div>
+      <div class="cat-btn" tabindex="0" role="button" data-cat="proteina" onclick="selCatCompra(this)"><div class="cat-ico">🍗</div><div class="cat-lbl">Proteína</div></div>
+      <div class="cat-btn" tabindex="0" role="button" data-cat="lacteo"   onclick="selCatCompra(this)"><div class="cat-ico">🥛</div><div class="cat-lbl">Lácteos</div></div>
+      <div class="cat-btn" tabindex="0" role="button" data-cat="cereal"   onclick="selCatCompra(this)"><div class="cat-ico">🌾</div><div class="cat-lbl">Cereales</div></div>
+      <div class="cat-btn" tabindex="0" role="button" data-cat="insumo"   onclick="selCatCompra(this)"><div class="cat-ico">🧴</div><div class="cat-lbl">Insumos</div></div>
+      <div class="cat-btn" tabindex="0" role="button" data-cat="bebida"   onclick="selCatCompra(this)"><div class="cat-ico">💧</div><div class="cat-lbl">Bebidas</div></div>
+      <div class="cat-btn" tabindex="0" role="button" data-cat="otro"     onclick="selCatCompra(this)"><div class="cat-ico">📦</div><div class="cat-lbl">Otro</div></div>
     </div>
     <div style="padding:0 18px 14px;display:flex;flex-direction:column;gap:10px">
       <div class="field" style="margin:0">
@@ -2197,6 +2197,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/app.js?v=f890eab8"></script>
+<script src="js/app.js?v=bf167cb1"></script>
 </body>
 </html>
