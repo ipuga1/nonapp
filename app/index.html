@@ -47,11 +47,11 @@
     <div class="splash-logo">🌿</div>
     <div class="splash-name">Raíz</div>
     <div class="splash-tag">El sistema operativo del cuidado<br>de personas mayores</div>
-    <div class="splash-pill"><span>✦</span> El cuidado organizado, en un solo lugar</div>
+    <div class="splash-pill"><span>✦</span> Para tu familia o tu residencia</div>
   </div>
   <div style="flex-shrink:0;padding:20px 20px 0;display:flex;flex-direction:column;gap:12px;background:var(--white);">
     <button class="btn btn-p" onclick="navTo('s-login')">Iniciar sesión</button>
-    <button class="btn btn-s" onclick="navTo('s-registro-tipo')">Crear cuenta nueva</button>
+    <button class="btn btn-s" onclick="navTo('s-registro-cuenta')">Crear cuenta nueva</button>
   </div>
   <div style="flex-shrink:0;padding:12px 22px max(24px,env(safe-area-inset-bottom));text-align:center;background:var(--white);">
     <div style="font-size:13px;color:var(--ink3)">¿Te invitaron? <button style="background:none;border:none;padding:0;font:inherit;color:var(--sage);font-weight:600;cursor:pointer" onclick="navTo('s-ingresar-codigo')">Usar código de invitación →</button></div>
@@ -63,7 +63,7 @@
   <div class="auth-hdr">
     <button class="back-btn" onclick="navTo('s-splash')">‹ Volver</button>
     <div class="auth-title">Bienvenido/a de vuelta</div>
-    <div class="auth-sub">Ingresa con tu email y contraseña</div>
+    <div class="auth-sub">Ingresa con tu email y contraseña — para tu familia o tu residencia</div>
   </div>
   <div class="scroll">
     <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px">
@@ -84,16 +84,38 @@
     </div>
     <div style="padding:0 22px 8px;display:flex;flex-direction:column;gap:10px;">
       <button class="btn btn-p" onclick="hacerLogin()"><div class="spinner" id="login-spinner"></div><span id="login-btn-txt">Iniciar sesión</span></button>
-      <div style="text-align:center;font-size:13px;color:var(--ink3);padding:6px 0;">¿Primera vez? <span style="color:var(--sage);font-weight:600;cursor:pointer" onclick="navTo('s-registro-tipo')">Crear cuenta</span></div>
+      <div style="text-align:center;font-size:13px;color:var(--ink3);padding:6px 0;">¿Primera vez? <span style="color:var(--sage);font-weight:600;cursor:pointer" onclick="navTo('s-registro-cuenta')">Crear cuenta</span></div>
     </div>
     <div style="height:max(20px,env(safe-area-inset-bottom))"></div>
   </div>
 </div>
 
+<!-- Para quién es la cuenta: familia particular (D2C) o residencia/institución (B2B) -->
+<div class="screen" id="s-registro-cuenta">
+  <div class="auth-hdr">
+    <button class="back-btn" onclick="navTo('s-splash')">‹ Volver</button>
+    <div class="auth-title">¿Para quién es esta cuenta?</div>
+    <div class="auth-sub">Esto no se puede cambiar después de crear la cuenta.</div>
+  </div>
+  <div class="scroll" style="padding:16px 22px">
+    <div class="rol-card sel" id="cuenta-familia" tabindex="0" role="button" onclick="selTipoCuentaRegistro('familia')">
+      <div class="rol-ico">👨‍👩‍👧</div>
+      <div style="flex:1"><div class="rol-name">Familia particular</div><div class="rol-desc">Para cuidar a un familiar mayor en casa, coordinando con el resto de la familia.</div></div>
+      <div class="rol-chk on" id="cuenta-chk-familia">✓</div>
+    </div>
+    <div class="rol-card" id="cuenta-institucion" tabindex="0" role="button" onclick="selTipoCuentaRegistro('institucion')">
+      <div class="rol-ico">🏢</div>
+      <div style="flex:1"><div class="rol-name">Residencia o institución</div><div class="rol-desc">Para una residencia con varios residentes y un equipo de cuidadoras y enfermeras.</div></div>
+      <div class="rol-chk" id="cuenta-chk-institucion"></div>
+    </div>
+  </div>
+  <div class="btns"><button class="btn btn-p" onclick="continuarTipoCuenta()">Continuar →</button></div>
+</div>
+
 <!-- Tipo de registro -->
 <div class="screen" id="s-registro-tipo">
   <div class="auth-hdr">
-    <button class="back-btn" onclick="navTo('s-splash')">‹ Volver</button>
+    <button class="back-btn" onclick="navTo('s-registro-cuenta')">‹ Volver</button>
     <div class="auth-title">¿Cómo quieres entrar?</div>
     <div class="auth-sub">El rol se define al registrarse y no puede cambiarse sin autorización.</div>
   </div>
@@ -2226,6 +2248,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/app.js?v=259c03e6"></script>
+<script src="js/app.js?v=499d9a90"></script>
 </body>
 </html>

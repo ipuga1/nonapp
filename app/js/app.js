@@ -861,7 +861,7 @@ function navTo(id){
   // Mostrar/ocultar sidebar según si hay sesión y no es pantalla de auth
   const sb=document.getElementById('sidebar');
   const sesionActiva=!!DB.getSesion();
-  const esPantallaAuth=['s-splash','s-login','s-registro-tipo','s-registro-admin',
+  const esPantallaAuth=['s-splash','s-login','s-registro-tipo','s-registro-cuenta','s-registro-admin',
     's-ingresar-codigo','s-registro-invitado'].includes(id);
   // El sidebar en mobile NUNCA tiene display inline — lo controla el @media CSS
   // Solo ocultarlo explícitamente en pantallas de auth
@@ -950,12 +950,47 @@ function irAlHome(){
 
 /* ════ AUTH — MÓDULO 1 ════ */
 
-// Tipo de registro
-let _tipoReg='admin';
-// true solo cuando se llega vía ?accion=institucion (link privado, sin
-// autoservicio público — ver PROPUESTAS.md #1, Fase 4). Decide si el botón
-// de s-registro-admin crea una cuenta D2C o una institución B2B.
+// Familia particular (D2C) o residencia/institución (B2B) — primer paso del
+// registro visible, antes incluso de saber si quien se registra será admin o
+// invitado. _esRegistroInstitucion ya existía para el link privado
+// ?accion=institucion (ver PROPUESTAS.md #1, Fase 4); ahora también lo fija
+// esta pantalla, así que un mismo flag cubre ambos caminos hacia
+// registrarAdminOInstitucion().
+let _tipoCuentaReg='familia';
 let _esRegistroInstitucion=false;
+function selTipoCuentaRegistro(tipo){
+  _tipoCuentaReg=tipo;
+  ['familia','institucion'].forEach(t=>{
+    $('cuenta-'+t)?.classList.toggle('sel',t===tipo);
+    const c=$('cuenta-chk-'+t);
+    if(c){ c.classList.toggle('on',t===tipo); c.textContent=t===tipo?'✓':''; }
+  });
+}
+function continuarTipoCuenta(){
+  _esRegistroInstitucion=(_tipoCuentaReg==='institucion');
+  navTo('s-registro-tipo');
+}
+
+// Los textos de s-registro-admin dependen de _esRegistroInstitucion, fijado
+// antes por continuarTipoCuenta() (flujo visible) o por
+// irSegunAccionSinSesion() (link privado ?accion=institucion).
+function _aplicarTextosRegistroAdmin(){
+  const t=$('reg-titulo'), rs=$('reg-sub'), rl=$('reg-nombre-lbl'), rn=$('reg-nombre');
+  if(_esRegistroInstitucion){
+    if(t) t.textContent='Crear cuenta de institución';
+    if(rs) rs.textContent='Podrás invitar a tu equipo y a las familias después.';
+    if(rl) rl.textContent='Nombre de la institución';
+    if(rn) rn.placeholder='Ej: Residencia Los Aromos';
+  } else {
+    if(t) t.textContent='Crear cuenta de administrador';
+    if(rs) rs.textContent='Podrás invitar a familiares y cuidadoras después.';
+    if(rl) rl.textContent='Tu nombre completo';
+    if(rn) rn.placeholder='Ej: Valentina Rodríguez';
+  }
+}
+
+// Cómo quieres entrar: segundo paso, ya sabiendo para quién es la cuenta.
+let _tipoReg='admin';
 function selTipoRegistro(tipo){
   _tipoReg=tipo;
   ['admin','invitado'].forEach(t=>{
@@ -965,18 +1000,7 @@ function selTipoRegistro(tipo){
   });
 }
 function continuarRegistro(){
-  if(_tipoReg==='admin'){
-    // Este es el único camino normal (autoservicio, sin link especial) hacia
-    // s-registro-admin — resetear acá asegura que _esRegistroInstitucion
-    // nunca quede pegado en true de una visita anterior con
-    // ?accion=institucion y termine creando una cuenta B2B por error.
-    _esRegistroInstitucion=false;
-    const t=$('reg-titulo'); if(t) t.textContent='Crear cuenta de administrador';
-    const rs=$('reg-sub'); if(rs) rs.textContent='Podrás invitar a familiares y cuidadoras después.';
-    const rl=$('reg-nombre-lbl'); if(rl) rl.textContent='Tu nombre completo';
-    const rn=$('reg-nombre'); if(rn) rn.placeholder='Ej: Valentina Rodríguez';
-    navTo('s-registro-admin');
-  }
+  if(_tipoReg==='admin'){ _aplicarTextosRegistroAdmin(); navTo('s-registro-admin'); }
   else navTo('s-ingresar-codigo');
 }
 
@@ -1164,8 +1188,9 @@ function registrarAdmin(){
 }
 
 // Decide, al enviar el formulario de s-registro-admin, si crea una cuenta
-// D2C (flujo normal) o una institución B2B (solo si se llegó vía el link
-// privado ?accion=institucion — ver PROPUESTAS.md #1, Fase 4).
+// D2C o una institución B2B, según lo que se haya elegido en
+// s-registro-cuenta (o, si se llegó por el link privado ?accion=institucion,
+// lo que fijó irSegunAccionSinSesion() — ver PROPUESTAS.md #1, Fase 4).
 function registrarAdminOInstitucion(){
   if(_esRegistroInstitucion) registrarInstitucion();
   else registrarAdmin();
@@ -3163,19 +3188,16 @@ window._raizOnAuth = async (firebaseUser) => {
 function irSegunAccionSinSesion(){
   const accion=new URLSearchParams(location.search).get('accion');
   if(accion==='login') navTo('s-login');
-  else if(accion==='registro') navTo('s-registro-tipo');
-  // Alta de institución B2B: sin autoservicio público — este link solo se
-  // comparte directamente con una institución con la que ya se habló, nunca
-  // aparece como botón en la pantalla de registro normal (ver PROPUESTAS.md
-  // #1, Fase 4). Reutiliza la misma pantalla de "Crear cuenta de
+  else if(accion==='registro') navTo('s-registro-cuenta');
+  // Alta de institución B2B vía link directo (p.ej. compartido a mano con una
+  // institución con la que ya se habló) — equivalente a elegir "Residencia o
+  // institución" en s-registro-cuenta, pero sin pasar por esa pantalla ni por
+  // "¿Cómo quieres entrar?". Reutiliza la misma pantalla de "Crear cuenta de
   // administrador" — _esRegistroInstitucion decide, al enviar el formulario,
-  // si crea una cuenta D2C o B2B.
+  // si crea una cuenta D2C o B2B (ver PROPUESTAS.md #1, Fase 4).
   else if(accion==='institucion'){
     _esRegistroInstitucion=true;
-    const t=$('reg-titulo'); if(t) t.textContent='Crear cuenta de institución';
-    const rs=$('reg-sub'); if(rs) rs.textContent='Podrás invitar a tu equipo y a las familias después.';
-    const rl=$('reg-nombre-lbl'); if(rl) rl.textContent='Nombre de la institución';
-    const rn=$('reg-nombre'); if(rn) rn.placeholder='Ej: Residencia Los Aromos';
+    _aplicarTextosRegistroAdmin();
     navTo('s-registro-admin');
   }
   else navTo('s-splash');
